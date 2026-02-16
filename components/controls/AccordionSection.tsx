@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { useThemeStore } from '@/store/theme-store';
+import { useBreakpoint } from '@/lib/use-breakpoint';
 
 interface AccordionSectionProps {
   title: string;
@@ -18,11 +19,24 @@ export default function AccordionSection({
   const [open, setOpen] = useState(defaultOpen);
   const id = title.toLowerCase().replace(/\s+/g, '-');
   const setActiveControlSection = useThemeStore((s) => s.setActiveControlSection);
+  const setMobileTab = useThemeStore((s) => s.setMobileTab);
+  const setActivePage = useThemeStore((s) => s.setActivePage);
+  const bp = useBreakpoint();
 
   const handleToggle = () => {
     const next = !open;
     setOpen(next);
     setActiveControlSection(next ? id : null);
+
+    // On mobile: opening a section auto-switches to Preview tab so the user sees the highlight
+    if (next && bp === 'mobile') {
+      setMobileTab('preview');
+    }
+
+    // Auto-switch to login page when "Login Page" section is opened
+    if (next && id === 'login-page') {
+      setActivePage('login');
+    }
   };
 
   return (

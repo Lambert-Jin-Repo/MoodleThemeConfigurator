@@ -73,7 +73,7 @@ export default function ColourPicker({
           id={`color-${id}`}
           value={value}
           onChange={(e) => handleNativeChange(e.target.value)}
-          className="w-8 h-8 rounded border border-gray-300 cursor-pointer p-0"
+          className="w-10 h-10 md:w-8 md:h-8 rounded border border-gray-300 cursor-pointer p-0"
           aria-label={`${label} colour picker`}
         />
 
@@ -89,7 +89,7 @@ export default function ColourPicker({
 
         {/* Popover toggle */}
         <button
-          className="text-xs text-gray-500 hover:text-gray-700 px-1"
+          className="text-xs text-gray-500 hover:text-gray-700 px-1 min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0 flex items-center justify-center"
           onClick={() => setPopoverOpen(!popoverOpen)}
           aria-label={`Advanced picker for ${label}`}
         >
@@ -140,7 +140,7 @@ export default function ColourPicker({
             {CFA_PALETTE.map((swatch) => (
               <button
                 key={swatch.hex}
-                className="w-6 h-6 rounded border border-gray-300 hover:ring-2 hover:ring-offset-1 hover:ring-gray-400"
+                className="w-8 h-8 md:w-6 md:h-6 rounded border border-gray-300 hover:ring-2 hover:ring-offset-1 hover:ring-gray-400"
                 style={{ backgroundColor: swatch.hex }}
                 onClick={() => {
                   onChange(swatch.hex);

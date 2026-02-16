@@ -16,6 +16,8 @@ import {
   autoTextColour,
 } from '@/lib/tokens';
 
+export type MobileTab = 'controls' | 'preview' | 'audit';
+
 interface ThemeState {
   tokens: ThemeTokens;
   activePresetId: string | null;
@@ -25,6 +27,8 @@ interface ThemeState {
   zoom: number;
   savedConfigs: SavedConfig[];
   activeControlSection: string | null;
+  mobileTab: MobileTab;
+  auditDrawerOpen: boolean;
 
   setToken: (key: keyof ThemeTokens, value: string | number | boolean) => void;
   setBrandPrimary: (value: string) => void;
@@ -34,6 +38,8 @@ interface ThemeState {
   setActivePage: (page: PreviewPage) => void;
   setZoom: (zoom: number) => void;
   setActiveControlSection: (section: string | null) => void;
+  setMobileTab: (tab: MobileTab) => void;
+  setAuditDrawerOpen: (open: boolean) => void;
   saveConfig: (name: string, score: number) => void;
   loadConfig: (id: string) => void;
   deleteConfig: (id: string) => void;
@@ -51,6 +57,8 @@ export const useThemeStore = create<ThemeState>()(
         zoom: 125,
         savedConfigs: [] as SavedConfig[],
         activeControlSection: null as string | null,
+        mobileTab: 'preview' as MobileTab,
+        auditDrawerOpen: false,
 
         setToken: (key, value) => {
           set((state) => {
@@ -129,6 +137,8 @@ export const useThemeStore = create<ThemeState>()(
         setActivePage: (page) => set({ activePage: page }),
         setZoom: (zoom) => set({ zoom }),
         setActiveControlSection: (section) => set({ activeControlSection: section }),
+        setMobileTab: (tab) => set({ mobileTab: tab }),
+        setAuditDrawerOpen: (open) => set({ auditDrawerOpen: open }),
 
         saveConfig: (name, score) => {
           const config: SavedConfig = {

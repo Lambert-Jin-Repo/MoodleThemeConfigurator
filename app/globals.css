@@ -35,3 +35,8 @@ html, body {
   outline: 2px solid #336E7B;
   outline-offset: 2px;
 }
+
+/* Safe-area bottom padding for iPhone notch / home indicator */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
