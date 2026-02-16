@@ -43,21 +43,27 @@ function buildHighlightStyles(section: string | null): string {
   if (!section || !SECTION_HIGHLIGHT_MAP[section]) return '';
   const selector = SECTION_HIGHLIGHT_MAP[section];
 
-  // Common: subtle persistent outline after flash settles
-  const persistentOutline = `
+  // Shared: 3-cycle breathing pulse on the outline, then settle to persistent indicator
+  // Total: ~600ms initial flash + 3 × 700ms pulses ≈ 2.7s of attention, then static
+  const pulsingOutline = `
     ${selector} {
-      outline: 2px solid rgba(242, 121, 39, 0.5) !important;
-      outline-offset: 3px !important;
-      border-radius: 4px;
       position: relative;
       z-index: 2;
-      transition: outline-color 0.3s ease;
+      border-radius: 4px;
+      outline: 2px solid rgba(242, 121, 39, 0.5) !important;
+      outline-offset: 3px !important;
+      animation: cfa-outline-pulse 700ms ease-in-out 3;
+    }
+    @keyframes cfa-outline-pulse {
+      0%   { outline-color: rgba(242, 121, 39, 0.25); outline-offset: 3px; }
+      50%  { outline-color: rgba(242, 121, 39, 0.8);  outline-offset: 5px; }
+      100% { outline-color: rgba(242, 121, 39, 0.25); outline-offset: 3px; }
     }
   `;
 
   if (BG_FLASH_SECTIONS.has(section)) {
-    // Background flash via ::after overlay that fades from opaque orange to transparent
-    return persistentOutline + `
+    // Initial flash overlay + breathing pulse on outline
+    return pulsingOutline + `
       ${selector} {
         overflow: hidden;
       }
@@ -69,54 +75,43 @@ function buildHighlightStyles(section: string | null): string {
         pointer-events: none;
         border-radius: inherit;
         z-index: 10;
-        animation: cfa-bg-flash 800ms ease-out forwards;
+        animation: cfa-bg-flash 600ms ease-out forwards;
       }
       @keyframes cfa-bg-flash {
-        0%   { opacity: 0.55; }
-        20%  { opacity: 0.45; }
-        50%  { opacity: 0.2; }
+        0%   { opacity: 0.45; }
+        40%  { opacity: 0.2; }
         100% { opacity: 0; }
       }
     `;
   }
 
   if (TEXT_FLASH_SECTIONS.has(section)) {
-    // Text colour flash: briefly turns orange then back
-    return persistentOutline + `
+    // Text briefly turns orange then back + breathing pulse on outline
+    return pulsingOutline + `
       ${selector} {
-        animation: cfa-text-flash 800ms ease-out forwards;
+        animation: cfa-text-flash 600ms ease-out forwards, cfa-outline-pulse 700ms ease-in-out 3;
       }
       @keyframes cfa-text-flash {
         0%   { color: #F27927 !important; }
-        25%  { color: #F27927 !important; }
+        30%  { color: #F27927 !important; }
         100% { color: inherit; }
       }
     `;
   }
 
-  // Default: scale pop + overlay flash for buttons, cards, alerts, etc.
-  return persistentOutline + `
+  // Default: scale pop + breathing glow for buttons, cards, alerts, etc.
+  return pulsingOutline + `
     ${selector} {
-      animation: cfa-element-flash 800ms ease-out forwards;
-      box-shadow: 0 0 0 4px rgba(242, 121, 39, 0.3);
+      animation: cfa-element-flash 2100ms ease-in-out forwards;
     }
     @keyframes cfa-element-flash {
-      0%   {
-        box-shadow: 0 0 0 6px rgba(242, 121, 39, 0.5);
-        transform: scale(1.03);
-      }
-      30%  {
-        box-shadow: 0 0 0 8px rgba(242, 121, 39, 0.35);
-        transform: scale(1.01);
-      }
-      60%  {
-        box-shadow: 0 0 0 4px rgba(242, 121, 39, 0.15);
-        transform: scale(0.998);
-      }
-      100% {
-        box-shadow: 0 0 0 0 rgba(242, 121, 39, 0);
-        transform: scale(1);
-      }
+      0%   { box-shadow: 0 0 0 6px rgba(242, 121, 39, 0.5);  transform: scale(1.025); }
+      14%  { box-shadow: 0 0 0 2px rgba(242, 121, 39, 0.15); transform: scale(1); }
+      28%  { box-shadow: 0 0 0 5px rgba(242, 121, 39, 0.4);  transform: scale(1.015); }
+      42%  { box-shadow: 0 0 0 2px rgba(242, 121, 39, 0.1);  transform: scale(1); }
+      57%  { box-shadow: 0 0 0 4px rgba(242, 121, 39, 0.3);  transform: scale(1.01); }
+      71%  { box-shadow: 0 0 0 2px rgba(242, 121, 39, 0.08); transform: scale(1); }
+      100% { box-shadow: 0 0 0 0 rgba(242, 121, 39, 0);      transform: scale(1); }
     }
   `;
 }
