@@ -46,10 +46,10 @@ export default function Toolbar({ onSave, onExport }: ToolbarProps) {
         <button
           onClick={onExport}
           className="flex items-center gap-1.5 px-3 py-1.5 bg-[#F27927] text-white text-xs font-semibold rounded hover:bg-[#d96a20] transition-colors ml-1"
-          aria-label="Export SCSS (Ctrl+E)"
+          aria-label="Apply on Moodle (Ctrl+E)"
         >
           <FileCode size={14} />
-          Export SCSS
+          Apply on Moodle
         </button>
       </div>
     </header>
