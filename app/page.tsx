@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import Toolbar from '@/components/Toolbar';
-import PanelLayout from '@/components/PanelLayout';
+import ResponsiveLayout from '@/components/ResponsiveLayout';
+import MobileTabBar from '@/components/MobileTabBar';
 import ControlsPanel from '@/components/controls/ControlsPanel';
 import PreviewPanel from '@/components/preview/PreviewPanel';
 import AuditPanel from '@/components/audit/AuditPanel';
@@ -27,15 +28,16 @@ export default function Home() {
         onExport={() => setExportOpen(true)}
       />
       <div className="flex-1 overflow-hidden">
-        <PanelLayout
-          left={<ControlsPanel />}
-          center={<PreviewPanel />}
-          right={<AuditPanel />}
+        <ResponsiveLayout
+          controls={<ControlsPanel />}
+          preview={<PreviewPanel />}
+          audit={<AuditPanel />}
         />
       </div>
       <ExportModal open={exportOpen} onClose={() => setExportOpen(false)} />
       <SaveLoadModal open={saveOpen} onClose={() => setSaveOpen(false)} />
       <Toast />
+      <MobileTabBar />
     </div>
   );
 }

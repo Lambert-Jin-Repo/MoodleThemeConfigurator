@@ -18,14 +18,14 @@ export default function PreviewToolbar() {
   const setZoom = useThemeStore((s) => s.setZoom);
 
   return (
-    <div className="flex items-center justify-between px-4 py-2 bg-white border-b border-gray-200">
+    <div className="flex items-center justify-between px-2 md:px-4 py-2 bg-white border-b border-gray-200">
       <div className="flex gap-1" role="tablist" aria-label="Preview pages">
         {PAGES.map((page) => (
           <button
             key={page.id}
             role="tab"
             aria-selected={activePage === page.id}
-            className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
+            className={`px-3 md:px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
               activePage === page.id
                 ? 'bg-gray-800 text-white'
                 : 'text-gray-600 hover:bg-gray-100'
@@ -36,7 +36,9 @@ export default function PreviewToolbar() {
           </button>
         ))}
       </div>
-      <div className="flex items-center gap-2">
+
+      {/* Zoom selector — hidden on mobile (auto-fit handles it) */}
+      <div className="hidden md:flex items-center gap-2">
         <label htmlFor="zoom-select" className="text-xs text-gray-500">
           Zoom
         </label>
