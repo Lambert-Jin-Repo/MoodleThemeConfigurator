@@ -550,3 +550,67 @@ Replaced single-fire flash with a repeating glow animation for better discoverab
 - `npm run build` — zero errors
 - `npm run lint` — zero warnings/errors
 - Git repo: https://github.com/Lambert-Jin-Repo/MoodleThemeConfigurator
+
+---
+
+## Session: 2026-02-16 (continued) — Mobile & Tablet Responsive Design
+
+### Feature: Three-Breakpoint Responsive Layout
+
+Previously the app was desktop-only with a rigid 3-panel layout (Controls 320px | Preview flex-1 | Audit 300px). This session adds mobile and tablet support at three breakpoints while keeping the desktop experience 100% unchanged.
+
+| Tier | Range | Tailwind prefix | Layout |
+|------|-------|-----------------|--------|
+| **Mobile** | <768px | *(default)* | Single panel + bottom tab bar |
+| **Tablet** | 768–1023px | `md:` | Two-column + collapsible audit drawer |
+| **Desktop** | 1024px+ | `lg:` | Original 3-panel (unchanged) |
+
+### Files Created
+
+| File | Purpose |
+|------|---------|
+| `lib/use-breakpoint.ts` | `useBreakpoint()` hook — returns `'mobile' \| 'tablet' \| 'desktop'` via `window.matchMedia` listeners, SSR-safe default `'desktop'` |
+| `components/MobileTabBar.tsx` | Fixed bottom tab bar (56px) with 3 tabs: Controls (Sliders), Preview (Monitor), Audit (ShieldCheck). Active tab in CFA orange. `md:hidden` — auto-hidden on tablet/desktop. Safe-area padding for iPhone notch. |
+| `components/ResponsiveLayout.tsx` | Three layout modes rendered via CSS `hidden`/`flex` (not conditional rendering — preserves React state). Mobile: single panel by `mobileTab`. Tablet: Controls (280px) + Preview (flex-1) + audit overlay drawer. Desktop: original 3-panel. |
+| `components/audit/AuditDrawer.tsx` | Slide-in drawer (300px, absolute right) wrapping AuditPanel for tablet view. Close button header. Slides via `translate-x` transition. |
+
+### Files Modified
+
+| File | Changes |
+|------|---------|
+| `store/theme-store.ts` | Added `MobileTab` type, `mobileTab: 'preview'` and `auditDrawerOpen: false` state + `setMobileTab()` / `setAuditDrawerOpen()` setters. Both excluded from localStorage persist and undo/redo history. |
+| `app/page.tsx` | Swapped `PanelLayout` import for `ResponsiveLayout` (controls/preview/audit props). Added `<MobileTabBar />` to root. |
+| `components/Toolbar.tsx` | Mobile: shorter title ("Theme Config"), icon-only export button with 44px min tap target. Tablet: audit toggle button (ShieldCheck icon, `md:block lg:hidden`). Desktop: unchanged. |
+| `components/preview/PreviewPanel.tsx` | Mobile: auto-fit zoom via `ResizeObserver` (containerWidth / 1280 design width), no padding. Desktop/Tablet: original percentage-based zoom math preserved exactly. |
+| `components/preview/PreviewToolbar.tsx` | Zoom selector hidden on mobile (`hidden md:flex`). Tighter padding on mobile (`px-2 md:px-4`). Page tabs slightly smaller (`px-3 md:px-4`). |
+| `components/controls/AccordionSection.tsx` | Cross-tab highlight linking: on mobile, opening a section auto-switches to Preview tab via `setMobileTab('preview')`. Auto-switches to login page when "Login Page" section is opened (improves UX at all breakpoints). |
+| `components/controls/ColourPicker.tsx` | Larger touch targets on mobile: native colour input `w-10 h-10 md:w-8 md:h-8`, popover toggle `min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0`, palette swatches `w-8 h-8 md:w-6 md:h-6`. |
+| `app/globals.css` | Added `.pb-safe` utility for `env(safe-area-inset-bottom)` padding. |
+| `app/layout.tsx` | Added `viewport` export with `viewportFit: 'cover'` for iPhone safe-area support. |
+
+### Design Decisions
+
+| Decision | Rationale |
+|---|---|
+| CSS `hidden` vs conditional rendering | CSS `display:none` switches panels on mobile. Preserves React state (accordion open/close, scroll position, form values) when switching tabs. |
+| Transform-based preview scaling | Moodle preview always renders at natural ~1280px width, scaled via CSS `transform: scale()`. On mobile at 390px the scale is ~0.30 — small but readable, consistent with "desktop site preview" behaviour. |
+| No changes to preview internals | DashboardPage, CoursePage, LoginPage remain unchanged. Transform scaling means they render identically at all breakpoints. |
+| Audit drawer (tablet) vs bottom sheet | Side drawer chosen because audit content is tall/scrollable and a side panel is more natural than a bottom sheet. |
+| `PanelLayout.tsx` kept but unused | No code imports remain — only docs reference it. Harmless to leave; avoids breaking doc references. |
+
+### Verification Checklist
+
+| Check | Result |
+|---|---|
+| `npm run build` | Zero errors |
+| `npm run lint` | Zero warnings/errors |
+| Desktop layout (1024px+) unchanged | Identical 3-panel: Controls (320px) \| Preview (flex-1) \| Audit (300px) |
+| Tablet layout (768–1023px) | Two-column + audit drawer toggle in toolbar |
+| Mobile layout (<768px) | Single panel + bottom tab bar, auto-fit preview zoom |
+| No regressions in undo/redo | `mobileTab` and `auditDrawerOpen` excluded from temporal history |
+| No regressions in localStorage | Both new states excluded from persist `partialize` |
+
+### Git Status
+- **Branch:** `feat/responsive-mobile-tablet`
+- **Commit:** `6a6ba86` — `feat(responsive): add mobile and tablet responsive layouts`
+- **Pushed to:** `origin/feat/responsive-mobile-tablet`
