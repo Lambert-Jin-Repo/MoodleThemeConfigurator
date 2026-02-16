@@ -465,3 +465,88 @@ merge: (persistedState, currentState) => ({
 ### Build Status
 - `npm run build` — zero errors
 - `npm run lint` — zero warnings/errors
+
+---
+
+## Session: 2026-02-16 (continued) — Drawer Text, Logo Auto, Export Redesign, Highlight Pulse
+
+### Fix: Drawer Text Invisible on Dark Backgrounds
+
+CourseDrawer used page-level `bodyText` (#404041) on `drawerBg`, producing only 1.56:1 contrast in CFA Dark Mode (#1D2125 background). The accessibility audit had no check for text on drawer background.
+
+| # | Issue | Action | Status |
+|---|---|---|---|
+| 37 | Drawer text invisible on dark backgrounds (1.56:1 contrast) | Added `drawerText` token that auto-computes from `drawerBg` via `autoTextColour()` | Fixed |
+| 38 | No audit check for drawer text contrast | Added `drawer-text` check (drawerText on drawerBg) | Fixed |
+| 39 | No Drawer Text colour picker in controls | Added to Drawers accordion section | Fixed |
+
+**Files modified:** `lib/tokens.ts`, `store/theme-store.ts`, `components/preview/CourseDrawer.tsx`, `lib/accessibility.ts`, `components/controls/ControlsPanel.tsx`
+
+### Fix: Logo "Australia" — Auto Colour Across All Surfaces
+
+A single hardcoded `logoAustraliaColour` in presets couldn't serve both dark navbars and white login cards. 5 of 6 presets failed on the login page (e.g. lime #BAF73C on white = 1.28:1). The audit only checked navbar, missing the login card entirely.
+
+| # | Issue | Action | Status |
+|---|---|---|---|
+| 40 | Logo "AUSTRALIA" lime on white login card = 1.28:1 contrast | Removed hardcoded `logoAustraliaColour` from all 6 presets — `'auto'` mode picks best colour per surface | Fixed |
+| 41 | Audit only checked logo contrast on navbar, not login card | Added `logo-australia-login` check (logoAustraliaColour on loginCardBg) | Fixed |
+| 42 | Audit fix suggested a single hex instead of auto mode | Fix handler now suggests `'auto'` which adapts per surface | Fixed |
+
+**Auto mode results (all 8 presets verified):**
+- Dark navbars → Lime #BAF73C (4.2–12.7:1 contrast)
+- White login card → Red #F64747 (3.6:1 contrast)
+
+**Files modified:** `lib/tokens.ts`, `lib/accessibility.ts`, `components/audit/AuditPanel.tsx`
+
+### Feature: Export Redesign — "Apply on Moodle" Tutorial
+
+Replaced the code-heavy export modal with a clean step-by-step tutorial.
+
+| # | Issue | Action | Status |
+|---|---|---|---|
+| 43 | "Export SCSS" button name not user-friendly | Renamed to "Apply on Moodle" | Fixed |
+| 44 | Export showed raw SCSS code blocks — confusing for non-technical admins | Redesigned as 5-step tutorial with copy buttons, no visible code | Fixed |
+
+**New flow:** Step 1 (where to go) → Step 2 (brand colour with swatch) → Step 3 (copy Initial SCSS) → Step 4 (copy Raw SCSS) → Step 5 (save & purge caches). Download as .txt option at bottom.
+
+**Files modified:** `components/Toolbar.tsx`, `components/export/ExportModal.tsx`
+
+### Fix: Export Blocked Falsely on High Contrast AAA
+
+| # | Issue | Action | Status |
+|---|---|---|---|
+| 45 | ExportModal passed raw `'auto'` string to `contrastRatio()` — treated as black (0,0,0) → false 1:1 contrast → export blocked | Added `bestLogoAccentColour()` resolution matching AuditPanel logic | Fixed |
+
+**Root cause:** AuditPanel resolved `'auto'` before computing contrast, ExportModal did not. `hexToRgb('auto')` returned `[0,0,0]` (defensive guard), which against dark navbars gave ~1:1 ratio.
+
+**File modified:** `components/export/ExportModal.tsx`
+
+### Feature: 3-Cycle Breathing Pulse for Section Indicators
+
+Replaced single-fire flash with a repeating glow animation for better discoverability.
+
+| # | Issue | Action | Status |
+|---|---|---|---|
+| 46 | Section highlight flashed once (800ms) — easy to miss | Replaced with 3-cycle breathing glow pulse (~2.1s total) | Fixed |
+| 47 | CSS cascade bug: second animation property overrode the first (pulse never played) | Consolidated to single `animation` property per element using `box-shadow`-based glow | Fixed |
+
+**Animation design (follows Intercom/Stripe onboarding patterns):**
+- BG sections: 600ms orange overlay fade + 3× glow pulse
+- Text sections: 600ms text colour flash + 3× glow pulse
+- Element sections: 3× scale pop + glow pulse
+- All settle to persistent 2px orange outline while section stays open
+
+**File modified:** `components/preview/MoodleShell.tsx`
+
+### Preset Change: CFA High Contrast AAA as Recommended
+
+| # | Issue | Action | Status |
+|---|---|---|---|
+| 48 | CFA Teal Professional was recommended — doesn't reflect CFA's accessibility mission | Moved `recommended: true` to CFA High Contrast AAA (AAA ratios, 3px focus, 17px font) | Changed |
+
+**File modified:** `lib/tokens.ts`
+
+### Build Status
+- `npm run build` — zero errors
+- `npm run lint` — zero warnings/errors
+- Git repo: https://github.com/Lambert-Jin-Repo/MoodleThemeConfigurator

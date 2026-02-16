@@ -43,29 +43,32 @@ function buildHighlightStyles(section: string | null): string {
   if (!section || !SECTION_HIGHLIGHT_MAP[section]) return '';
   const selector = SECTION_HIGHLIGHT_MAP[section];
 
-  // Shared: 3-cycle breathing pulse on the outline, then settle to persistent indicator
-  // Total: ~600ms initial flash + 3 × 700ms pulses ≈ 2.7s of attention, then static
-  const pulsingOutline = `
+  // Shared keyframes for 3-cycle breathing glow (box-shadow based — works cross-browser)
+  const sharedKeyframes = `
+    @keyframes cfa-glow-pulse {
+      0%   { box-shadow: 0 0 0 3px rgba(242, 121, 39, 0.2); }
+      50%  { box-shadow: 0 0 8px 4px rgba(242, 121, 39, 0.5); }
+      100% { box-shadow: 0 0 0 3px rgba(242, 121, 39, 0.2); }
+    }
+  `;
+
+  // Base styles: persistent outline + 3-cycle glow pulse
+  const base = `
     ${selector} {
       position: relative;
       z-index: 2;
       border-radius: 4px;
       outline: 2px solid rgba(242, 121, 39, 0.5) !important;
       outline-offset: 3px !important;
-      animation: cfa-outline-pulse 700ms ease-in-out 3;
-    }
-    @keyframes cfa-outline-pulse {
-      0%   { outline-color: rgba(242, 121, 39, 0.25); outline-offset: 3px; }
-      50%  { outline-color: rgba(242, 121, 39, 0.8);  outline-offset: 5px; }
-      100% { outline-color: rgba(242, 121, 39, 0.25); outline-offset: 3px; }
     }
   `;
 
   if (BG_FLASH_SECTIONS.has(section)) {
-    // Initial flash overlay + breathing pulse on outline
-    return pulsingOutline + `
+    // ::after overlay flash + glow pulse on the element itself via a wrapper approach
+    return sharedKeyframes + base + `
       ${selector} {
         overflow: hidden;
+        animation: cfa-glow-pulse 700ms ease-in-out 3;
       }
       ${selector}::after {
         content: '';
@@ -86,10 +89,10 @@ function buildHighlightStyles(section: string | null): string {
   }
 
   if (TEXT_FLASH_SECTIONS.has(section)) {
-    // Text briefly turns orange then back + breathing pulse on outline
-    return pulsingOutline + `
+    // Text flashes orange then back, combined with glow pulse
+    return sharedKeyframes + base + `
       ${selector} {
-        animation: cfa-text-flash 600ms ease-out forwards, cfa-outline-pulse 700ms ease-in-out 3;
+        animation: cfa-text-flash 600ms ease-out forwards, cfa-glow-pulse 700ms ease-in-out 3;
       }
       @keyframes cfa-text-flash {
         0%   { color: #F27927 !important; }
@@ -99,19 +102,15 @@ function buildHighlightStyles(section: string | null): string {
     `;
   }
 
-  // Default: scale pop + breathing glow for buttons, cards, alerts, etc.
-  return pulsingOutline + `
+  // Default: 3-cycle scale pop + glow for buttons, cards, alerts, etc.
+  return sharedKeyframes + base + `
     ${selector} {
-      animation: cfa-element-flash 2100ms ease-in-out forwards;
+      animation: cfa-element-pulse 700ms ease-in-out 3;
     }
-    @keyframes cfa-element-flash {
-      0%   { box-shadow: 0 0 0 6px rgba(242, 121, 39, 0.5);  transform: scale(1.025); }
-      14%  { box-shadow: 0 0 0 2px rgba(242, 121, 39, 0.15); transform: scale(1); }
-      28%  { box-shadow: 0 0 0 5px rgba(242, 121, 39, 0.4);  transform: scale(1.015); }
-      42%  { box-shadow: 0 0 0 2px rgba(242, 121, 39, 0.1);  transform: scale(1); }
-      57%  { box-shadow: 0 0 0 4px rgba(242, 121, 39, 0.3);  transform: scale(1.01); }
-      71%  { box-shadow: 0 0 0 2px rgba(242, 121, 39, 0.08); transform: scale(1); }
-      100% { box-shadow: 0 0 0 0 rgba(242, 121, 39, 0);      transform: scale(1); }
+    @keyframes cfa-element-pulse {
+      0%   { box-shadow: 0 0 0 3px rgba(242, 121, 39, 0.2);  transform: scale(1); }
+      50%  { box-shadow: 0 0 8px 4px rgba(242, 121, 39, 0.45); transform: scale(1.02); }
+      100% { box-shadow: 0 0 0 3px rgba(242, 121, 39, 0.2);  transform: scale(1); }
     }
   `;
 }
