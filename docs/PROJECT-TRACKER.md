@@ -446,3 +446,22 @@ merge: (persistedState, currentState) => ({
 ### Build Status
 - `npm run build` — zero errors
 - `npm run lint` — zero warnings/errors
+
+---
+
+## Session: 2026-02-16 (continued) — Toolbar Cleanup + Git Upload + README
+
+### Changes
+
+| # | Issue | Action | Status |
+|---|---|---|---|
+| 35 | CFA logo in toolbar header (next to "Moodle Theme Configurator") | Removed logo from Toolbar.tsx per user preference — text only | Fixed |
+| 36 | No README.md in repository | Created professional README with features, tech stack, setup instructions, architecture overview, deployment guide, and CFA logo disclaimer | Added |
+
+### Files Modified
+- `components/Toolbar.tsx` — removed `CfaLogo` import and component from toolbar header
+- `README.md` — NEW: professional project documentation with CFA logo testing disclaimer
+
+### Build Status
+- `npm run build` — zero errors
+- `npm run lint` — zero warnings/errors

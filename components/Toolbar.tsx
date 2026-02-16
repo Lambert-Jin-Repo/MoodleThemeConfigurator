@@ -3,7 +3,6 @@
 import { Undo2, Redo2, RotateCcw, Save, FileCode } from 'lucide-react';
 import { useStore } from 'zustand';
 import { useThemeStore } from '@/store/theme-store';
-import CfaLogo from './preview/CfaLogo';
 
 interface ToolbarProps {
   onSave: () => void;
@@ -17,12 +16,9 @@ export default function Toolbar({ onSave, onExport }: ToolbarProps) {
   return (
     <header className="flex items-center justify-between px-4 py-2 bg-[#404041] text-white">
       {/* Left: title */}
-      <div className="flex items-center gap-3">
-        <CfaLogo bgHex="#404041" variant="toolbar" />
-        <h1 className="text-sm font-bold tracking-wide">
-          Moodle Theme Configurator
-        </h1>
-      </div>
+      <h1 className="text-sm font-bold tracking-wide">
+        Moodle Theme Configurator
+      </h1>
 
       {/* Right: Actions */}
       <div className="flex items-center gap-1">
