@@ -267,6 +267,14 @@ export const CONTRAST_CHECKS: ContrastCheck[] = [
     isLargeText: true,
   },
   {
+    id: 'logo-australia-login',
+    label: 'Logo "AUSTRALIA" on Login Card',
+    description: 'Logo accent text on login card background',
+    fgKey: 'logoAustraliaColour',
+    bgKey: 'loginCardBg',
+    isLargeText: true,
+  },
+  {
     id: 'drawer-text',
     label: 'Drawer Text',
     description: 'Drawer item text on drawer background',

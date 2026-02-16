@@ -91,12 +91,9 @@ export default function AuditPanel() {
             bg={r.bg}
             isLargeText={r.isLargeText}
             onApplyFix={(fix) => {
-              if (r.id === 'logo-australia') {
-                // For logo check, prefer LOGO_ACCENT_COLOURS that pass contrast
-                const passing = LOGO_ACCENT_COLOURS
-                  .filter(c => contrastRatio(c.hex, r.bg) >= 3.0)
-                  .sort((a, b) => contrastRatio(b.hex, r.bg) - contrastRatio(a.hex, r.bg));
-                setToken('logoAustraliaColour', passing.length > 0 ? passing[0].hex : fix);
+              if (r.id === 'logo-australia' || r.id === 'logo-australia-login') {
+                // For logo checks, suggest 'auto' which adapts per surface
+                setToken('logoAustraliaColour', 'auto');
               } else {
                 setToken(r.fgKey as keyof ThemeTokens, fix);
               }

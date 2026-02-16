@@ -314,7 +314,6 @@ export const PRESET_TEMPLATES: PresetTemplate[] = [
       info: '#336E7B',
       sectionAccent: 'none',
       signupBtnBg: '#6c757d',
-      logoAustraliaColour: '#F64747',
     },
   },
   {
@@ -352,7 +351,6 @@ export const PRESET_TEMPLATES: PresetTemplate[] = [
       info: '#336E7B',
       sectionAccent: '#F27927',
       signupBtnBg: '#6c757d',
-      logoAustraliaColour: '#F27927',
     },
   },
   {
@@ -393,7 +391,6 @@ export const PRESET_TEMPLATES: PresetTemplate[] = [
       info: '#336E7B',
       sectionAccent: 'none',
       signupBtnBg: '#6c757d',
-      logoAustraliaColour: '#BAF73C',
     },
   },
   {
@@ -431,7 +428,6 @@ export const PRESET_TEMPLATES: PresetTemplate[] = [
       info: '#B500B5',
       sectionAccent: '#B500B5',
       signupBtnBg: '#336E7B',
-      logoAustraliaColour: '#BAF73C',
     },
   },
   {
@@ -472,7 +468,6 @@ export const PRESET_TEMPLATES: PresetTemplate[] = [
       info: '#336E7B',
       sectionAccent: 'none',
       signupBtnBg: '#6c757d',
-      logoAustraliaColour: '#F27927',
     },
   },
   {
@@ -553,7 +548,6 @@ export const PRESET_TEMPLATES: PresetTemplate[] = [
       info: '#9E4E12',
       sectionAccent: '#336E7B',
       signupBtnBg: '#336E7B',
-      logoAustraliaColour: '#00BFFF',
     },
   },
   {
