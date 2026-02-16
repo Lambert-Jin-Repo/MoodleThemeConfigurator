@@ -4,7 +4,7 @@ import { useEffect, useRef, useMemo, useState } from 'react';
 import { X, Download, Copy, Check, ExternalLink } from 'lucide-react';
 import { useThemeStore } from '@/store/theme-store';
 import { generateScss } from '@/lib/scss-generator';
-import { contrastRatio } from '@/lib/accessibility';
+import { contrastRatio, bestLogoAccentColour } from '@/lib/accessibility';
 import { CONTRAST_CHECKS } from '@/lib/accessibility';
 import type { ThemeTokens } from '@/lib/tokens';
 
@@ -55,8 +55,12 @@ export default function ExportModal({ open, onClose }: ExportModalProps) {
 
   const canExport = useMemo(() => {
     return !CONTRAST_CHECKS.some((check) => {
-      const fg = tokens[check.fgKey as keyof ThemeTokens] as string;
+      let fg = tokens[check.fgKey as keyof ThemeTokens] as string;
       const bg = tokens[check.bgKey as keyof ThemeTokens] as string;
+      // Resolve 'auto' logoAustraliaColour to computed value
+      if (check.fgKey === 'logoAustraliaColour' && fg === 'auto') {
+        fg = bestLogoAccentColour(bg);
+      }
       return contrastRatio(fg, bg) < 3;
     });
   }, [tokens]);
