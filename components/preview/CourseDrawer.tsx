@@ -20,7 +20,7 @@ export default function CourseDrawer() {
     >
       <h4
         className="text-xs font-semibold uppercase tracking-wide mb-3 px-2"
-        style={{ color: 'var(--cfa-muted-text)' }}
+        style={{ color: 'var(--cfa-drawer-text)', opacity: 0.7 }}
       >
         Course Index
       </h4>
@@ -29,7 +29,7 @@ export default function CourseDrawer() {
           key={item}
           className="moodle-drawer-item flex items-center justify-between text-sm"
           style={{
-            color: i === 0 ? 'var(--cfa-link-colour)' : 'var(--cfa-body-text)',
+            color: 'var(--cfa-drawer-text)',
             fontWeight: i === 0 ? 600 : 400,
           }}
         >

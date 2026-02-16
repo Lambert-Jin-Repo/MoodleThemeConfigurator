@@ -266,4 +266,11 @@ export const CONTRAST_CHECKS: ContrastCheck[] = [
     bgKey: 'navbarBg',
     isLargeText: true,
   },
+  {
+    id: 'drawer-text',
+    label: 'Drawer Text',
+    description: 'Drawer item text on drawer background',
+    fgKey: 'drawerText',
+    bgKey: 'drawerBg',
+  },
 ];

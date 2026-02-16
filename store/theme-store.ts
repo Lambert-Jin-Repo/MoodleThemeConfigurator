@@ -61,6 +61,9 @@ export const useThemeStore = create<ThemeState>()(
             if (key === 'footerBg' && typeof value === 'string') {
               newTokens.footerText = autoTextColour(value);
             }
+            if (key === 'drawerBg' && typeof value === 'string') {
+              newTokens.drawerText = autoTextColour(value);
+            }
             return {
               tokens: newTokens,
               isCustomMode: true,
@@ -99,8 +102,13 @@ export const useThemeStore = create<ThemeState>()(
         applyPreset: (presetId: string) => {
           const preset = PRESET_TEMPLATES.find(p => p.id === presetId);
           if (!preset) return;
+          const mergedTokens = { ...DEFAULT_TOKENS, ...preset.overrides };
+          // Auto-compute drawerText if preset sets drawerBg but not drawerText
+          if (preset.overrides.drawerBg && !preset.overrides.drawerText) {
+            mergedTokens.drawerText = autoTextColour(preset.overrides.drawerBg);
+          }
           set({
-            tokens: { ...DEFAULT_TOKENS, ...preset.overrides },
+            tokens: mergedTokens,
             activePresetId: presetId,
             isCustomMode: false,
           });

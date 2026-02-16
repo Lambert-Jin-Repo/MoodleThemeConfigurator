@@ -470,6 +470,12 @@ export default function ControlsPanel() {
           disabled={locked}
         />
         <ColourPicker
+          label="Drawer Text"
+          value={tokens.drawerText}
+          onChange={(v) => set('drawerText')(v)}
+          disabled={locked}
+        />
+        <ColourPicker
           label="Drawer Border"
           value={tokens.drawerBorder}
           onChange={(v) => set('drawerBorder')(v)}

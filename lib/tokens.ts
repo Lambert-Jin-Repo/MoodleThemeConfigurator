@@ -58,6 +58,7 @@ export interface ThemeTokens {
 
   // Drawers
   drawerBg: string;
+  drawerText: string;
   drawerBorder: string;
 
   // Typography
@@ -141,6 +142,7 @@ export const DEFAULT_TOKENS: ThemeTokens = {
   footerAccent: 'none',
 
   drawerBg: '#FFFFFF',
+  drawerText: '#404041',
   drawerBorder: '#dee2e6',
 
   bodyFontSize: 0.9375,
@@ -378,6 +380,7 @@ export const PRESET_TEMPLATES: PresetTemplate[] = [
       footerLink: '#00BFFF',
       footerAccent: 'none',
       drawerBg: '#1D2125',
+      drawerText: '#F0EEEE',
       drawerBorder: '#404041',
       loginBg: '#1D2125',
       loginBtnBg: '#336E7B',
