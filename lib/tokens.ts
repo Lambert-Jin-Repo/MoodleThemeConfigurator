@@ -281,7 +281,6 @@ export const PRESET_TEMPLATES: PresetTemplate[] = [
     id: 'cfa-teal-pro',
     name: 'CFA Teal Professional',
     description: 'Clean, conservative monochrome teal theme',
-    recommended: true,
     overrides: {
       brandPrimary: '#336E7B',
       navbarBg: '#336E7B',
@@ -477,6 +476,7 @@ export const PRESET_TEMPLATES: PresetTemplate[] = [
     id: 'cfa-high-contrast',
     name: 'CFA High Contrast AAA',
     description: 'Maximum accessibility with AAA contrast and 3px focus rings',
+    recommended: true,
     overrides: {
       brandPrimary: '#245058',
       navbarBg: '#1D2125',
