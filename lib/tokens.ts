@@ -98,8 +98,8 @@ export interface ThemeTokens {
 export const DEFAULT_TOKENS: ThemeTokens = {
   brandPrimary: '#0f6cbf',
 
-  navbarBg: '#0f6cbf',
-  navbarText: '#FFFFFF',
+  navbarBg: '#FFFFFF',
+  navbarText: '#404041',
   navbarBorder: 'none',
   navActiveUnderline: '#0f6cbf',
   navHoverBg: 'rgba(0,0,0,0.2)',
@@ -113,7 +113,7 @@ export const DEFAULT_TOKENS: ThemeTokens = {
   btnPrimaryBg: '#0f6cbf',
   btnPrimaryText: '#FFFFFF',
   btnPrimaryHover: '#0c5aa0',
-  btnRadius: 4,
+  btnRadius: 8,
 
   linkColour: '#0f6cbf',
   linkHover: '#0a4a82',
@@ -124,7 +124,7 @@ export const DEFAULT_TOKENS: ThemeTokens = {
   contentMaxWidth: 830,
   sectionAccent: 'none',
 
-  loginBg: '#0f6cbf',
+  loginBg: '#FFFFFF',
   loginCardBg: '#FFFFFF',
   loginHeading: '#404041',
   loginBtnBg: '#0f6cbf',
@@ -149,8 +149,8 @@ export const DEFAULT_TOKENS: ThemeTokens = {
   headingScale: 1.25,
   lineHeight: 1.5,
   fontFamily: '"Source Sans Pro", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-  headingText: '#404041',
-  bodyText: '#404041',
+  headingText: '#1d2125',
+  bodyText: '#1d2125',
   mutedText: '#6a737b',
 
   secondaryNavActive: '#0f6cbf',
@@ -159,7 +159,7 @@ export const DEFAULT_TOKENS: ThemeTokens = {
   success: '#357a32',
   warning: '#f0ad4e',
   error: '#ca3120',
-  info: '#0f6cbf',
+  info: '#008196',
   alertInfoBg: '#d1ecf1',
   progressBg: '#dee2e6',
   progressFill: '#0f6cbf',
@@ -208,9 +208,16 @@ export const BRAND_LINKED_KEYS: (keyof ThemeTokens)[] = [
   'progressFill',
   'focusRing',
   'loginBtnBg',
-  'info',
   'footerLink',
 ];
+
+// ── Preset modification detection ──
+export function isModifiedFromPreset(tokens: ThemeTokens, baseline: ThemeTokens | null): boolean {
+  if (!baseline) return false;
+  return (Object.keys(baseline) as (keyof ThemeTokens)[]).some(
+    (k) => tokens[k] !== baseline[k]
+  );
+}
 
 // ── Font options ──
 export const FONT_OPTIONS = [

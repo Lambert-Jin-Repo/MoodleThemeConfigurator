@@ -8,6 +8,7 @@ export default function MoodleFooter() {
 
   return (
     <footer
+      data-section="footer"
       className="px-6 py-4 text-sm"
       style={{
         backgroundColor: 'var(--cfa-footer-bg)',

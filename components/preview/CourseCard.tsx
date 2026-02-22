@@ -7,7 +7,7 @@ interface CourseCardProps {
 
 export default function CourseCard({ title, category = 'General' }: CourseCardProps) {
   return (
-    <div className="moodle-card overflow-hidden">
+    <div data-section="content-area" className="moodle-card overflow-hidden">
       {/* Card image placeholder */}
       <div
         className="h-28 flex items-center justify-center"
@@ -45,8 +45,8 @@ export default function CourseCard({ title, category = 'General' }: CourseCardPr
           </span>
         </div>
         <div className="flex gap-2">
-          <button className="moodle-btn-primary text-xs">Continue</button>
-          <button className="moodle-btn-outline text-xs">View</button>
+          <button data-section="buttons" className="moodle-btn-primary text-xs">Continue</button>
+          <button data-section="buttons" className="moodle-btn-outline text-xs">View</button>
         </div>
       </div>
     </div>

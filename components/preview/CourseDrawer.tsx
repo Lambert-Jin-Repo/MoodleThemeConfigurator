@@ -12,6 +12,7 @@ const ITEMS = [
 export default function CourseDrawer() {
   return (
     <aside
+      data-section="drawers"
       className="w-56 flex-shrink-0 border-r p-3 moodle-drawer"
       style={{
         backgroundColor: 'var(--cfa-drawer-bg)',
