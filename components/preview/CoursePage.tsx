@@ -24,6 +24,7 @@ export default function CoursePage() {
         <CourseDrawer />
         <div className="flex-1 p-6">
           <h2
+            data-section="typography"
             className="text-lg font-semibold mb-1 highlight-text"
             style={{ color: 'var(--cfa-heading-text)' }}
           >

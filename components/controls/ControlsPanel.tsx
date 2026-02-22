@@ -1,21 +1,46 @@
 'use client';
 
+import { useRef, useEffect, useCallback } from 'react';
 import { useThemeStore } from '@/store/theme-store';
 import { FONT_OPTIONS, LOGO_ACCENT_COLOURS } from '@/lib/tokens';
 import { bestLogoAccentColour, isDarkBackground, contrastRatio } from '@/lib/accessibility';
 import type { ThemeTokens } from '@/lib/tokens';
 import PresetDropdown from './PresetDropdown';
 import AccordionSection from './AccordionSection';
+import type { AccordionSectionHandle } from './AccordionSection';
 import ColourPicker from './ColourPicker';
 import SliderControl from './SliderControl';
 import SelectControl from './SelectControl';
 import GradientToggle from './GradientToggle';
 import ImageUploadControl from './ImageUploadControl';
+import QuickPalette from './QuickPalette';
 
 export default function ControlsPanel() {
   const tokens = useThemeStore((s) => s.tokens);
   const setToken = useThemeStore((s) => s.setToken);
   const setBrandPrimary = useThemeStore((s) => s.setBrandPrimary);
+  const scrollToSectionRequest = useThemeStore((s) => s.scrollToSectionRequest);
+  const clearScrollRequest = useThemeStore((s) => s.clearScrollRequest);
+
+  const accordionRefs = useRef<Record<string, AccordionSectionHandle | null>>({});
+
+  const setAccordionRef = useCallback(
+    (sectionId: string) => (handle: AccordionSectionHandle | null) => {
+      accordionRefs.current[sectionId] = handle;
+    },
+    []
+  );
+
+  // Respond to scroll-to-section requests from store
+  useEffect(() => {
+    if (!scrollToSectionRequest) return;
+    const ref = accordionRefs.current[scrollToSectionRequest];
+    if (ref) {
+      ref.open();
+      ref.scrollIntoView();
+    }
+    clearScrollRequest();
+  }, [scrollToSectionRequest, clearScrollRequest]);
 
   const set = (key: keyof ThemeTokens) => (value: string | number | boolean) => {
     setToken(key, value);
@@ -30,8 +55,11 @@ export default function ControlsPanel() {
       {/* Preset Dropdown */}
       <PresetDropdown />
 
+      {/* Quick Palette */}
+      <QuickPalette />
+
       {/* 1. Brand Colour */}
-      <AccordionSection title="Brand Colour" defaultOpen>
+      <AccordionSection title="Brand Colour" sectionId="brand-colour" defaultOpen ref={setAccordionRef('brand-colour')}>
         <ColourPicker
           label="Primary Brand Colour"
           value={tokens.brandPrimary}
@@ -41,7 +69,7 @@ export default function ControlsPanel() {
       </AccordionSection>
 
       {/* 2. Logo */}
-      <AccordionSection title="Logo">
+      <AccordionSection title="Logo" sectionId="logo" ref={setAccordionRef('logo')}>
         {/* Mini preview on current navbar background */}
         <div
           className="rounded-lg p-3 flex items-center justify-center"
@@ -139,7 +167,7 @@ export default function ControlsPanel() {
       </AccordionSection>
 
       {/* 3. Navbar */}
-      <AccordionSection title="Navbar">
+      <AccordionSection title="Navbar" sectionId="navbar" ref={setAccordionRef('navbar')}>
         <ColourPicker
           label="Navbar Background"
           value={tokens.navbarBg}
@@ -161,7 +189,7 @@ export default function ControlsPanel() {
       </AccordionSection>
 
       {/* 4. Edit Mode Toggle */}
-      <AccordionSection title="Edit Mode Toggle">
+      <AccordionSection title="Edit Mode Toggle" sectionId="edit-mode-toggle" ref={setAccordionRef('edit-mode-toggle')}>
         <ColourPicker
           label="Edit Mode ON Colour"
           value={tokens.editModeOnColour}
@@ -178,7 +206,7 @@ export default function ControlsPanel() {
       </AccordionSection>
 
       {/* 5. Links & Focus */}
-      <AccordionSection title="Links & Focus">
+      <AccordionSection title="Links & Focus" sectionId="links-&-focus" ref={setAccordionRef('links-&-focus')}>
         <ColourPicker
           label="Link Colour"
           value={tokens.linkColour}
@@ -206,7 +234,7 @@ export default function ControlsPanel() {
       </AccordionSection>
 
       {/* 6. Buttons */}
-      <AccordionSection title="Buttons">
+      <AccordionSection title="Buttons" sectionId="buttons" ref={setAccordionRef('buttons')}>
         <ColourPicker
           label="Button Primary BG"
           value={tokens.btnPrimaryBg}
@@ -237,7 +265,7 @@ export default function ControlsPanel() {
       </AccordionSection>
 
       {/* 7. Content Area */}
-      <AccordionSection title="Content Area">
+      <AccordionSection title="Content Area" sectionId="content-area" ref={setAccordionRef('content-area')}>
         <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded">
           Page background is locked to #FFFFFF. Moodle Boost has dozens of elements that default to white — tinted backgrounds create inconsistent artefacts.
         </div>
@@ -273,7 +301,7 @@ export default function ControlsPanel() {
       </AccordionSection>
 
       {/* 7.5 Background Images */}
-      <AccordionSection title="Background Images">
+      <AccordionSection title="Background Images" sectionId="background-images" ref={setAccordionRef('background-images')}>
         <ImageUploadControl
           label="Site Background"
           value={tokens.backgroundImage}
@@ -291,7 +319,7 @@ export default function ControlsPanel() {
       </AccordionSection>
 
       {/* 8. Login Page */}
-      <AccordionSection title="Login Page">
+      <AccordionSection title="Login Page" sectionId="login-page" ref={setAccordionRef('login-page')}>
         <ColourPicker
           label="Login Background"
           value={tokens.loginBg}
@@ -339,7 +367,7 @@ export default function ControlsPanel() {
       </AccordionSection>
 
       {/* 9. Footer */}
-      <AccordionSection title="Footer">
+      <AccordionSection title="Footer" sectionId="footer" ref={setAccordionRef('footer')}>
         <ColourPicker
           label="Footer Background"
           value={tokens.footerBg}
@@ -367,7 +395,7 @@ export default function ControlsPanel() {
       </AccordionSection>
 
       {/* 10. Typography */}
-      <AccordionSection title="Typography">
+      <AccordionSection title="Typography" sectionId="typography" ref={setAccordionRef('typography')}>
         <SelectControl
           label="Font Family"
           value={tokens.fontFamily}
@@ -421,7 +449,7 @@ export default function ControlsPanel() {
       </AccordionSection>
 
       {/* 11. Drawers */}
-      <AccordionSection title="Drawers">
+      <AccordionSection title="Drawers" sectionId="drawers" ref={setAccordionRef('drawers')}>
         <ColourPicker
           label="Drawer Background"
           value={tokens.drawerBg}
@@ -440,7 +468,7 @@ export default function ControlsPanel() {
       </AccordionSection>
 
       {/* 12. Alerts & Progress */}
-      <AccordionSection title="Alerts & Progress">
+      <AccordionSection title="Alerts & Progress" sectionId="alerts-&-progress" ref={setAccordionRef('alerts-&-progress')}>
         <ColourPicker
           label="Success"
           value={tokens.success}

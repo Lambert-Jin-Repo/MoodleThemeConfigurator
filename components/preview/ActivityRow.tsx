@@ -15,7 +15,7 @@ export default function ActivityRow({ title, type = 'Assignment' }: ActivityRowP
         style={{ color: 'var(--cfa-btn-primary-bg)', flexShrink: 0 }}
       />
       <div className="flex-1 min-w-0">
-        <span className="moodle-link text-sm">{title}</span>
+        <span data-section="links-&-focus" className="moodle-link text-sm">{title}</span>
         <p className="text-xs" style={{ color: 'var(--cfa-muted-text)' }}>
           {type}
         </p>

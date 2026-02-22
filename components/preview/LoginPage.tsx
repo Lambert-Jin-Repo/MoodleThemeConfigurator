@@ -28,6 +28,7 @@ export default function LoginPage() {
       style={bgStyle}
     >
       <div
+        data-section="login-page"
         className="w-full max-w-sm rounded-lg shadow-lg p-8 login-area"
         style={{
           backgroundColor: 'var(--cfa-login-card-bg)',

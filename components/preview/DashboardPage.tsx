@@ -23,6 +23,7 @@ export default function DashboardPage() {
   return (
     <div className="p-6 max-w-5xl mx-auto">
       <h2
+        data-section="typography"
         className="text-lg font-semibold mb-4 highlight-text"
         style={{ color: 'var(--cfa-heading-text)' }}
       >
@@ -79,6 +80,7 @@ export default function DashboardPage() {
       </section>
 
       <div
+        data-section="alerts-&-progress"
         className="moodle-alert rounded-md p-3 text-sm"
         style={{
           backgroundColor: 'var(--cfa-alert-info-bg)',

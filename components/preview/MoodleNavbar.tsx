@@ -14,6 +14,7 @@ export default function MoodleNavbar() {
 
   return (
     <nav
+      data-section="navbar"
       className="flex items-center justify-between px-4 py-2"
       style={{
         backgroundColor: 'var(--cfa-navbar-bg)',
@@ -38,7 +39,7 @@ export default function MoodleNavbar() {
 
       {/* Right: edit mode + bell + avatar */}
       <div className="flex items-center gap-3">
-        <div className="flex items-center gap-2 edit-mode-area">
+        <div data-section="edit-mode-toggle" className="flex items-center gap-2 edit-mode-area">
           <span
             className="text-xs font-medium"
             style={{ color: 'var(--cfa-navbar-text)' }}

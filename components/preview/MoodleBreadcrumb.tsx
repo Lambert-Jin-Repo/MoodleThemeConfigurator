@@ -5,6 +5,7 @@ import { Home } from 'lucide-react';
 export default function MoodleBreadcrumb() {
   return (
     <div
+      data-section="content-area"
       className="moodle-breadcrumb px-4 py-2 text-sm flex items-center gap-2"
       style={{ backgroundColor: 'var(--cfa-breadcrumb-bg)' }}
     >
