@@ -42,6 +42,8 @@ export default function ControlsPanel() {
     if (ref) {
       ref.open();
       ref.scrollIntoView();
+      // Highlight after scroll settles so user sees where to look
+      setTimeout(() => ref.highlight(), 400);
     }
     clearScrollRequest();
   }, [scrollToSectionRequest, clearScrollRequest]);

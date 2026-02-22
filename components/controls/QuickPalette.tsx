@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { HexColorPicker } from 'react-colorful';
+import { ChevronRight } from 'lucide-react';
 import { useThemeStore } from '@/store/theme-store';
 import { CFA_PALETTE } from '@/lib/tokens';
 import type { ThemeTokens } from '@/lib/tokens';
@@ -41,8 +42,12 @@ export default function QuickPalette() {
     }
     setActiveSwatch(swatch.tokenKey);
     setHexInput(String(tokens[swatch.tokenKey]));
+  };
+
+  const handleGoToSection = (swatch: SwatchDef) => {
     setActiveControlSection(swatch.sectionId);
     requestScrollToSection(swatch.sectionId);
+    setActiveSwatch(null);
   };
 
   const handleColorChange = (color: string, swatch: SwatchDef) => {
@@ -98,13 +103,24 @@ export default function QuickPalette() {
         <div className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs font-semibold text-gray-700">{activeSwatchDef.label}</span>
-            <button
-              className="text-xs text-gray-400 hover:text-gray-600"
-              onClick={() => setActiveSwatch(null)}
-              aria-label="Close picker"
-            >
-              Done
-            </button>
+            <div className="flex items-center gap-1.5">
+              <button
+                className="flex items-center gap-0.5 text-xs font-medium text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-2 py-0.5 rounded-full transition-colors"
+                onClick={() => handleGoToSection(activeSwatchDef)}
+                aria-label={`Go to ${activeSwatchDef.label} section for more options`}
+                title="Jump to full section below"
+              >
+                All options
+                <ChevronRight size={14} />
+              </button>
+              <button
+                className="text-xs text-gray-400 hover:text-gray-600 px-1.5 py-0.5"
+                onClick={() => setActiveSwatch(null)}
+                aria-label="Close picker"
+              >
+                Done
+              </button>
+            </div>
           </div>
           <HexColorPicker
             color={String(tokens[activeSwatchDef.tokenKey])}

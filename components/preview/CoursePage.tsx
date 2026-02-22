@@ -3,14 +3,15 @@
 import { useThemeStore } from '@/store/theme-store';
 import SecondaryNav from './SecondaryNav';
 import CourseDrawer from './CourseDrawer';
+import BlocksDrawer from './BlocksDrawer';
 import ActivityRow from './ActivityRow';
 
 const ACTIVITIES = [
-  { title: 'Welcome and Introduction', type: 'Page' },
-  { title: 'Module 1: Understanding WCAG', type: 'Lesson' },
-  { title: 'Knowledge Check Quiz', type: 'Quiz' },
-  { title: 'Accessibility Checklist Template', type: 'File' },
-  { title: 'Group Discussion: Barriers to Access', type: 'Forum' },
+  { title: 'Welcome and Introduction', type: 'Page', purpose: 'content' as const },
+  { title: 'Module 1: Understanding WCAG', type: 'Lesson', purpose: 'content' as const },
+  { title: 'Knowledge Check Quiz', type: 'Quiz', purpose: 'assessment' as const },
+  { title: 'Accessibility Checklist Template', type: 'File', purpose: 'content' as const },
+  { title: 'Group Discussion: Barriers to Access', type: 'Forum', purpose: 'communication' as const },
 ];
 
 export default function CoursePage() {
@@ -55,7 +56,7 @@ export default function CoursePage() {
             }}
           >
             {ACTIVITIES.map((a) => (
-              <ActivityRow key={a.title} title={a.title} type={a.type} />
+              <ActivityRow key={a.title} title={a.title} type={a.type} purpose={a.purpose} />
             ))}
           </div>
 
@@ -68,6 +69,7 @@ export default function CoursePage() {
             </button>
           </div>
         </div>
+        <BlocksDrawer />
       </div>
     </div>
   );

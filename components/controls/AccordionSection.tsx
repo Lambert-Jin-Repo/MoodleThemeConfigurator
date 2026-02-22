@@ -8,6 +8,7 @@ import { useBreakpoint } from '@/lib/use-breakpoint';
 export interface AccordionSectionHandle {
   open: () => void;
   scrollIntoView: () => void;
+  highlight: () => void;
 }
 
 interface AccordionSectionProps {
@@ -20,8 +21,10 @@ interface AccordionSectionProps {
 const AccordionSection = forwardRef<AccordionSectionHandle, AccordionSectionProps>(
   function AccordionSection({ title, sectionId, defaultOpen = false, children }, ref) {
     const [isOpen, setIsOpen] = useState(defaultOpen);
+    const [isHighlighted, setIsHighlighted] = useState(false);
     const id = sectionId || title.toLowerCase().replace(/\s+/g, '-');
     const containerRef = useRef<HTMLDivElement>(null);
+    const highlightTimer = useRef<ReturnType<typeof setTimeout>>();
     const setActiveControlSection = useThemeStore((s) => s.setActiveControlSection);
     const setMobileTab = useThemeStore((s) => s.setMobileTab);
     const setActivePage = useThemeStore((s) => s.setActivePage);
@@ -36,6 +39,11 @@ const AccordionSection = forwardRef<AccordionSectionHandle, AccordionSectionProp
         requestAnimationFrame(() => {
           containerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         });
+      },
+      highlight: () => {
+        clearTimeout(highlightTimer.current);
+        setIsHighlighted(true);
+        highlightTimer.current = setTimeout(() => setIsHighlighted(false), 1800);
       },
     }));
 
@@ -54,9 +62,20 @@ const AccordionSection = forwardRef<AccordionSectionHandle, AccordionSectionProp
     };
 
     return (
-      <div ref={containerRef} className="border-b border-gray-200">
+      <div
+        ref={containerRef}
+        className={`border-b border-gray-200 transition-all duration-700 ${
+          isHighlighted
+            ? 'bg-blue-50 ring-2 ring-inset ring-blue-300'
+            : 'bg-transparent ring-0 ring-transparent'
+        }`}
+      >
         <button
-          className="w-full flex items-center justify-between px-4 py-3 text-left text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+          className={`w-full flex items-center justify-between px-4 py-3 text-left text-sm font-semibold transition-colors ${
+            isHighlighted
+              ? 'text-blue-700'
+              : 'text-gray-700 hover:bg-gray-50'
+          }`}
           aria-expanded={isOpen}
           aria-controls={`section-${id}`}
           onClick={handleToggle}

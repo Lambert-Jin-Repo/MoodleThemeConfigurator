@@ -93,10 +93,9 @@ export const useThemeStore = create<ThemeState>()(
                 (newTokens as Record<string, string | number | boolean>)[key] = value;
               }
             }
-            if (state.tokens.navbarBg.toUpperCase() === oldBrand.toUpperCase()) {
-              newTokens.navbarBg = value;
-              newTokens.navbarText = autoTextColour(value);
-            }
+            // Note: navbarBg is NOT propagated from brandPrimary.
+            // In real Moodle Boost, the navbar stays white regardless of $primary.
+            // Navbar background is controlled independently via custom CSS rules.
             newTokens.btnPrimaryHover = darkenHex(newTokens.btnPrimaryBg, 15);
             newTokens.linkHover = darkenHex(newTokens.linkColour, 20);
             if (state.tokens.editModeOnColour.toUpperCase() === oldBrand.toUpperCase()) {
