@@ -212,6 +212,14 @@ export const BRAND_LINKED_KEYS: (keyof ThemeTokens)[] = [
   'footerLink',
 ];
 
+// ── Preset modification detection ──
+export function isModifiedFromPreset(tokens: ThemeTokens, baseline: ThemeTokens | null): boolean {
+  if (!baseline) return false;
+  return (Object.keys(baseline) as (keyof ThemeTokens)[]).some(
+    (k) => tokens[k] !== baseline[k]
+  );
+}
+
 // ── Font options ──
 export const FONT_OPTIONS = [
   { label: 'Source Sans Pro', value: '"Source Sans Pro", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' },

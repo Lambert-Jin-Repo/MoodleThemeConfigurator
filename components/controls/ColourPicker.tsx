@@ -3,7 +3,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { HexColorPicker } from 'react-colorful';
 import { CFA_PALETTE } from '@/lib/tokens';
+import type { ThemeTokens } from '@/lib/tokens';
 import { contrastRatio, isBlockedColour } from '@/lib/accessibility';
+import LinkedIndicator from './LinkedIndicator';
 
 interface ColourPickerProps {
   label: string;
@@ -11,7 +13,8 @@ interface ColourPickerProps {
   onChange: (value: string) => void;
   disabled?: boolean;
   showContrastOn?: string;
-  tokenKey?: string;
+  tokenKey?: keyof ThemeTokens;
+  linkedToBrand?: boolean;
 }
 
 export default function ColourPicker({
@@ -21,6 +24,7 @@ export default function ColourPicker({
   disabled = false,
   showContrastOn,
   tokenKey,
+  linkedToBrand = false,
 }: ColourPickerProps) {
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [hexInput, setHexInput] = useState(value);
@@ -62,9 +66,14 @@ export default function ColourPicker({
 
   return (
     <div className={`space-y-1 ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
-      <label htmlFor={`color-${id}`} className="block text-xs font-medium text-gray-600">
-        {label}
-      </label>
+      <div className="flex items-center justify-between">
+        <label htmlFor={`color-${id}`} className="text-xs font-medium text-gray-600">
+          {label}
+        </label>
+        {linkedToBrand && tokenKey && (
+          <LinkedIndicator tokenKey={tokenKey} currentValue={value} />
+        )}
+      </div>
 
       <div className="flex items-center gap-2">
         {/* Native colour input (always visible) */}
