@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Star } from 'lucide-react';
 import { useThemeStore } from '@/store/theme-store';
 import { PRESET_TEMPLATES, DEFAULT_TOKENS, isModifiedFromPreset } from '@/lib/tokens';
 
@@ -85,43 +85,56 @@ export default function PresetDropdown() {
 
       {open && (
         <div
-          className="absolute left-4 right-4 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-80 overflow-y-auto"
+          className="absolute left-4 right-4 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-80 overflow-y-auto p-2"
           role="listbox"
           aria-label="Theme presets"
         >
-          {PRESET_TEMPLATES.map((preset) => {
-            const colors = getSwatchColors(preset.id);
-            const isActive = preset.id === activePresetId;
-            return (
-              <button
-                key={preset.id}
-                role="option"
-                aria-selected={isActive}
-                onClick={() => {
-                  applyPreset(preset.id);
-                  setOpen(false);
-                }}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 text-left hover:bg-gray-50 transition-colors ${
-                  isActive ? 'bg-blue-50 border-l-2 border-l-blue-500' : 'border-l-2 border-l-transparent'
-                }`}
-              >
-                <MiniSwatch colors={colors} />
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-1.5">
-                    <span className={`text-sm truncate ${isActive ? 'font-semibold text-blue-700' : 'font-medium text-gray-800'}`}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            {PRESET_TEMPLATES.map((preset) => {
+              const colors = getSwatchColors(preset.id);
+              const isActive = preset.id === activePresetId;
+              return (
+                <button
+                  key={preset.id}
+                  role="option"
+                  aria-selected={isActive}
+                  onClick={() => {
+                    applyPreset(preset.id);
+                    setOpen(false);
+                  }}
+                  className={`rounded-lg border-2 overflow-hidden text-left transition-all hover:shadow-md ${
+                    isActive ? 'border-gray-800 ring-1 ring-gray-400' : 'border-gray-200 hover:border-gray-400'
+                  }`}
+                >
+                  {/* Mini preview */}
+                  <div className="bg-gray-100">
+                    {/* Navbar bar */}
+                    <div className="h-[3px]" style={{ backgroundColor: colors.navbar }} />
+                    {/* Body area with button */}
+                    <div className="h-10 flex items-center justify-center">
+                      <div
+                        className="px-3 py-0.5 rounded text-[8px] font-medium text-white"
+                        style={{ backgroundColor: colors.button }}
+                      >
+                        Button
+                      </div>
+                    </div>
+                    {/* Footer bar */}
+                    <div className="h-[3px]" style={{ backgroundColor: colors.footer }} />
+                  </div>
+                  {/* Name row */}
+                  <div className="px-2 py-1.5 flex items-center justify-between">
+                    <span className={`text-xs truncate ${isActive ? 'font-semibold text-gray-900' : 'font-medium text-gray-700'}`}>
                       {preset.name}
                     </span>
                     {preset.recommended && (
-                      <span className="text-[10px] font-semibold px-1 py-0.5 bg-green-100 text-green-700 rounded">
-                        Recommended
-                      </span>
+                      <Star className="w-3 h-3 text-amber-500 fill-amber-500 flex-shrink-0" />
                     )}
                   </div>
-                  <p className="text-xs text-gray-500 truncate">{preset.description}</p>
-                </div>
-              </button>
-            );
-          })}
+                </button>
+              );
+            })}
+          </div>
         </div>
       )}
     </div>

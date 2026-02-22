@@ -1,6 +1,7 @@
 'use client';
 
-import { useRef, useEffect, useCallback } from 'react';
+import { useRef, useEffect, useCallback, useState } from 'react';
+import { Upload } from 'lucide-react';
 import { useThemeStore } from '@/store/theme-store';
 import { FONT_OPTIONS, LOGO_ACCENT_COLOURS } from '@/lib/tokens';
 import { bestLogoAccentColour, isDarkBackground, contrastRatio } from '@/lib/accessibility';
@@ -14,6 +15,7 @@ import SelectControl from './SelectControl';
 import GradientToggle from './GradientToggle';
 import ImageUploadControl from './ImageUploadControl';
 import QuickPalette from './QuickPalette';
+import BatchImportModal from './BatchImportModal';
 
 export default function ControlsPanel() {
   const tokens = useThemeStore((s) => s.tokens);
@@ -21,6 +23,8 @@ export default function ControlsPanel() {
   const setBrandPrimary = useThemeStore((s) => s.setBrandPrimary);
   const scrollToSectionRequest = useThemeStore((s) => s.scrollToSectionRequest);
   const clearScrollRequest = useThemeStore((s) => s.clearScrollRequest);
+
+  const [batchImportOpen, setBatchImportOpen] = useState(false);
 
   const accordionRefs = useRef<Record<string, AccordionSectionHandle | null>>({});
 
@@ -48,9 +52,19 @@ export default function ControlsPanel() {
 
   return (
     <div className="h-full overflow-y-auto bg-white border-r border-gray-200">
-      <div className="px-4 py-3 border-b border-gray-200">
+      <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
         <h2 className="text-sm font-bold text-gray-800">Theme Controls</h2>
+        <button
+          onClick={() => setBatchImportOpen(true)}
+          className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 transition-colors"
+          aria-label="Import colors"
+        >
+          <Upload className="w-3.5 h-3.5" />
+          Import
+        </button>
       </div>
+
+      <BatchImportModal open={batchImportOpen} onClose={() => setBatchImportOpen(false)} />
 
       {/* Preset Dropdown */}
       <PresetDropdown />
