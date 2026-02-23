@@ -183,6 +183,19 @@ export default function MoodleShell() {
 
 function buildHoverStyles(tokens: ThemeTokens): string {
   return `
+    .moodle-preview {
+      font-family: var(--cfa-font-family);
+      font-size: calc(var(--cfa-body-font-size) * 1rem);
+      font-weight: var(--cfa-font-weight);
+      line-height: var(--cfa-line-height);
+    }
+    .moodle-preview h1,
+    .moodle-preview h2,
+    .moodle-preview h3,
+    .moodle-preview h4 {
+      font-family: var(--cfa-font-family);
+      font-weight: 700;
+    }
     .moodle-preview .moodle-link {
       color: var(--cfa-link-colour);
       text-decoration: underline;

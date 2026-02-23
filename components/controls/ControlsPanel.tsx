@@ -414,9 +414,16 @@ export default function ControlsPanel() {
       <AccordionSection title="Typography" sectionId="typography" ref={setAccordionRef('typography')}>
         <SelectControl
           label="Font Family"
-          value={tokens.fontFamily}
-          onChange={(v) => set('fontFamily')(v)}
-          options={FONT_OPTIONS}
+          value={`${tokens.fontFamily}||${tokens.fontWeight}`}
+          onChange={(v) => {
+            const [family, weight] = v.split('||');
+            set('fontFamily')(family);
+            set('fontWeight')(weight);
+          }}
+          options={FONT_OPTIONS.map((opt) => ({
+            label: opt.label,
+            value: `${opt.value}||${opt.weight}`,
+          }))}
         />
         <SliderControl
           label="Base Font Size"
