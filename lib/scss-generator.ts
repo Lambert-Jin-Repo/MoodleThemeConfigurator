@@ -20,6 +20,11 @@ function isDarkBg(hex: string): boolean {
   return lum < 0.179;
 }
 
+// Auto-select readable text colour for a given background
+function autoTextForHex(bgHex: string): string {
+  return isDarkBg(bgHex) ? '#FFFFFF' : '#404041';
+}
+
 export function generateScss(tokens: ThemeTokens): ScssOutput {
   const d = DEFAULT_TOKENS;
   const darkMode = isDarkBg(tokens.pageBg);
@@ -47,6 +52,14 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
   if (tokens.btnRadius !== d.btnRadius) vars.push(`$btn-border-radius: ${tokens.btnRadius}px;`);
   if (tokens.loginInputRadius !== d.loginInputRadius) vars.push(`$input-border-radius: ${tokens.loginInputRadius}px;`);
   if (tokens.fontFamily !== d.fontFamily) vars.push(`$font-family-sans-serif: ${tokens.fontFamily};`);
+  if (tokens.fontWeight !== d.fontWeight) vars.push(`$font-weight-base: ${tokens.fontWeight};`);
+  if (tokens.headingScale !== d.headingScale) {
+    const base = tokens.bodyFontSize || 0.9375;
+    vars.push(`$h1-font-size: ${(base * Math.pow(tokens.headingScale, 4)).toFixed(4)}rem;`);
+    vars.push(`$h2-font-size: ${(base * Math.pow(tokens.headingScale, 3)).toFixed(4)}rem;`);
+    vars.push(`$h3-font-size: ${(base * Math.pow(tokens.headingScale, 2)).toFixed(4)}rem;`);
+    vars.push(`$h4-font-size: ${(base * tokens.headingScale).toFixed(4)}rem;`);
+  }
   // Dark theme: Bootstrap form control variables
   if (darkMode) {
     vars.push(`$input-color: ${tokens.bodyText};`);
@@ -151,9 +164,6 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
   // --- Links ---
   rules.push('// ── Links ──');
   rules.push(`a { text-decoration: underline; }`);
-  if (tokens.linkColour !== d.linkColour) {
-    rules.push(`a:hover { color: ${tokens.linkHover} !important; }`);
-  }
   rules.push('');
 
   // --- Focus ---
@@ -312,6 +322,51 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push('');
   }
 
+  // --- Content Max Width ---
+  if (tokens.contentMaxWidth !== d.contentMaxWidth) {
+    rules.push('// ── Content Max Width ──');
+    rules.push(`#region-main { max-width: ${tokens.contentMaxWidth}px; margin-left: auto; margin-right: auto; }`);
+    rules.push('');
+  }
+
+  // --- Signup Button ---
+  if (tokens.signupBtnBg !== d.signupBtnBg) {
+    rules.push('// ── Signup Button ──');
+    rules.push(`body#page-login-index .login-signup .btn,`);
+    rules.push(`body#page-login-index .btn-secondary {`);
+    rules.push(`  background-color: ${tokens.signupBtnBg} !important;`);
+    rules.push(`  border-color: ${tokens.signupBtnBg} !important;`);
+    rules.push(`}`);
+    rules.push('');
+  }
+
+  // --- Link Hover ---
+  if (tokens.linkHover !== d.linkHover) {
+    rules.push('// ── Link Hover ──');
+    rules.push(`a:hover, a:focus { color: ${tokens.linkHover} !important; }`);
+    rules.push('');
+  }
+
+  // --- Secondary Nav (non-dark) ---
+  if (tokens.secondaryNavText !== d.secondaryNavText && !darkMode) {
+    rules.push('// ── Secondary Navigation Text ──');
+    rules.push(`.secondary-navigation .nav-tabs .nav-link {`);
+    rules.push(`  color: ${tokens.secondaryNavText} !important;`);
+    rules.push(`}`);
+    rules.push('');
+  }
+
+  // --- Nav Hover Text ---
+  if (tokens.navHoverText !== d.navHoverText && (NAV_BG === d.navbarBg && NAV_TEXT === d.navbarText)) {
+    // Output nav hover text even when navbar section is otherwise default
+    rules.push('// ── Nav Hover Text ──');
+    rules.push(`.navbar .primary-navigation .nav-link:hover,`);
+    rules.push(`.navbar .primary-navigation .nav-link:focus {`);
+    rules.push(`  color: ${tokens.navHoverText} !important;`);
+    rules.push(`}`);
+    rules.push('');
+  }
+
   // --- Dark Theme: comprehensive text & widget overrides ---
   if (darkMode) {
     rules.push('// ── Dark Theme Overrides ──');
@@ -350,7 +405,7 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push(`.text-muted, .text-secondary, small, .small,`);
     rules.push(`.coursecategory, .course-category, .coursecat, .dimmed_text,`);
     rules.push(`.categoryname, .categoryname.text-truncate {`);
-    rules.push(`  color: #F0EEEE !important;`);
+    rules.push(`  color: ${tokens.mutedText} !important;`);
     rules.push(`}`);
     rules.push('');
 
@@ -359,7 +414,7 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push(`  background-color: ${tokens.cardBorder} !important;`);
     rules.push(`}`);
     rules.push(`.progress-text, .progress .text, .progress .small {`);
-    rules.push(`  color: #F0EEEE !important;`);
+    rules.push(`  color: ${tokens.mutedText} !important;`);
     rules.push(`}`);
     rules.push(`.dashboard-card-footer, .course-info-container {`);
     rules.push(`  background-color: ${tokens.cardBg} !important;`);
@@ -460,11 +515,11 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
       rules.push('');
     }
 
-    // Secondary nav tab hover — lime bg with dark text for visibility
+    // Secondary nav tab hover — use secondaryNavActive as bg, auto-contrast text
     rules.push(`.secondary-navigation .nav-tabs .nav-link:hover,`);
     rules.push(`.secondary-navigation .nav-tabs .nav-link:focus {`);
-    rules.push(`  background-color: #BAF73C !important;`);
-    rules.push(`  color: #404041 !important;`);
+    rules.push(`  background-color: ${tokens.secondaryNavActive} !important;`);
+    rules.push(`  color: ${autoTextForHex(tokens.secondaryNavActive)} !important;`);
     rules.push(`  font-weight: 700;`);
     rules.push(`}`);
     rules.push('');

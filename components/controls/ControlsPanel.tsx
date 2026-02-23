@@ -88,7 +88,7 @@ export default function ControlsPanel() {
           label="Primary Brand Colour"
           value={tokens.brandPrimary}
           onChange={setBrandPrimary}
-          showContrastOn="#FFFFFF"
+          showContrastOn={tokens.pageBg}
         />
       </AccordionSection>
 
@@ -216,6 +216,41 @@ export default function ControlsPanel() {
             onChange={(v) => set('navHoverBg')(v)}
           />
         </div>
+        <div>
+          <div className="flex items-center mb-1">
+            <span className="text-xs font-semibold text-gray-700">Nav Hover Text</span>
+            <AdditiveHint />
+          </div>
+          <ColourPicker
+            label=""
+            value={tokens.navHoverText}
+            onChange={(v) => set('navHoverText')(v)}
+          />
+        </div>
+        <div>
+          <div className="flex items-center mb-1">
+            <span className="text-xs font-semibold text-gray-700">Nav Active Underline</span>
+            <AdditiveHint />
+          </div>
+          <ColourPicker
+            label=""
+            value={tokens.navActiveUnderline}
+            onChange={(v) => set('navActiveUnderline')(v)}
+            tokenKey="navActiveUnderline"
+            linkedToBrand
+          />
+        </div>
+        <div>
+          <div className="flex items-center mb-1">
+            <span className="text-xs font-semibold text-gray-700">Navbar Border</span>
+            <AdditiveHint />
+          </div>
+          <ColourPicker
+            label=""
+            value={tokens.navbarBorder === 'none' ? tokens.navbarBg : tokens.navbarBorder}
+            onChange={(v) => set('navbarBorder')(v)}
+          />
+        </div>
       </AccordionSection>
 
       {/* 4. Edit Mode Toggle */}
@@ -247,14 +282,21 @@ export default function ControlsPanel() {
           label="Link Colour"
           value={tokens.linkColour}
           onChange={(v) => set('linkColour')(v)}
-          showContrastOn="#FFFFFF"
+          showContrastOn={tokens.pageBg}
           tokenKey="linkColour"
           linkedToBrand
+        />
+        <ColourPicker
+          label="Link Hover Colour"
+          value={tokens.linkHover}
+          onChange={(v) => set('linkHover')(v)}
+          showContrastOn={tokens.pageBg}
         />
         <ColourPicker
           label="Focus Ring Colour"
           value={tokens.focusRing}
           onChange={(v) => set('focusRing')(v)}
+          showContrastOn={tokens.pageBg}
           tokenKey="focusRing"
           linkedToBrand
         />
@@ -302,13 +344,16 @@ export default function ControlsPanel() {
 
       {/* 7. Content Area */}
       <AccordionSection title="Content Area" sectionId="content-area" ref={setAccordionRef('content-area')}>
-        <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded">
-          Page background is locked to #FFFFFF. Moodle Boost has dozens of elements that default to white — tinted backgrounds create inconsistent artefacts.
-        </div>
+        <ColourPicker
+          label="Page Background"
+          value={tokens.pageBg}
+          onChange={(v) => set('pageBg')(v)}
+        />
         <ColourPicker
           label="Card Background"
           value={tokens.cardBg}
           onChange={(v) => set('cardBg')(v)}
+          showContrastOn={tokens.pageBg}
         />
         <ColourPicker
           label="Card Border"
@@ -406,6 +451,12 @@ export default function ControlsPanel() {
           value={tokens.loginBtnText}
           onChange={(v) => set('loginBtnText')(v)}
         />
+        <ColourPicker
+          label="Signup Button BG"
+          value={tokens.signupBtnBg}
+          onChange={(v) => set('signupBtnBg')(v)}
+          showContrastOn={tokens.loginBg}
+        />
         <SliderControl
           label="Input Radius"
           value={tokens.loginInputRadius}
@@ -495,20 +546,20 @@ export default function ControlsPanel() {
           label="Heading Text"
           value={tokens.headingText}
           onChange={(v) => set('headingText')(v)}
-          showContrastOn="#FFFFFF"
+          showContrastOn={tokens.pageBg}
         />
         <ColourPicker
           label="Body Text"
           value={tokens.bodyText}
           onChange={(v) => set('bodyText')(v)}
-          showContrastOn="#FFFFFF"
+          showContrastOn={tokens.pageBg}
           tokenKey="bodyText"
         />
         <ColourPicker
           label="Muted Text"
           value={tokens.mutedText}
           onChange={(v) => set('mutedText')(v)}
-          showContrastOn="#FFFFFF"
+          showContrastOn={tokens.pageBg}
         />
       </AccordionSection>
 
@@ -531,7 +582,24 @@ export default function ControlsPanel() {
         />
       </AccordionSection>
 
-      {/* 12. Alerts & Progress */}
+      {/* 12. Secondary Navigation */}
+      <AccordionSection title="Secondary Navigation" sectionId="secondary-nav" ref={setAccordionRef('secondary-nav')}>
+        <ColourPicker
+          label="Active Tab Colour"
+          value={tokens.secondaryNavActive}
+          onChange={(v) => set('secondaryNavActive')(v)}
+          tokenKey="secondaryNavActive"
+          linkedToBrand
+        />
+        <ColourPicker
+          label="Tab Text Colour"
+          value={tokens.secondaryNavText}
+          onChange={(v) => set('secondaryNavText')(v)}
+          showContrastOn={tokens.pageBg}
+        />
+      </AccordionSection>
+
+      {/* 13. Alerts & Progress */}
       <AccordionSection title="Alerts & Progress" sectionId="alerts-&-progress" ref={setAccordionRef('alerts-&-progress')}>
         <ColourPicker
           label="Success"
