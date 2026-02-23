@@ -17,6 +17,14 @@ import ImageUploadControl from './ImageUploadControl';
 import QuickPalette from './QuickPalette';
 import BatchImportModal from './BatchImportModal';
 
+function AdditiveHint() {
+  return (
+    <span className="inline-block text-[10px] font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 ml-1" title="This generates additive CSS beyond standard Moodle Boost. The SCSS will work but it's not a native Moodle setting.">
+      Additive CSS
+    </span>
+  );
+}
+
 export default function ControlsPanel() {
   const tokens = useThemeStore((s) => s.tokens);
   const setToken = useThemeStore((s) => s.setToken);
@@ -197,11 +205,17 @@ export default function ControlsPanel() {
           onChange={(v) => set('navbarText')(v)}
           showContrastOn={tokens.navbarBg}
         />
-        <ColourPicker
-          label="Nav Hover Background"
-          value={tokens.navHoverBg}
-          onChange={(v) => set('navHoverBg')(v)}
-        />
+        <div>
+          <div className="flex items-center mb-1">
+            <span className="text-xs font-semibold text-gray-700">Nav Hover Background</span>
+            <AdditiveHint />
+          </div>
+          <ColourPicker
+            label=""
+            value={tokens.navHoverBg}
+            onChange={(v) => set('navHoverBg')(v)}
+          />
+        </div>
       </AccordionSection>
 
       {/* 4. Edit Mode Toggle */}
@@ -214,11 +228,17 @@ export default function ControlsPanel() {
           tokenKey="editModeOnColour"
           linkedToBrand
         />
-        <ColourPicker
-          label="Edit Mode Thumb Colour"
-          value={tokens.editModeThumbColour}
-          onChange={(v) => set('editModeThumbColour')(v)}
-        />
+        <div>
+          <div className="flex items-center mb-1">
+            <span className="text-xs font-semibold text-gray-700">Edit Mode Thumb Colour</span>
+            <AdditiveHint />
+          </div>
+          <ColourPicker
+            label=""
+            value={tokens.editModeThumbColour}
+            onChange={(v) => set('editModeThumbColour')(v)}
+          />
+        </div>
       </AccordionSection>
 
       {/* 5. Links & Focus */}
@@ -295,16 +315,31 @@ export default function ControlsPanel() {
           value={tokens.cardBorder}
           onChange={(v) => set('cardBorder')(v)}
         />
-        <ColourPicker
-          label="Breadcrumb Background"
-          value={tokens.breadcrumbBg === 'transparent' ? '#FFFFFF' : tokens.breadcrumbBg}
-          onChange={(v) => set('breadcrumbBg')(v)}
-        />
-        <ColourPicker
-          label="Section Accent"
-          value={tokens.sectionAccent === 'none' ? '#FFFFFF' : tokens.sectionAccent}
-          onChange={(v) => set('sectionAccent')(v)}
-        />
+        <div>
+          <div className="flex items-center mb-1">
+            <span className="text-xs font-semibold text-gray-700">Breadcrumb Background</span>
+            <AdditiveHint />
+          </div>
+          <ColourPicker
+            label=""
+            value={tokens.breadcrumbBg === 'transparent' ? '#FFFFFF' : tokens.breadcrumbBg}
+            onChange={(v) => set('breadcrumbBg')(v)}
+          />
+        </div>
+        <div>
+          <div className="flex items-center mb-1">
+            <span className="text-xs font-semibold text-gray-700">Section Accent</span>
+            <AdditiveHint />
+          </div>
+          <ColourPicker
+            label=""
+            value={tokens.sectionAccent === 'none' ? '#FFFFFF' : tokens.sectionAccent}
+            onChange={(v) => set('sectionAccent')(v)}
+          />
+        </div>
+        <div className="text-[10px] text-amber-700 bg-amber-50 border border-amber-200 rounded p-2 mt-1">
+          <strong>Additive CSS</strong> controls generate valid SCSS that works on MoodleCloud, but target elements beyond standard Boost theme variables.
+        </div>
         <SliderControl
           label="Content Max Width"
           value={tokens.contentMaxWidth}
@@ -403,11 +438,17 @@ export default function ControlsPanel() {
           tokenKey="footerLink"
           linkedToBrand
         />
-        <ColourPicker
-          label="Footer Accent (top border)"
-          value={tokens.footerAccent === 'none' ? '#FFFFFF' : tokens.footerAccent}
-          onChange={(v) => set('footerAccent')(v)}
-        />
+        <div>
+          <div className="flex items-center mb-1">
+            <span className="text-xs font-semibold text-gray-700">Footer Accent (top border)</span>
+            <AdditiveHint />
+          </div>
+          <ColourPicker
+            label=""
+            value={tokens.footerAccent === 'none' ? '#FFFFFF' : tokens.footerAccent}
+            onChange={(v) => set('footerAccent')(v)}
+          />
+        </div>
       </AccordionSection>
 
       {/* 10. Typography */}

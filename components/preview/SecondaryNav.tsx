@@ -1,12 +1,14 @@
 'use client';
 
-const TABS = ['Course', 'Settings', 'Participants', 'Grades'];
+import { ChevronDown } from 'lucide-react';
+
+const TABS = ['Course', 'Settings', 'Participants', 'Grades', 'Activities'];
 
 export default function SecondaryNav() {
   return (
     <div
       className="flex border-b"
-      style={{ borderColor: 'var(--cfa-card-border)' }}
+      style={{ borderColor: 'var(--cfa-card-border)', backgroundColor: 'var(--cfa-page-bg)' }}
     >
       {TABS.map((tab, i) => (
         <span
@@ -16,6 +18,9 @@ export default function SecondaryNav() {
           {tab}
         </span>
       ))}
+      <span className="moodle-tab text-sm flex items-center gap-1">
+        More <ChevronDown size={14} />
+      </span>
     </div>
   );
 }

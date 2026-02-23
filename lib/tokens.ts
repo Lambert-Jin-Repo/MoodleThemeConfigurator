@@ -80,8 +80,6 @@ export interface ThemeTokens {
   warning: string;
   error: string;
   info: string;
-  alertInfoBg: string;
-  progressBg: string;
   progressFill: string;
 
   // Focus
@@ -161,9 +159,7 @@ export const DEFAULT_TOKENS: ThemeTokens = {
   success: '#357a32',
   warning: '#f0ad4e',
   error: '#ca3120',
-  info: '#008196',
-  alertInfoBg: '#d1ecf1',
-  progressBg: '#dee2e6',
+  info: '#0f6cbf',
   progressFill: '#0f6cbf',
 
   focusRing: '#0f6cbf',
@@ -260,15 +256,6 @@ export function darkenHex(hex: string, percent: number): string {
   return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase();
 }
 
-// ── Utility: lighten a hex colour ──
-export function lightenHex(hex: string, percent: number): string {
-  const num = parseInt(hex.replace('#', ''), 16);
-  const r = Math.min(255, Math.round(((num >> 16) & 0xff) + (255 - ((num >> 16) & 0xff)) * percent / 100));
-  const g = Math.min(255, Math.round(((num >> 8) & 0xff) + (255 - ((num >> 8) & 0xff)) * percent / 100));
-  const b = Math.min(255, Math.round((num & 0xff) + (255 - (num & 0xff)) * percent / 100));
-  return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase();
-}
-
 // ── Utility: auto text colour (white or dark) ──
 export function autoTextColour(bgHex: string): string {
   const num = parseInt(bgHex.replace('#', ''), 16);
@@ -314,7 +301,9 @@ export const PRESET_TEMPLATES: PresetTemplate[] = [
       footerLink: '#F0EEEE',
       footerAccent: 'none',
       loginBg: '#404041',
+      loginCardBg: '#FFFFFF',
       loginBtnBg: '#336E7B',
+      loginBtnText: '#FFFFFF',
       loginHeading: '#336E7B',
       loginGradientEnabled: false,
       secondaryNavActive: '#336E7B',
@@ -348,15 +337,17 @@ export const PRESET_TEMPLATES: PresetTemplate[] = [
       linkHover: '#245058',
       footerBg: '#404041',
       footerText: '#F0EEEE',
-      footerLink: '#F27927',
+      footerLink: '#F0EEEE',
       footerAccent: '#F27927',
       loginBg: '#404041',
+      loginCardBg: '#FFFFFF',
       loginBtnBg: '#F27927',
+      loginBtnText: '#1D2125',
       loginHeading: '#336E7B',
       loginGradientEnabled: false,
       secondaryNavActive: '#336E7B',
       progressFill: '#336E7B',
-      focusRing: '#F27927',
+      focusRing: '#9E4E12',
       focusRingWidth: 2,
       info: '#336E7B',
       sectionAccent: '#F27927',
@@ -391,7 +382,9 @@ export const PRESET_TEMPLATES: PresetTemplate[] = [
       drawerText: '#F0EEEE',
       drawerBorder: '#404041',
       loginBg: '#1D2125',
+      loginCardBg: '#FFFFFF',
       loginBtnBg: '#336E7B',
+      loginBtnText: '#FFFFFF',
       loginHeading: '#336E7B',
       loginGradientEnabled: false,
       secondaryNavActive: '#336E7B',
@@ -428,7 +421,9 @@ export const PRESET_TEMPLATES: PresetTemplate[] = [
       footerLink: '#F0EEEE',
       footerAccent: 'none',
       loginBg: '#404041',
+      loginCardBg: '#FFFFFF',
       loginBtnBg: '#B500B5',
+      loginBtnText: '#FFFFFF',
       loginHeading: '#B500B5',
       loginGradientEnabled: false,
       secondaryNavActive: '#336E7B',
@@ -467,7 +462,9 @@ export const PRESET_TEMPLATES: PresetTemplate[] = [
       footerLink: '#F0EEEE',
       footerAccent: 'none',
       loginBg: '#404041',
+      loginCardBg: '#FFFFFF',
       loginBtnBg: '#336E7B',
+      loginBtnText: '#FFFFFF',
       loginHeading: '#336E7B',
       loginGradientEnabled: true,
       loginGradientEnd: '#336E7B',
@@ -509,7 +506,9 @@ export const PRESET_TEMPLATES: PresetTemplate[] = [
       footerLink: '#FFFFFF',
       footerAccent: 'none',
       loginBg: '#1D2125',
+      loginCardBg: '#FFFFFF',
       loginBtnBg: '#245058',
+      loginBtnText: '#FFFFFF',
       loginHeading: '#245058',
       loginGradientEnabled: false,
       secondaryNavActive: '#245058',
@@ -544,10 +543,12 @@ export const PRESET_TEMPLATES: PresetTemplate[] = [
       linkHover: '#7A3D0E',
       footerBg: '#404041',
       footerText: '#F0EEEE',
-      footerLink: '#F27927',
+      footerLink: '#F0EEEE',
       footerAccent: '#9E4E12',
       loginBg: '#9E4E12',
+      loginCardBg: '#FFFFFF',
       loginBtnBg: '#9E4E12',
+      loginBtnText: '#FFFFFF',
       loginHeading: '#9E4E12',
       loginGradientEnabled: true,
       loginGradientEnd: '#7A3D0E',
@@ -558,6 +559,58 @@ export const PRESET_TEMPLATES: PresetTemplate[] = [
       info: '#9E4E12',
       sectionAccent: '#336E7B',
       signupBtnBg: '#336E7B',
+    },
+  },
+  {
+    id: 'cfa-dark-lime',
+    name: 'CFA Dark Lime',
+    description: 'Dark background with lime green accents — matches CFA client brief',
+    overrides: {
+      brandPrimary: '#336E7B',
+      pageBg: '#404041',
+      cardBg: '#2D2D2E',
+      cardBorder: '#555556',
+      navbarBg: '#1D2125',
+      navbarText: '#F0EEEE',
+      navbarBorder: 'none',
+      navActiveUnderline: '#BAF73C',
+      navHoverBg: 'rgba(255,255,255,0.08)',
+      navHoverText: '#BAF73C',
+      editModeOnColour: '#BAF73C',
+      editModeThumbColour: '#1D2125',
+      breadcrumbBg: '#333334',
+      btnPrimaryBg: '#BAF73C',
+      btnPrimaryText: '#1D2125',
+      btnPrimaryHover: '#A8E030',
+      btnRadius: 4,
+      linkColour: '#BAF73C',
+      linkHover: '#A8E030',
+      bodyText: '#F0EEEE',
+      headingText: '#FFFFFF',
+      mutedText: '#A0A0A1',
+      footerBg: '#1D2125',
+      footerText: '#F0EEEE',
+      footerLink: '#BAF73C',
+      footerAccent: '#B500B5',
+      drawerBg: '#1D2125',
+      drawerText: '#F0EEEE',
+      drawerBorder: '#404041',
+      loginBg: '#1D2125',
+      loginCardBg: '#2D2D2E',
+      loginBtnBg: '#BAF73C',
+      loginBtnText: '#1D2125',
+      loginHeading: '#BAF73C',
+      loginGradientEnabled: false,
+      secondaryNavActive: '#BAF73C',
+      secondaryNavText: '#F0EEEE',
+      progressFill: '#BAF73C',
+      focusRing: '#BAF73C',
+      focusRingWidth: 2,
+      info: '#336E7B',
+      sectionAccent: '#B500B5',
+      signupBtnBg: '#555556',
+      success: '#BAF73C',
+      logoAustraliaColour: '#BAF73C',
     },
   },
   {
