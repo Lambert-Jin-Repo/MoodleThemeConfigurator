@@ -394,6 +394,50 @@ Presets use `Partial<ThemeTokens>` -- only include tokens that differ from `DEFA
 
 ---
 
+## 7. Real-Site Verified Dark Theme Selectors (2026-02-23)
+
+These selectors were verified by applying the CFA Dark Lime preset to a live MoodleCloud instance. Without overrides, all of these default to white backgrounds or invisible text on dark themes.
+
+### Course Content Page
+
+| Selector | Issue | Fix |
+|---|---|---|
+| `.activity-item`, `.activity-basis`, `.activity-info` | White background on activity rows | `background-color: transparent` |
+| `.course-content .section`, `.course-section` | White section containers | `background-color: transparent` |
+| `#region-main`, `#page-content`, `.course-content` | White main content wrapper | `background-color: pageBg` |
+| `.dimmed`, `.isrestricted`, `.ishidden` | "Hidden from students" banners — invisible text | `background: rgba(255,255,255,0.05)`, `color: mutedText` |
+| `.completioninfo`, `.activity-completion` | White completion status area | `background: transparent`, `color: bodyText` |
+
+### My Courses / Course Cards
+
+| Selector | Issue | Fix |
+|---|---|---|
+| `.dashboard-card-deck .dashboard-card .card-body` | White card body | `background-color: cardBg` |
+| `.dashboard-card-deck .dashboard-card .card-footer` | White card footer (progress area) | `background-color: cardBg` |
+| `.block_myoverview .card`, `.card-body`, `.card-footer` | My courses block cards | `background-color: cardBg` |
+| `.categoryname`, `.categoryname.text-truncate` | Invisible category label | `color: #F0EEEE` |
+| `.dashboard-card-footer`, `.course-info-container` | White progress area | `background-color: cardBg` |
+| `.progress-text`, `.progress .text`, `.progress .small` | Invisible progress percentage text | `color: #F0EEEE` — check for ALL themes, not just dark lime |
+
+### Site Administration
+
+| Selector | Issue | Fix |
+|---|---|---|
+| `.secondary-navigation .nav-tabs .nav-link:hover` | White hover bg makes text invisible | `background: #BAF73C`, `color: #404041`, `font-weight: 700` |
+| `.adminlink`, `.admintree`, `#adminsettings` | White admin tree rows | `background-color: transparent` |
+| `.generalbox`, `.well`, `.alert-info` | White content boxes | `background-color: cardBg` |
+
+### Key Takeaway
+
+Moodle Boost has **many nested containers** that each set their own `background-color: #fff`. The `$body-bg` variable alone does NOT cascade to all of them. Each must be individually overridden in Block 2. When testing dark themes, always check:
+1. Dashboard page (cards, progress, calendar)
+2. Course content page (activity list, sections, hidden items)
+3. My courses page (card grid, category labels)
+4. Site administration (tabs, tree, admin panels)
+5. Login page (card, inputs, links)
+
+---
+
 ## Source Files
 
 | File | Purpose |

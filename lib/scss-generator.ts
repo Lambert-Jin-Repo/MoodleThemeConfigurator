@@ -348,17 +348,41 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
 
     // Muted text (helper labels, calendar day numbers, timestamps, category labels)
     rules.push(`.text-muted, .text-secondary, small, .small,`);
-    rules.push(`.coursecategory, .course-category, .coursecat, .dimmed_text {`);
-    rules.push(`  color: ${tokens.mutedText} !important;`);
+    rules.push(`.coursecategory, .course-category, .coursecat, .dimmed_text,`);
+    rules.push(`.categoryname, .categoryname.text-truncate {`);
+    rules.push(`  color: #F0EEEE !important;`);
     rules.push(`}`);
     rules.push('');
 
-    // Progress bars — dark background behind progress track
+    // Progress bars — dark background behind progress track + text
     rules.push('.progress {');
     rules.push(`  background-color: ${tokens.cardBorder} !important;`);
     rules.push(`}`);
+    rules.push(`.progress-text, .progress .text, .progress .small {`);
+    rules.push(`  color: #F0EEEE !important;`);
+    rules.push(`}`);
     rules.push(`.dashboard-card-footer, .course-info-container {`);
     rules.push(`  background-color: ${tokens.cardBg} !important;`);
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push(`}`);
+    rules.push('');
+
+    // Course card body — "My courses" page card backgrounds
+    rules.push(`.dashboard-card-deck .dashboard-card,`);
+    rules.push(`.dashboard-card-deck .dashboard-card .card-body,`);
+    rules.push(`.dashboard-card-deck .dashboard-card .card-footer,`);
+    rules.push(`.course-summaryitem, .coursebox,`);
+    rules.push(`.block_myoverview .card, .block_myoverview .card-body,`);
+    rules.push(`.block_myoverview .card-footer {`);
+    rules.push(`  background-color: ${tokens.cardBg} !important;`);
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push(`}`);
+    rules.push('');
+
+    // Course overview filter bar & search area
+    rules.push(`.block_myoverview .d-flex, .block_myoverview .dropdown,`);
+    rules.push(`.block_myoverview [data-region="filter"],`);
+    rules.push(`.block_myoverview [data-region="courses-view"] {`);
     rules.push(`  color: ${tokens.bodyText} !important;`);
     rules.push(`}`);
     rules.push('');
@@ -436,15 +460,49 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
       rules.push('');
     }
 
+    // Secondary nav tab hover — lime bg with dark text for visibility
+    rules.push(`.secondary-navigation .nav-tabs .nav-link:hover,`);
+    rules.push(`.secondary-navigation .nav-tabs .nav-link:focus {`);
+    rules.push(`  background-color: #BAF73C !important;`);
+    rules.push(`  color: #404041 !important;`);
+    rules.push(`  font-weight: 700;`);
+    rules.push(`}`);
+    rules.push('');
+
     // Breadcrumb text on dark background
     rules.push(`.breadcrumb-item, .breadcrumb-item a { color: ${tokens.bodyText} !important; }`);
     rules.push(`.breadcrumb-item + .breadcrumb-item::before { color: ${tokens.mutedText} !important; }`);
     rules.push('');
 
-    // Course content area
-    rules.push('.course-content, #region-main, #page-content,');
-    rules.push('.activity-item, .activity-header {');
+    // Course content area — backgrounds AND text
+    rules.push('.course-content, #region-main, #page-content {');
+    rules.push(`  background-color: ${tokens.pageBg} !important;`);
     rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push(`}`);
+    rules.push('');
+
+    // Activity items — force dark bg on each activity row
+    rules.push(`.activity-item, .activity-header, .activity-basis,`);
+    rules.push(`.activity-info, .activity-actions {`);
+    rules.push(`  background-color: transparent !important;`);
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push(`}`);
+    rules.push('');
+
+    // Course sections — entire section container + li items
+    rules.push(`.course-content .section, .course-content .section li,`);
+    rules.push(`.course-section, .course-section-header,`);
+    rules.push('#region-main .course-content ul.section {');
+    rules.push(`  background-color: transparent !important;`);
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push(`}`);
+    rules.push('');
+
+    // "Hidden from students" dimmed activity banners
+    rules.push(`.dimmed, .dimmed_text, .dimmed_category,`);
+    rules.push(`.isrestricted, .ishidden {`);
+    rules.push(`  background-color: rgba(255,255,255,0.05) !important;`);
+    rules.push(`  color: ${tokens.mutedText} !important;`);
     rules.push(`}`);
     rules.push('');
 
@@ -478,6 +536,23 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
 
     // List-group items (used in drawers, course index)
     rules.push(`.list-group-item {`);
+    rules.push(`  background-color: ${tokens.cardBg} !important;`);
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push(`  border-color: ${tokens.cardBorder} !important;`);
+    rules.push(`}`);
+    rules.push('');
+
+    // Site administration tree — category rows
+    rules.push(`.adminlink, .admintree, .admin_settingspage,`);
+    rules.push(`#adminsettings, .adminsettingsflags {`);
+    rules.push(`  background-color: transparent !important;`);
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push(`}`);
+    rules.push('');
+
+    // General content containers — catch remaining white-bg panels
+    rules.push(`.generalbox, .box.py-3, .loginbox,`);
+    rules.push(`.well, .alert-info {`);
     rules.push(`  background-color: ${tokens.cardBg} !important;`);
     rules.push(`  color: ${tokens.bodyText} !important;`);
     rules.push(`  border-color: ${tokens.cardBorder} !important;`);
