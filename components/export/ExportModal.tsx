@@ -4,9 +4,6 @@ import { useEffect, useRef, useMemo, useState } from 'react';
 import { X, Download, Copy, Check, ExternalLink } from 'lucide-react';
 import { useThemeStore } from '@/store/theme-store';
 import { generateScss } from '@/lib/scss-generator';
-import { contrastRatio, bestLogoAccentColour } from '@/lib/accessibility';
-import { CONTRAST_CHECKS } from '@/lib/accessibility';
-import type { ThemeTokens } from '@/lib/tokens';
 import ImportTab from './ImportTab';
 
 type ModalTab = 'export' | 'import';
@@ -57,18 +54,6 @@ export default function ExportModal({ open, onClose, initialTab = 'export' }: Ex
   const modalRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const [activeTab, setActiveTab] = useState<ModalTab>(initialTab);
-
-  const canExport = useMemo(() => {
-    return !CONTRAST_CHECKS.some((check) => {
-      let fg = tokens[check.fgKey as keyof ThemeTokens] as string;
-      const bg = tokens[check.bgKey as keyof ThemeTokens] as string;
-      // Resolve 'auto' logoAustraliaColour to computed value
-      if (check.fgKey === 'logoAustraliaColour' && fg === 'auto') {
-        fg = bestLogoAccentColour(bg);
-      }
-      return contrastRatio(fg, bg) < 3;
-    });
-  }, [tokens]);
 
   const scss = useMemo(() => generateScss(tokens), [tokens]);
 
@@ -209,12 +194,6 @@ export default function ExportModal({ open, onClose, initialTab = 'export' }: Ex
             aria-labelledby="export-tab"
             className="px-6 py-5 space-y-5"
           >
-            {!canExport && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700" role="alert">
-                Export is blocked — fix colour pairings with less than 3:1 contrast in the Audit panel first.
-              </div>
-            )}
-
             {/* Step 1: Where to go */}
             <div>
               <div className="flex items-center gap-2 mb-3">
@@ -295,8 +274,7 @@ export default function ExportModal({ open, onClose, initialTab = 'export' }: Ex
             <div className="pt-2 border-t border-gray-200">
               <button
                 onClick={handleDownload}
-                disabled={!canExport}
-                className="flex items-center justify-center gap-2 w-full px-4 py-2.5 text-sm font-medium bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="flex items-center justify-center gap-2 w-full px-4 py-2.5 text-sm font-medium bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
               >
                 <Download size={16} />
                 Download all as .txt
