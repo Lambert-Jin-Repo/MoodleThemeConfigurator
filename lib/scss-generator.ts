@@ -9,8 +9,20 @@ interface ScssOutput {
   block2: string;
 }
 
+// Detect dark page background via relative luminance
+function isDarkBg(hex: string): boolean {
+  const num = parseInt(hex.replace('#', ''), 16);
+  const r = ((num >> 16) & 0xff) / 255;
+  const g = ((num >> 8) & 0xff) / 255;
+  const b = (num & 0xff) / 255;
+  const toLinear = (c: number) => c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+  const lum = 0.2126 * toLinear(r) + 0.7152 * toLinear(g) + 0.0722 * toLinear(b);
+  return lum < 0.179;
+}
+
 export function generateScss(tokens: ThemeTokens): ScssOutput {
   const d = DEFAULT_TOKENS;
+  const darkMode = isDarkBg(tokens.pageBg);
 
   // ── Block 0: Brand Colour ──
   const brandColour = tokens.brandPrimary;
@@ -24,6 +36,7 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
   if (tokens.brandPrimary !== d.brandPrimary) vars.push(`$primary: ${tokens.brandPrimary};`);
   if (tokens.linkColour !== d.linkColour) vars.push(`$link-color: ${tokens.linkColour};`);
   if (tokens.pageBg !== d.pageBg) vars.push(`$body-bg: ${tokens.pageBg};`);
+  if (tokens.bodyText !== d.bodyText) vars.push(`$body-color: ${tokens.bodyText};`);
   if (tokens.cardBg !== d.cardBg) vars.push(`$card-bg: ${tokens.cardBg};`);
   if (tokens.bodyFontSize !== d.bodyFontSize) vars.push(`$font-size-base: ${tokens.bodyFontSize}rem;`);
   if (tokens.lineHeight !== d.lineHeight) vars.push(`$line-height-base: ${tokens.lineHeight};`);
@@ -34,6 +47,17 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
   if (tokens.btnRadius !== d.btnRadius) vars.push(`$btn-border-radius: ${tokens.btnRadius}px;`);
   if (tokens.loginInputRadius !== d.loginInputRadius) vars.push(`$input-border-radius: ${tokens.loginInputRadius}px;`);
   if (tokens.fontFamily !== d.fontFamily) vars.push(`$font-family-sans-serif: ${tokens.fontFamily};`);
+  // Dark theme: Bootstrap form control variables
+  if (darkMode) {
+    vars.push(`$input-color: ${tokens.bodyText};`);
+    vars.push(`$input-bg: ${tokens.cardBg};`);
+    vars.push(`$input-border-color: ${tokens.cardBorder};`);
+    vars.push(`$table-color: ${tokens.bodyText};`);
+    vars.push(`$dropdown-bg: ${tokens.cardBg};`);
+    vars.push(`$dropdown-color: ${tokens.bodyText};`);
+    vars.push(`$dropdown-link-color: ${tokens.bodyText};`);
+    vars.push(`$dropdown-border-color: ${tokens.cardBorder};`);
+  }
 
   const block1 = vars.join('\n');
 
@@ -101,13 +125,23 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
       rules.push(`}`);
     }
 
-    // Dropdown overrides (dark text on white)
+    // Dropdown overrides
     rules.push('');
-    rules.push('// Dropdowns on white background');
-    rules.push(`.navbar .dropdown-menu, .navbar .popover-region-container,`);
-    rules.push(`.navbar .usermenu .dropdown-menu {`);
-    rules.push(`  .dropdown-item, .nav-link, a { color: #404041 !important; }`);
-    rules.push(`}`);
+    if (darkMode) {
+      rules.push('// Navbar dropdowns on dark theme');
+      rules.push(`.navbar .dropdown-menu, .navbar .popover-region-container,`);
+      rules.push(`.navbar .usermenu .dropdown-menu {`);
+      rules.push(`  background-color: ${tokens.cardBg} !important;`);
+      rules.push(`  border-color: ${tokens.cardBorder} !important;`);
+      rules.push(`  .dropdown-item, .nav-link, a { color: ${tokens.bodyText} !important; }`);
+      rules.push(`}`);
+    } else {
+      rules.push('// Dropdowns on white background');
+      rules.push(`.navbar .dropdown-menu, .navbar .popover-region-container,`);
+      rules.push(`.navbar .usermenu .dropdown-menu {`);
+      rules.push(`  .dropdown-item, .nav-link, a { color: #404041 !important; }`);
+      rules.push(`}`);
+    }
     rules.push('');
   } else {
     rules.push('/* Navbar section omitted — using Moodle default */');
@@ -263,6 +297,179 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     if (tokens.cardBorder !== d.cardBorder) {
       rules.push(`.card { border-color: ${tokens.cardBorder} !important; }`);
     }
+    rules.push('');
+  }
+
+  // --- Dark Theme: comprehensive text & widget overrides ---
+  if (darkMode) {
+    rules.push('// ── Dark Theme Overrides ──');
+    rules.push('// Auto-generated for dark page backgrounds');
+    rules.push('');
+
+    // Page wrapper containers — prevent white gaps
+    rules.push('#page, #page-wrapper, #topofscroll, .main-inner,');
+    rules.push('#region-main-box, .pagelayout-standard #page.drawers {');
+    rules.push(`  background-color: ${tokens.pageBg} !important;`);
+    rules.push(`}`);
+    rules.push('');
+
+    // Secondary navigation background
+    rules.push(`.secondary-navigation { background-color: ${tokens.pageBg} !important; }`);
+    rules.push('');
+
+    // Breadcrumb area
+    rules.push(`.breadcrumb { background-color: ${tokens.breadcrumbBg === 'transparent' ? tokens.pageBg : tokens.breadcrumbBg} !important; }`);
+    rules.push('');
+
+    // Card text colour — critical for readability
+    rules.push(`.card, .card-body, .card-title, .card-text, .card-footer {`);
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push(`}`);
+    rules.push('');
+
+    // Moodle block containers (dashboard blocks, calendar, timeline)
+    rules.push(`.block, .block_timeline, .block_recentlyaccessedcourses,`);
+    rules.push(`.block_myoverview, .block_calendar_month {`);
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push(`}`);
+    rules.push('');
+
+    // Muted text (helper labels, calendar day numbers, timestamps, category labels)
+    rules.push(`.text-muted, .text-secondary, small, .small,`);
+    rules.push(`.coursecategory, .course-category, .coursecat, .dimmed_text {`);
+    rules.push(`  color: ${tokens.mutedText} !important;`);
+    rules.push(`}`);
+    rules.push('');
+
+    // Progress bars — dark background behind progress track
+    rules.push('.progress {');
+    rules.push(`  background-color: ${tokens.cardBorder} !important;`);
+    rules.push(`}`);
+    rules.push(`.dashboard-card-footer, .course-info-container {`);
+    rules.push(`  background-color: ${tokens.cardBg} !important;`);
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push(`}`);
+    rules.push('');
+
+    // Activity completion & availability info
+    rules.push('.completioninfo, .completion-info, .automatic-completion-conditions,');
+    rules.push('.activity-completion, .availability-info, .availabilityinfo {');
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push(`  background-color: transparent !important;`);
+    rules.push(`}`);
+    rules.push('');
+
+    // Course section headers & hidden sections
+    rules.push('.course-section-header, .sectionname, .section-title {');
+    rules.push(`  color: ${tokens.headingText} !important;`);
+    rules.push(`}`);
+    rules.push(`.sectionhidden, .dimmed { color: ${tokens.mutedText} !important; }`);
+    rules.push('');
+
+    // Comment areas
+    rules.push(`.comment-area, .comment-list, .comment-item {`);
+    rules.push(`  background-color: ${tokens.cardBg} !important;`);
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push(`}`);
+    rules.push('');
+
+    // Form controls — inputs, selects, textareas
+    rules.push('.form-control, input[type="text"], input[type="email"],');
+    rules.push('input[type="password"], input[type="search"], input[type="url"],');
+    rules.push('textarea, select {');
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push(`  background-color: ${tokens.cardBg} !important;`);
+    rules.push(`  border-color: ${tokens.cardBorder} !important;`);
+    rules.push(`}`);
+    rules.push('');
+
+    // Placeholders
+    rules.push(`::placeholder { color: ${tokens.mutedText} !important; opacity: 0.7; }`);
+    rules.push('');
+
+    // Form labels
+    rules.push(`label, .form-label, .form-check-label { color: ${tokens.bodyText} !important; }`);
+    rules.push('');
+
+    // Tables (calendar grid, participant lists)
+    rules.push(`table, th, td { color: ${tokens.bodyText} !important; }`);
+    rules.push(`th { background-color: rgba(0,0,0,0.15) !important; }`);
+    rules.push(`.table-bordered th, .table-bordered td { border-color: ${tokens.cardBorder} !important; }`);
+    rules.push('');
+
+    // Calendar-specific
+    rules.push('// Calendar on dark backgrounds');
+    rules.push(`.calendarwrapper .day, .calendar_event_course,`);
+    rules.push(`.calendar-controls a, .calendar td { color: ${tokens.bodyText} !important; }`);
+    rules.push('');
+
+    // Dropdowns (site-wide, not just navbar)
+    rules.push('.dropdown-menu {');
+    rules.push(`  background-color: ${tokens.cardBg} !important;`);
+    rules.push(`  border-color: ${tokens.cardBorder} !important;`);
+    rules.push(`}`);
+    rules.push(`.dropdown-item { color: ${tokens.bodyText} !important; }`);
+    rules.push(`.dropdown-item:hover, .dropdown-item:focus {`);
+    rules.push(`  background-color: rgba(255,255,255,0.08) !important;`);
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push(`}`);
+    rules.push(`.dropdown-divider { border-color: ${tokens.cardBorder} !important; }`);
+    rules.push('');
+
+    // Secondary nav text — all tab links, not just active
+    if (tokens.secondaryNavText !== d.secondaryNavText) {
+      rules.push(`.secondary-navigation .nav-tabs .nav-link {`);
+      rules.push(`  color: ${tokens.secondaryNavText} !important;`);
+      rules.push(`}`);
+      rules.push('');
+    }
+
+    // Breadcrumb text on dark background
+    rules.push(`.breadcrumb-item, .breadcrumb-item a { color: ${tokens.bodyText} !important; }`);
+    rules.push(`.breadcrumb-item + .breadcrumb-item::before { color: ${tokens.mutedText} !important; }`);
+    rules.push('');
+
+    // Course content area
+    rules.push('.course-content, #region-main, #page-content,');
+    rules.push('.activity-item, .activity-header {');
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push(`}`);
+    rules.push('');
+
+    // Btn-secondary / btn-outline on dark
+    rules.push(`.btn-secondary, .btn-outline-secondary {`);
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push(`  border-color: ${tokens.cardBorder} !important;`);
+    rules.push(`  background-color: transparent !important;`);
+    rules.push(`}`);
+    rules.push(`.btn-secondary:hover, .btn-outline-secondary:hover {`);
+    rules.push(`  background-color: rgba(255,255,255,0.08) !important;`);
+    rules.push(`}`);
+    rules.push('');
+
+    // Login page text on dark backgrounds
+    if (tokens.loginBg !== d.loginBg && isDarkBg(tokens.loginBg)) {
+      rules.push('body#page-login-index .card,');
+      rules.push('body#page-login-index .login-heading,');
+      rules.push('body#page-login-index label,');
+      rules.push('body#page-login-index .login-form-forgotpassword a,');
+      rules.push('body#page-login-index .login-signup a {');
+      rules.push(`  color: ${tokens.bodyText} !important;`);
+      rules.push(`}`);
+      rules.push('');
+    }
+
+    // Popover / tooltip
+    rules.push(`.popover { background-color: ${tokens.cardBg} !important; color: ${tokens.bodyText} !important; }`);
+    rules.push(`.popover-body { color: ${tokens.bodyText} !important; }`);
+    rules.push('');
+
+    // List-group items (used in drawers, course index)
+    rules.push(`.list-group-item {`);
+    rules.push(`  background-color: ${tokens.cardBg} !important;`);
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push(`  border-color: ${tokens.cardBorder} !important;`);
+    rules.push(`}`);
     rules.push('');
   }
 

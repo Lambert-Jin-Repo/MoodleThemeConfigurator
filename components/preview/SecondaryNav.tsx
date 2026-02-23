@@ -8,7 +8,7 @@ export default function SecondaryNav() {
   return (
     <div
       className="flex border-b"
-      style={{ borderColor: 'var(--cfa-card-border)' }}
+      style={{ borderColor: 'var(--cfa-card-border)', backgroundColor: 'var(--cfa-page-bg)' }}
     >
       {TABS.map((tab, i) => (
         <span

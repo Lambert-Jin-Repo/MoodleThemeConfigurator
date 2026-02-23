@@ -132,6 +132,25 @@ export default function DashboardPage() {
                   Category 1
                 </div>
               </div>
+              {/* Progress bar */}
+              <div style={{ padding: '6px 12px 10px', backgroundColor: 'var(--cfa-card-bg)' }}>
+                <div style={{
+                  height: 6,
+                  borderRadius: 3,
+                  backgroundColor: 'var(--cfa-card-border)',
+                  overflow: 'hidden',
+                }}>
+                  <div style={{
+                    width: '40%',
+                    height: '100%',
+                    backgroundColor: 'var(--cfa-progress-fill)',
+                    borderRadius: 3,
+                  }} />
+                </div>
+                <div style={{ color: 'var(--cfa-muted-text)', fontSize: 11, marginTop: 3 }}>
+                  40% complete
+                </div>
+              </div>
             </div>
 
             {/* Course card 2 — grey placeholder */}
@@ -159,6 +178,25 @@ export default function DashboardPage() {
                   }}
                 >
                   Category 1
+                </div>
+              </div>
+              {/* Progress bar */}
+              <div style={{ padding: '6px 12px 10px', backgroundColor: 'var(--cfa-card-bg)' }}>
+                <div style={{
+                  height: 6,
+                  borderRadius: 3,
+                  backgroundColor: 'var(--cfa-card-border)',
+                  overflow: 'hidden',
+                }}>
+                  <div style={{
+                    width: '75%',
+                    height: '100%',
+                    backgroundColor: 'var(--cfa-progress-fill)',
+                    borderRadius: 3,
+                  }} />
+                </div>
+                <div style={{ color: 'var(--cfa-muted-text)', fontSize: 11, marginTop: 3 }}>
+                  75% complete
                 </div>
               </div>
             </div>
@@ -189,9 +227,9 @@ export default function DashboardPage() {
                 defaultValue="7days"
                 style={{
                   appearance: 'none',
-                  backgroundColor: '#e9ecef',
-                  color: '#1d2125',
-                  border: '1px solid #ced4da',
+                  backgroundColor: 'var(--cfa-card-bg)',
+                  color: 'var(--cfa-body-text)',
+                  border: '1px solid var(--cfa-card-border)',
                   borderRadius: tokens.btnRadius,
                   padding: '6px 30px 6px 12px',
                   fontSize: 13,
@@ -212,7 +250,7 @@ export default function DashboardPage() {
                   top: '50%',
                   transform: 'translateY(-50%)',
                   pointerEvents: 'none',
-                  color: '#1d2125',
+                  color: 'var(--cfa-body-text)',
                 }}
               />
             </div>
@@ -225,9 +263,9 @@ export default function DashboardPage() {
                 defaultValue="dates"
                 style={{
                   appearance: 'none',
-                  backgroundColor: '#e9ecef',
-                  color: '#1d2125',
-                  border: '1px solid #ced4da',
+                  backgroundColor: 'var(--cfa-card-bg)',
+                  color: 'var(--cfa-body-text)',
+                  border: '1px solid var(--cfa-card-border)',
                   borderRadius: tokens.btnRadius,
                   padding: '6px 30px 6px 12px',
                   fontSize: 13,
@@ -246,7 +284,7 @@ export default function DashboardPage() {
                   top: '50%',
                   transform: 'translateY(-50%)',
                   pointerEvents: 'none',
-                  color: '#1d2125',
+                  color: 'var(--cfa-body-text)',
                 }}
               />
             </div>
@@ -311,9 +349,9 @@ export default function DashboardPage() {
                 defaultValue="all"
                 style={{
                   appearance: 'none',
-                  backgroundColor: '#e9ecef',
-                  color: '#1d2125',
-                  border: '1px solid #ced4da',
+                  backgroundColor: 'var(--cfa-card-bg)',
+                  color: 'var(--cfa-body-text)',
+                  border: '1px solid var(--cfa-card-border)',
                   borderRadius: tokens.btnRadius,
                   padding: '6px 30px 6px 12px',
                   fontSize: 13,
@@ -331,7 +369,7 @@ export default function DashboardPage() {
                   top: '50%',
                   transform: 'translateY(-50%)',
                   pointerEvents: 'none',
-                  color: '#1d2125',
+                  color: 'var(--cfa-body-text)',
                 }}
               />
             </div>

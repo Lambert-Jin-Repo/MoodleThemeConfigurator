@@ -160,14 +160,14 @@ export default function CoursePage() {
             <div
               className="flex items-center justify-between px-4 py-3 border-b"
               style={{
-                backgroundColor: '#f8f9fa',
+                backgroundColor: 'rgba(128,128,128,0.1)',
                 borderColor: 'var(--cfa-card-border)',
               }}
             >
               <div className="flex items-center gap-2">
                 <span
                   className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded"
-                  style={{ backgroundColor: '#e9ecef', color: 'var(--cfa-body-text)' }}
+                  style={{ backgroundColor: 'rgba(128,128,128,0.15)', color: 'var(--cfa-body-text)' }}
                 >
                   <EyeOff size={12} />
                   Hidden from students

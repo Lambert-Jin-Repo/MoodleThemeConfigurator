@@ -159,7 +159,7 @@ export default function MoodleShell() {
   `;
 
   return (
-    <div className="moodle-preview" style={cssVars} onClick={handlePreviewClick}>
+    <div className="moodle-preview" style={{ ...cssVars, backgroundColor: 'var(--cfa-page-bg)' }} onClick={handlePreviewClick}>
       <style dangerouslySetInnerHTML={{ __html: hoverStyles + highlightStyles + bgImageStyles + clickToEditStyles }} />
       {activePage === 'login' ? (
         <LoginPage />
@@ -220,9 +220,9 @@ function buildHoverStyles(tokens: ThemeTokens): string {
       background-color: var(--cfa-btn-primary-hover);
     }
     .moodle-preview .moodle-btn-secondary {
-      background-color: #e9ecef;
-      color: #1d2125;
-      border: 1px solid #ced4da;
+      background-color: var(--cfa-card-bg);
+      color: var(--cfa-body-text);
+      border: 1px solid var(--cfa-card-border);
       padding: 6px 16px;
       border-radius: ${tokens.btnRadius}px;
       cursor: pointer;
@@ -231,8 +231,8 @@ function buildHoverStyles(tokens: ThemeTokens): string {
       transition: background-color 0.15s, border-color 0.15s;
     }
     .moodle-preview .moodle-btn-secondary:hover {
-      background-color: #ced4da;
-      border-color: #b8bfc6;
+      background-color: rgba(128,128,128,0.2);
+      border-color: rgba(128,128,128,0.4);
     }
     .moodle-preview .moodle-nav-link {
       color: var(--cfa-navbar-text);
@@ -298,10 +298,12 @@ function buildHoverStyles(tokens: ThemeTokens): string {
       background-color: rgba(0,0,0,0.03);
     }
     .moodle-preview .moodle-input {
-      border: 1px solid #ced4da;
+      border: 1px solid var(--cfa-card-border);
       border-radius: ${tokens.loginInputRadius}px;
       padding: 6px 12px;
       outline: none;
+      color: var(--cfa-body-text);
+      background-color: var(--cfa-card-bg);
       transition: border-color 0.15s, box-shadow 0.15s;
     }
     .moodle-preview .moodle-input:focus {
