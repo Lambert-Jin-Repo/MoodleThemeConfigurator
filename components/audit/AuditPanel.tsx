@@ -20,7 +20,7 @@ export default function AuditPanel() {
   const tokens = useThemeStore((s) => s.tokens);
   const setToken = useThemeStore((s) => s.setToken);
 
-  const { score, canExport, results, additionalChecks } = useMemo(() => {
+  const { score, results, additionalChecks } = useMemo(() => {
     let passing = 0;
     const total = CONTRAST_CHECKS.length;
     const res = CONTRAST_CHECKS.map((check) => {
@@ -37,8 +37,6 @@ export default function AuditPanel() {
       if (passes) passing++;
       return { ...check, fg, bg, ratio, passes, isError: ratio < 3 };
     });
-    const blocked = res.some((r) => r.isError);
-
     // §7C non-contrast checks
     const additional: AdditionalCheck[] = [
       {
@@ -60,7 +58,6 @@ export default function AuditPanel() {
 
     return {
       score: Math.round((passing / total) * 100),
-      canExport: !blocked,
       results: res,
       additionalChecks: additional,
     };
@@ -74,11 +71,6 @@ export default function AuditPanel() {
 
       <div className="p-4 flex flex-col items-center border-b border-gray-200">
         <ScoreBadge score={score} />
-        {!canExport && (
-          <p className="text-xs text-red-600 mt-2 text-center" role="alert">
-            Export blocked: one or more colour pairings have less than 3:1 contrast.
-          </p>
-        )}
       </div>
 
       <div className="p-4 space-y-3">
