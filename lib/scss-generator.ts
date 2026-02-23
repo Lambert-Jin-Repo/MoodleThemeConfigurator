@@ -454,6 +454,24 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push(`}`);
     rules.push('');
 
+    // Activity row icons (FontAwesome) — completion indicators, etc.
+    rules.push(`.course-content .fa, .course-content [class*="fa-"],`);
+    rules.push(`.activity-item .fa, .activity-item [class*="fa-"],`);
+    rules.push(`.section .fa {`);
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push(`}`);
+    rules.push('');
+
+    // Group mode icon — rendered as <img class="icon"> not FontAwesome,
+    // so needs filter:invert to flip dark SVG to light on dark backgrounds
+    rules.push(`.activity-groupmode-info img.icon,`);
+    rules.push(`.groupmode-information img.icon,`);
+    rules.push(`[data-region="groupmode"] img.icon,`);
+    rules.push(`[data-region="groupmode-information"] img.icon {`);
+    rules.push(`  filter: invert(1) !important;`);
+    rules.push(`}`);
+    rules.push('');
+
     // Muted text (helper labels, calendar day numbers, timestamps, category labels)
     rules.push(`.text-muted, .text-secondary, small, .small,`);
     rules.push(`.coursecategory, .course-category, .coursecat, .dimmed_text,`);
