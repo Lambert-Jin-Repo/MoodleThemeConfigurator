@@ -37,6 +37,17 @@ A client-side web app that lets non-technical CFA admins preview Moodle theme co
 5. **Smart export.** Only include sections that differ from Moodle defaults. Omitted sections get comments.
 6. **Defaults = Moodle Boost**, NOT CFA brand. Brand primary starts at `#0f6cbf`.
 
+## Enforcement (MANDATORY — NO EXCEPTIONS)
+
+These rules exist because agents have previously rationalized skipping them. **Do not rationalize.**
+
+1. **Worktree-first for all features.** ANY feature work (no matter how small) MUST start by invoking `superpowers:using-git-worktrees` BEFORE writing any code. If you find yourself thinking "this is too small for a worktree" — that is the signal to use a worktree.
+2. **Never modify files on `main`.** If you are on `main` and about to edit a source file, STOP. Create a feature branch or worktree first.
+3. **Follow all skill phases.** If the `/feature` skill is invoked, every phase (DISCOVER → SPECIFY → BUILD → VERIFY → SHIP) must be completed in order. No skipping.
+4. **No code before spec approval.** When using the `/feature` pipeline, do NOT write implementation code until the feature spec MD is written and the user has approved it.
+
+**If you violate any of these rules, STOP immediately, tell the user what happened, and ask how to proceed.**
+
 ## Git Workflow (MANDATORY)
 
 All agents MUST follow this workflow. No exceptions.

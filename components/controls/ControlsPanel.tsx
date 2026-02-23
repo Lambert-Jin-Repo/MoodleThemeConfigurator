@@ -1,16 +1,21 @@
 'use client';
 
+import { useRef, useEffect, useCallback, useState } from 'react';
+import { Upload } from 'lucide-react';
 import { useThemeStore } from '@/store/theme-store';
 import { FONT_OPTIONS, LOGO_ACCENT_COLOURS } from '@/lib/tokens';
 import { bestLogoAccentColour, isDarkBackground, contrastRatio } from '@/lib/accessibility';
 import type { ThemeTokens } from '@/lib/tokens';
-import PresetSelector from './PresetSelector';
+import PresetDropdown from './PresetDropdown';
 import AccordionSection from './AccordionSection';
+import type { AccordionSectionHandle } from './AccordionSection';
 import ColourPicker from './ColourPicker';
 import SliderControl from './SliderControl';
 import SelectControl from './SelectControl';
 import GradientToggle from './GradientToggle';
 import ImageUploadControl from './ImageUploadControl';
+import QuickPalette from './QuickPalette';
+import BatchImportModal from './BatchImportModal';
 
 function AdditiveHint() {
   return (
@@ -22,12 +27,34 @@ function AdditiveHint() {
 
 export default function ControlsPanel() {
   const tokens = useThemeStore((s) => s.tokens);
-  const isCustomMode = useThemeStore((s) => s.isCustomMode);
   const setToken = useThemeStore((s) => s.setToken);
   const setBrandPrimary = useThemeStore((s) => s.setBrandPrimary);
-  const switchToCustom = useThemeStore((s) => s.switchToCustom);
+  const scrollToSectionRequest = useThemeStore((s) => s.scrollToSectionRequest);
+  const clearScrollRequest = useThemeStore((s) => s.clearScrollRequest);
 
-  const locked = !isCustomMode;
+  const [batchImportOpen, setBatchImportOpen] = useState(false);
+
+  const accordionRefs = useRef<Record<string, AccordionSectionHandle | null>>({});
+
+  const setAccordionRef = useCallback(
+    (sectionId: string) => (handle: AccordionSectionHandle | null) => {
+      accordionRefs.current[sectionId] = handle;
+    },
+    []
+  );
+
+  // Respond to scroll-to-section requests from store
+  useEffect(() => {
+    if (!scrollToSectionRequest) return;
+    const ref = accordionRefs.current[scrollToSectionRequest];
+    if (ref) {
+      ref.open();
+      ref.scrollIntoView();
+      // Highlight after scroll settles so user sees where to look
+      setTimeout(() => ref.highlight(), 400);
+    }
+    clearScrollRequest();
+  }, [scrollToSectionRequest, clearScrollRequest]);
 
   const set = (key: keyof ThemeTokens) => (value: string | number | boolean) => {
     setToken(key, value);
@@ -35,36 +62,38 @@ export default function ControlsPanel() {
 
   return (
     <div className="h-full overflow-y-auto bg-white border-r border-gray-200">
-      <div className="px-4 py-3 border-b border-gray-200">
+      <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
         <h2 className="text-sm font-bold text-gray-800">Theme Controls</h2>
-        {locked && (
-          <button
-            className="mt-1 text-xs text-blue-600 hover:underline"
-            onClick={switchToCustom}
-          >
-            Customise current preset
-          </button>
-        )}
+        <button
+          onClick={() => setBatchImportOpen(true)}
+          className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 transition-colors"
+          aria-label="Import colors"
+        >
+          <Upload className="w-3.5 h-3.5" />
+          Import
+        </button>
       </div>
 
-      {/* 1. Presets */}
-      <AccordionSection title="Presets" defaultOpen>
-        <PresetSelector />
-      </AccordionSection>
+      <BatchImportModal open={batchImportOpen} onClose={() => setBatchImportOpen(false)} />
 
-      {/* 2. Brand Colour */}
-      <AccordionSection title="Brand Colour" defaultOpen>
+      {/* Preset Dropdown */}
+      <PresetDropdown />
+
+      {/* Quick Palette */}
+      <QuickPalette />
+
+      {/* 1. Brand Colour */}
+      <AccordionSection title="Brand Colour" sectionId="brand-colour" defaultOpen ref={setAccordionRef('brand-colour')}>
         <ColourPicker
           label="Primary Brand Colour"
           value={tokens.brandPrimary}
           onChange={setBrandPrimary}
-          disabled={locked}
           showContrastOn="#FFFFFF"
         />
       </AccordionSection>
 
-      {/* 2.5 Logo */}
-      <AccordionSection title="Logo">
+      {/* 2. Logo */}
+      <AccordionSection title="Logo" sectionId="logo" ref={setAccordionRef('logo')}>
         {/* Mini preview on current navbar background */}
         <div
           className="rounded-lg p-3 flex items-center justify-center"
@@ -112,7 +141,6 @@ export default function ControlsPanel() {
                 : 'bg-white border-gray-200 text-gray-600 hover:border-gray-400'
             }`}
             onClick={() => set('logoAustraliaColour')('auto')}
-            disabled={locked}
             title="Auto-detect best WCAG contrast colour for current navbar"
           >
             <span>Auto (WCAG best match)</span>
@@ -142,7 +170,6 @@ export default function ControlsPanel() {
                       : 'border-gray-200 hover:border-gray-400 bg-white'
                   }`}
                   onClick={() => set('logoAustraliaColour')(c.hex)}
-                  disabled={locked}
                   title={`${c.name} ${c.hex} — ${ratio.toFixed(1)}:1 contrast`}
                   aria-label={`Set Australia colour to ${c.name}`}
                 >
@@ -164,18 +191,18 @@ export default function ControlsPanel() {
       </AccordionSection>
 
       {/* 3. Navbar */}
-      <AccordionSection title="Navbar">
+      <AccordionSection title="Navbar" sectionId="navbar" ref={setAccordionRef('navbar')}>
         <ColourPicker
           label="Navbar Background"
           value={tokens.navbarBg}
           onChange={(v) => set('navbarBg')(v)}
-          disabled={locked}
+          tokenKey="navbarBg"
+          linkedToBrand
         />
         <ColourPicker
           label="Navbar Text"
           value={tokens.navbarText}
           onChange={(v) => set('navbarText')(v)}
-          disabled={locked}
           showContrastOn={tokens.navbarBg}
         />
         <div>
@@ -187,19 +214,19 @@ export default function ControlsPanel() {
             label=""
             value={tokens.navHoverBg}
             onChange={(v) => set('navHoverBg')(v)}
-            disabled={locked}
           />
         </div>
       </AccordionSection>
 
       {/* 4. Edit Mode Toggle */}
-      <AccordionSection title="Edit Mode Toggle">
+      <AccordionSection title="Edit Mode Toggle" sectionId="edit-mode-toggle" ref={setAccordionRef('edit-mode-toggle')}>
         <ColourPicker
           label="Edit Mode ON Colour"
           value={tokens.editModeOnColour}
           onChange={(v) => set('editModeOnColour')(v)}
-          disabled={locked}
           showContrastOn={tokens.navbarBg}
+          tokenKey="editModeOnColour"
+          linkedToBrand
         />
         <div>
           <div className="flex items-center mb-1">
@@ -210,26 +237,26 @@ export default function ControlsPanel() {
             label=""
             value={tokens.editModeThumbColour}
             onChange={(v) => set('editModeThumbColour')(v)}
-            disabled={locked}
           />
         </div>
       </AccordionSection>
 
       {/* 5. Links & Focus */}
-      <AccordionSection title="Links & Focus">
+      <AccordionSection title="Links & Focus" sectionId="links-&-focus" ref={setAccordionRef('links-&-focus')}>
         <ColourPicker
           label="Link Colour"
           value={tokens.linkColour}
           onChange={(v) => set('linkColour')(v)}
-          disabled={locked}
           showContrastOn="#FFFFFF"
           tokenKey="linkColour"
+          linkedToBrand
         />
         <ColourPicker
           label="Focus Ring Colour"
           value={tokens.focusRing}
           onChange={(v) => set('focusRing')(v)}
-          disabled={locked}
+          tokenKey="focusRing"
+          linkedToBrand
         />
         <SliderControl
           label="Focus Ring Width"
@@ -239,30 +266,28 @@ export default function ControlsPanel() {
           max={4}
           step={1}
           unit="px"
-          disabled={locked}
         />
       </AccordionSection>
 
       {/* 6. Buttons */}
-      <AccordionSection title="Buttons">
+      <AccordionSection title="Buttons" sectionId="buttons" ref={setAccordionRef('buttons')}>
         <ColourPicker
           label="Button Primary BG"
           value={tokens.btnPrimaryBg}
           onChange={(v) => set('btnPrimaryBg')(v)}
-          disabled={locked}
           showContrastOn={tokens.btnPrimaryText}
+          tokenKey="btnPrimaryBg"
+          linkedToBrand
         />
         <ColourPicker
           label="Button Primary Text"
           value={tokens.btnPrimaryText}
           onChange={(v) => set('btnPrimaryText')(v)}
-          disabled={locked}
         />
         <ColourPicker
           label="Button Hover"
           value={tokens.btnPrimaryHover}
           onChange={(v) => set('btnPrimaryHover')(v)}
-          disabled={locked}
         />
         <SliderControl
           label="Button Radius"
@@ -272,12 +297,11 @@ export default function ControlsPanel() {
           max={24}
           step={1}
           unit="px"
-          disabled={locked}
         />
       </AccordionSection>
 
       {/* 7. Content Area */}
-      <AccordionSection title="Content Area">
+      <AccordionSection title="Content Area" sectionId="content-area" ref={setAccordionRef('content-area')}>
         <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded">
           Page background is locked to #FFFFFF. Moodle Boost has dozens of elements that default to white — tinted backgrounds create inconsistent artefacts.
         </div>
@@ -285,13 +309,11 @@ export default function ControlsPanel() {
           label="Card Background"
           value={tokens.cardBg}
           onChange={(v) => set('cardBg')(v)}
-          disabled={locked}
         />
         <ColourPicker
           label="Card Border"
           value={tokens.cardBorder}
           onChange={(v) => set('cardBorder')(v)}
-          disabled={locked}
         />
         <div>
           <div className="flex items-center mb-1">
@@ -302,7 +324,6 @@ export default function ControlsPanel() {
             label=""
             value={tokens.breadcrumbBg === 'transparent' ? '#FFFFFF' : tokens.breadcrumbBg}
             onChange={(v) => set('breadcrumbBg')(v)}
-            disabled={locked}
           />
         </div>
         <div>
@@ -314,7 +335,6 @@ export default function ControlsPanel() {
             label=""
             value={tokens.sectionAccent === 'none' ? '#FFFFFF' : tokens.sectionAccent}
             onChange={(v) => set('sectionAccent')(v)}
-            disabled={locked}
           />
         </div>
         <div className="text-[10px] text-amber-700 bg-amber-50 border border-amber-200 rounded p-2 mt-1">
@@ -328,18 +348,16 @@ export default function ControlsPanel() {
           max={1200}
           step={10}
           unit="px"
-          disabled={locked}
         />
       </AccordionSection>
 
       {/* 7.5 Background Images */}
-      <AccordionSection title="Background Images">
+      <AccordionSection title="Background Images" sectionId="background-images" ref={setAccordionRef('background-images')}>
         <ImageUploadControl
           label="Site Background"
           value={tokens.backgroundImage}
           onChange={(v) => set('backgroundImage')(v)}
           onClear={() => set('backgroundImage')('')}
-          disabled={locked}
           hint="Displays behind all pages except login (desktop only, matching Moodle's 768px+ breakpoint)"
         />
         <ImageUploadControl
@@ -347,51 +365,46 @@ export default function ControlsPanel() {
           value={tokens.loginBgImage}
           onChange={(v) => set('loginBgImage')(v)}
           onClear={() => set('loginBgImage')('')}
-          disabled={locked}
           hint="Displays behind the login card"
         />
       </AccordionSection>
 
       {/* 8. Login Page */}
-      <AccordionSection title="Login Page">
+      <AccordionSection title="Login Page" sectionId="login-page" ref={setAccordionRef('login-page')}>
         <ColourPicker
           label="Login Background"
           value={tokens.loginBg}
           onChange={(v) => set('loginBg')(v)}
-          disabled={locked}
         />
         <GradientToggle
           enabled={tokens.loginGradientEnabled}
           endColour={tokens.loginGradientEnd}
           onToggle={(v) => set('loginGradientEnabled')(v)}
           onEndColourChange={(v) => set('loginGradientEnd')(v)}
-          disabled={locked}
         />
         <ColourPicker
           label="Login Card Background"
           value={tokens.loginCardBg}
           onChange={(v) => set('loginCardBg')(v)}
-          disabled={locked}
         />
         <ColourPicker
           label="Login Heading"
           value={tokens.loginHeading}
           onChange={(v) => set('loginHeading')(v)}
-          disabled={locked}
           showContrastOn={tokens.loginCardBg}
         />
         <ColourPicker
           label="Login Button BG"
           value={tokens.loginBtnBg}
           onChange={(v) => set('loginBtnBg')(v)}
-          disabled={locked}
           showContrastOn={tokens.loginBtnText}
+          tokenKey="loginBtnBg"
+          linkedToBrand
         />
         <ColourPicker
           label="Login Button Text"
           value={tokens.loginBtnText}
           onChange={(v) => set('loginBtnText')(v)}
-          disabled={locked}
         />
         <SliderControl
           label="Input Radius"
@@ -401,31 +414,29 @@ export default function ControlsPanel() {
           max={24}
           step={1}
           unit="px"
-          disabled={locked}
         />
       </AccordionSection>
 
       {/* 9. Footer */}
-      <AccordionSection title="Footer">
+      <AccordionSection title="Footer" sectionId="footer" ref={setAccordionRef('footer')}>
         <ColourPicker
           label="Footer Background"
           value={tokens.footerBg}
           onChange={(v) => set('footerBg')(v)}
-          disabled={locked}
         />
         <ColourPicker
           label="Footer Text"
           value={tokens.footerText}
           onChange={(v) => set('footerText')(v)}
-          disabled={locked}
           showContrastOn={tokens.footerBg}
         />
         <ColourPicker
           label="Footer Link"
           value={tokens.footerLink}
           onChange={(v) => set('footerLink')(v)}
-          disabled={locked}
           showContrastOn={tokens.footerBg}
+          tokenKey="footerLink"
+          linkedToBrand
         />
         <div>
           <div className="flex items-center mb-1">
@@ -436,19 +447,24 @@ export default function ControlsPanel() {
             label=""
             value={tokens.footerAccent === 'none' ? '#FFFFFF' : tokens.footerAccent}
             onChange={(v) => set('footerAccent')(v)}
-            disabled={locked}
           />
         </div>
       </AccordionSection>
 
       {/* 10. Typography */}
-      <AccordionSection title="Typography">
+      <AccordionSection title="Typography" sectionId="typography" ref={setAccordionRef('typography')}>
         <SelectControl
           label="Font Family"
-          value={tokens.fontFamily}
-          onChange={(v) => set('fontFamily')(v)}
-          options={FONT_OPTIONS}
-          disabled={locked}
+          value={`${tokens.fontFamily}||${tokens.fontWeight}`}
+          onChange={(v) => {
+            const [family, weight] = v.split('||');
+            set('fontFamily')(family);
+            set('fontWeight')(weight);
+          }}
+          options={FONT_OPTIONS.map((opt) => ({
+            label: opt.label,
+            value: `${opt.value}||${opt.weight}`,
+          }))}
         />
         <SliderControl
           label="Base Font Size"
@@ -458,7 +474,6 @@ export default function ControlsPanel() {
           max={1.25}
           step={0.0625}
           unit="rem"
-          disabled={locked}
         />
         <SliderControl
           label="Heading Scale"
@@ -467,7 +482,6 @@ export default function ControlsPanel() {
           min={1.0}
           max={1.5}
           step={0.05}
-          disabled={locked}
         />
         <SliderControl
           label="Line Height"
@@ -476,20 +490,17 @@ export default function ControlsPanel() {
           min={1.2}
           max={2.0}
           step={0.1}
-          disabled={locked}
         />
         <ColourPicker
           label="Heading Text"
           value={tokens.headingText}
           onChange={(v) => set('headingText')(v)}
-          disabled={locked}
           showContrastOn="#FFFFFF"
         />
         <ColourPicker
           label="Body Text"
           value={tokens.bodyText}
           onChange={(v) => set('bodyText')(v)}
-          disabled={locked}
           showContrastOn="#FFFFFF"
           tokenKey="bodyText"
         />
@@ -497,64 +508,59 @@ export default function ControlsPanel() {
           label="Muted Text"
           value={tokens.mutedText}
           onChange={(v) => set('mutedText')(v)}
-          disabled={locked}
           showContrastOn="#FFFFFF"
         />
       </AccordionSection>
 
       {/* 11. Drawers */}
-      <AccordionSection title="Drawers">
+      <AccordionSection title="Drawers" sectionId="drawers" ref={setAccordionRef('drawers')}>
         <ColourPicker
           label="Drawer Background"
           value={tokens.drawerBg}
           onChange={(v) => set('drawerBg')(v)}
-          disabled={locked}
         />
         <ColourPicker
           label="Drawer Text"
           value={tokens.drawerText}
           onChange={(v) => set('drawerText')(v)}
-          disabled={locked}
         />
         <ColourPicker
           label="Drawer Border"
           value={tokens.drawerBorder}
           onChange={(v) => set('drawerBorder')(v)}
-          disabled={locked}
         />
       </AccordionSection>
 
       {/* 12. Alerts & Progress */}
-      <AccordionSection title="Alerts & Progress">
+      <AccordionSection title="Alerts & Progress" sectionId="alerts-&-progress" ref={setAccordionRef('alerts-&-progress')}>
         <ColourPicker
           label="Success"
           value={tokens.success}
           onChange={(v) => set('success')(v)}
-          disabled={locked}
         />
         <ColourPicker
           label="Warning"
           value={tokens.warning}
           onChange={(v) => set('warning')(v)}
-          disabled={locked}
         />
         <ColourPicker
           label="Error"
           value={tokens.error}
           onChange={(v) => set('error')(v)}
-          disabled={locked}
         />
         <ColourPicker
           label="Info"
           value={tokens.info}
           onChange={(v) => set('info')(v)}
-          disabled={locked}
+          tokenKey="info"
+          linkedToBrand
         />
         <ColourPicker
           label="Progress Fill"
           value={tokens.progressFill}
           onChange={(v) => set('progressFill')(v)}
-          disabled={locked}
+          tokenKey="progressFill"
+          linkedToBrand
         />
       </AccordionSection>
     </div>

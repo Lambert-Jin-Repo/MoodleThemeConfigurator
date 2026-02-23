@@ -16,24 +16,35 @@ import {
   autoTextColour,
 } from '@/lib/tokens';
 
+export type MobileTab = 'controls' | 'preview' | 'audit';
+
 interface ThemeState {
   tokens: ThemeTokens;
   activePresetId: string | null;
   isCustomMode: boolean;
+  presetBaseline: ThemeTokens | null;
+  scrollToSectionRequest: string | null;
   activePage: PreviewPage;
   viewport: Viewport;
   zoom: number;
   savedConfigs: SavedConfig[];
   activeControlSection: string | null;
+  mobileTab: MobileTab;
+  auditDrawerOpen: boolean;
 
   setToken: (key: keyof ThemeTokens, value: string | number | boolean) => void;
   setBrandPrimary: (value: string) => void;
   applyPreset: (presetId: string) => void;
   switchToCustom: () => void;
   reset: () => void;
+  requestScrollToSection: (id: string) => void;
+  clearScrollRequest: () => void;
+  batchSetTokens: (updates: Partial<ThemeTokens>) => void;
   setActivePage: (page: PreviewPage) => void;
   setZoom: (zoom: number) => void;
   setActiveControlSection: (section: string | null) => void;
+  setMobileTab: (tab: MobileTab) => void;
+  setAuditDrawerOpen: (open: boolean) => void;
   saveConfig: (name: string, score: number) => void;
   loadConfig: (id: string) => void;
   deleteConfig: (id: string) => void;
@@ -45,12 +56,16 @@ export const useThemeStore = create<ThemeState>()(
       (set, get) => ({
         tokens: { ...DEFAULT_TOKENS },
         activePresetId: null,
-        isCustomMode: false,
+        isCustomMode: true,
+        presetBaseline: null as ThemeTokens | null,
+        scrollToSectionRequest: null as string | null,
         activePage: 'dashboard' as PreviewPage,
         viewport: 'desktop' as Viewport,
         zoom: 125,
         savedConfigs: [] as SavedConfig[],
         activeControlSection: null as string | null,
+        mobileTab: 'preview' as MobileTab,
+        auditDrawerOpen: false,
 
         setToken: (key, value) => {
           set((state) => {
@@ -64,11 +79,7 @@ export const useThemeStore = create<ThemeState>()(
             if (key === 'drawerBg' && typeof value === 'string') {
               newTokens.drawerText = autoTextColour(value);
             }
-            return {
-              tokens: newTokens,
-              isCustomMode: true,
-              activePresetId: null,
-            };
+            return { tokens: newTokens };
           });
         },
 
@@ -82,20 +93,15 @@ export const useThemeStore = create<ThemeState>()(
                 (newTokens as Record<string, string | number | boolean>)[key] = value;
               }
             }
-            if (state.tokens.navbarBg.toUpperCase() === oldBrand.toUpperCase()) {
-              newTokens.navbarBg = value;
-              newTokens.navbarText = autoTextColour(value);
-            }
+            // Note: navbarBg is NOT propagated from brandPrimary.
+            // In real Moodle Boost, the navbar stays white regardless of $primary.
+            // Navbar background is controlled independently via custom CSS rules.
             newTokens.btnPrimaryHover = darkenHex(newTokens.btnPrimaryBg, 15);
             newTokens.linkHover = darkenHex(newTokens.linkColour, 20);
             if (state.tokens.editModeOnColour.toUpperCase() === oldBrand.toUpperCase()) {
               newTokens.editModeOnColour = value;
             }
-            return {
-              tokens: newTokens,
-              isCustomMode: true,
-              activePresetId: null,
-            };
+            return { tokens: newTokens };
           });
         },
 
@@ -110,7 +116,8 @@ export const useThemeStore = create<ThemeState>()(
           set({
             tokens: mergedTokens,
             activePresetId: presetId,
-            isCustomMode: false,
+            isCustomMode: true,
+            presetBaseline: { ...mergedTokens },
           });
         },
 
@@ -122,13 +129,25 @@ export const useThemeStore = create<ThemeState>()(
           set({
             tokens: { ...DEFAULT_TOKENS },
             activePresetId: null,
-            isCustomMode: false,
+            isCustomMode: true,
+            presetBaseline: null,
           });
+        },
+
+        requestScrollToSection: (id) => set({ scrollToSectionRequest: id }),
+        clearScrollRequest: () => set({ scrollToSectionRequest: null }),
+
+        batchSetTokens: (updates) => {
+          set((state) => ({
+            tokens: { ...state.tokens, ...updates },
+          }));
         },
 
         setActivePage: (page) => set({ activePage: page }),
         setZoom: (zoom) => set({ zoom }),
         setActiveControlSection: (section) => set({ activeControlSection: section }),
+        setMobileTab: (tab) => set({ mobileTab: tab }),
+        setAuditDrawerOpen: (open) => set({ auditDrawerOpen: open }),
 
         saveConfig: (name, score) => {
           const config: SavedConfig = {
@@ -170,6 +189,7 @@ export const useThemeStore = create<ThemeState>()(
             savedConfigs: state.savedConfigs,
             activePresetId: state.activePresetId,
             isCustomMode: state.isCustomMode,
+            presetBaseline: state.presetBaseline,
           };
         },
         merge: (persistedState, currentState) => {

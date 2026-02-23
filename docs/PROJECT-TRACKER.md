@@ -553,6 +553,70 @@ Replaced single-fire flash with a repeating glow animation for better discoverab
 
 ---
 
+## Session: 2026-02-16 (continued) — Mobile & Tablet Responsive Design
+
+### Feature: Three-Breakpoint Responsive Layout
+
+Previously the app was desktop-only with a rigid 3-panel layout (Controls 320px | Preview flex-1 | Audit 300px). This session adds mobile and tablet support at three breakpoints while keeping the desktop experience 100% unchanged.
+
+| Tier | Range | Tailwind prefix | Layout |
+|------|-------|-----------------|--------|
+| **Mobile** | <768px | *(default)* | Single panel + bottom tab bar |
+| **Tablet** | 768–1023px | `md:` | Two-column + collapsible audit drawer |
+| **Desktop** | 1024px+ | `lg:` | Original 3-panel (unchanged) |
+
+### Files Created
+
+| File | Purpose |
+|------|---------|
+| `lib/use-breakpoint.ts` | `useBreakpoint()` hook — returns `'mobile' \| 'tablet' \| 'desktop'` via `window.matchMedia` listeners, SSR-safe default `'desktop'` |
+| `components/MobileTabBar.tsx` | Fixed bottom tab bar (56px) with 3 tabs: Controls (Sliders), Preview (Monitor), Audit (ShieldCheck). Active tab in CFA orange. `md:hidden` — auto-hidden on tablet/desktop. Safe-area padding for iPhone notch. |
+| `components/ResponsiveLayout.tsx` | Three layout modes rendered via CSS `hidden`/`flex` (not conditional rendering — preserves React state). Mobile: single panel by `mobileTab`. Tablet: Controls (280px) + Preview (flex-1) + audit overlay drawer. Desktop: original 3-panel. |
+| `components/audit/AuditDrawer.tsx` | Slide-in drawer (300px, absolute right) wrapping AuditPanel for tablet view. Close button header. Slides via `translate-x` transition. |
+
+### Files Modified
+
+| File | Changes |
+|------|---------|
+| `store/theme-store.ts` | Added `MobileTab` type, `mobileTab: 'preview'` and `auditDrawerOpen: false` state + `setMobileTab()` / `setAuditDrawerOpen()` setters. Both excluded from localStorage persist and undo/redo history. |
+| `app/page.tsx` | Swapped `PanelLayout` import for `ResponsiveLayout` (controls/preview/audit props). Added `<MobileTabBar />` to root. |
+| `components/Toolbar.tsx` | Mobile: shorter title ("Theme Config"), icon-only export button with 44px min tap target. Tablet: audit toggle button (ShieldCheck icon, `md:block lg:hidden`). Desktop: unchanged. |
+| `components/preview/PreviewPanel.tsx` | Mobile: auto-fit zoom via `ResizeObserver` (containerWidth / 1280 design width), no padding. Desktop/Tablet: original percentage-based zoom math preserved exactly. |
+| `components/preview/PreviewToolbar.tsx` | Zoom selector hidden on mobile (`hidden md:flex`). Tighter padding on mobile (`px-2 md:px-4`). Page tabs slightly smaller (`px-3 md:px-4`). |
+| `components/controls/AccordionSection.tsx` | Cross-tab highlight linking: on mobile, opening a section auto-switches to Preview tab via `setMobileTab('preview')`. Auto-switches to login page when "Login Page" section is opened (improves UX at all breakpoints). |
+| `components/controls/ColourPicker.tsx` | Larger touch targets on mobile: native colour input `w-10 h-10 md:w-8 md:h-8`, popover toggle `min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0`, palette swatches `w-8 h-8 md:w-6 md:h-6`. |
+| `app/globals.css` | Added `.pb-safe` utility for `env(safe-area-inset-bottom)` padding. |
+| `app/layout.tsx` | Added `viewport` export with `viewportFit: 'cover'` for iPhone safe-area support. |
+
+### Design Decisions
+
+| Decision | Rationale |
+|---|---|
+| CSS `hidden` vs conditional rendering | CSS `display:none` switches panels on mobile. Preserves React state (accordion open/close, scroll position, form values) when switching tabs. |
+| Transform-based preview scaling | Moodle preview always renders at natural ~1280px width, scaled via CSS `transform: scale()`. On mobile at 390px the scale is ~0.30 — small but readable, consistent with "desktop site preview" behaviour. |
+| No changes to preview internals | DashboardPage, CoursePage, LoginPage remain unchanged. Transform scaling means they render identically at all breakpoints. |
+| Audit drawer (tablet) vs bottom sheet | Side drawer chosen because audit content is tall/scrollable and a side panel is more natural than a bottom sheet. |
+| `PanelLayout.tsx` kept but unused | No code imports remain — only docs reference it. Harmless to leave; avoids breaking doc references. |
+
+### Verification Checklist
+
+| Check | Result |
+|---|---|
+| `npm run build` | Zero errors |
+| `npm run lint` | Zero warnings/errors |
+| Desktop layout (1024px+) unchanged | Identical 3-panel: Controls (320px) \| Preview (flex-1) \| Audit (300px) |
+| Tablet layout (768–1023px) | Two-column + audit drawer toggle in toolbar |
+| Mobile layout (<768px) | Single panel + bottom tab bar, auto-fit preview zoom |
+| No regressions in undo/redo | `mobileTab` and `auditDrawerOpen` excluded from temporal history |
+| No regressions in localStorage | Both new states excluded from persist `partialize` |
+
+### Git Status
+- **Branch:** `feat/responsive-mobile-tablet`
+- **Commit:** `6a6ba86` — `feat(responsive): add mobile and tablet responsive layouts`
+- **Pushed to:** `origin/feat/responsive-mobile-tablet`
+
+---
+
 ## Session: 2026-02-23 — Moodle Layout Restructure
 
 ### Feature: Preview Layout Restructure to Match Real MoodleCloud Screenshots
@@ -575,10 +639,104 @@ Restructured all three preview pages (Dashboard, Course, Login) to match real Mo
 |---|---|
 | `docs/features/2026-02-23-moodle-layout-restructure.md` | Feature spec with 6 tasks |
 
+---
+
+## Session: 2026-02-23 — Quick Palette Typography + Moodle Accuracy Fixes
+
+### Feature: Quick Palette Typography Controls
+
+Added font family dropdown and text size slider directly in the Quick Palette section, including Source Sans Pro Bold as a font option per CFA style guide requirements.
+
+| # | Issue | Action | Status |
+|---|---|---|---|
+| 49 | No font family or text size controls in Quick Palette | Added `<select>` for font family and `<input type="range">` for body font size below the swatch grid | Fixed |
+| 50 | Source Sans Pro Bold not available as a font option | Added to FONT_OPTIONS with weight '700'; Source Sans 3 already loaded in globals.css with weights 400, 600, 700 | Fixed |
+| 51 | `fontWeight` token missing from ThemeTokens | Added `fontWeight: string` to interface and `'400'` to DEFAULT_TOKENS | Fixed |
+| 52 | Preview didn't consume typography CSS vars | Added global `.moodle-preview` font rules + heading styles in `buildHoverStyles()` | Fixed |
+| 53 | ControlsPanel Font Family select didn't set fontWeight | Updated to composite `value||weight` pattern matching QuickPalette | Fixed |
+
+**Files modified:** `lib/tokens.ts`, `components/controls/QuickPalette.tsx`, `components/preview/MoodleShell.tsx`, `components/controls/ControlsPanel.tsx`
+
+### Fix: Colour Picker Popover Broken (Issue 1)
+
+| # | Issue | Action | Status |
+|---|---|---|---|
+| 54 | Dropdown popover next to colour controls clipped by `overflow-y-auto` parent — no options visible | Replaced popover with inline HEX/RGB/HSL format cycler button | Fixed |
+
+**Root cause:** `ColourPicker.tsx` used `position: absolute` for the advanced popover, but the parent `ControlsPanel` has `overflow-y-auto` which clips absolute children.
+
+**Fix:** Removed the entire popover (HexColorPicker + CFA palette swatches). Replaced with a format cycle button — clicking cycles display between HEX → RGB → HSL. Text input parses the current format (e.g. `rgb(51, 110, 123)`) and converts back to hex. Native `<input type="color">` swatch remains for visual picking. Uses existing `hexToRgb`, `hexToHsl`, `hslToHex` from `lib/accessibility.ts`.
+
+**File modified:** `components/controls/ColourPicker.tsx`
+
+### Fix: Button Variants Don't Match Real Moodle (Issue 2)
+
+| # | Issue | Action | Status |
+|---|---|---|---|
+| 55 | Preview showed `.moodle-btn-outline` (transparent bg + primary border) — this variant doesn't exist in Moodle Boost | Replaced with `.moodle-btn-secondary` (solid grey `#ced4da` bg, dark `#1d2125` text) | Fixed |
+
+**Research finding:** Real Moodle Boost has `.btn-secondary` (`$gray-400` = `#ced4da` background) and `.btn-outline-secondary` (`$gray-600` border), but **no `.btn-outline-primary`**. The preview was showing a Bootstrap `btn-outline-primary` style that Moodle doesn't use.
+
+**Files modified:** `components/preview/MoodleShell.tsx` (CSS + SECTION_HIGHLIGHT_MAP), `components/preview/CourseCard.tsx`, `components/preview/CoursePage.tsx`
+
+### Fix: Calendar Preview Accuracy (Issue 3)
+
+| # | Issue | Action | Status |
+|---|---|---|---|
+| 56 | Calendar "today" highlight was rounded rectangle, not circle like real Moodle | Changed to `border-radius: 50%` with proper 18x18px circle | Fixed |
+| 57 | No indication that calendar event colours don't follow `$primary` | Added tooltip on Calendar header explaining the limitation | Fixed |
+
+**Research finding:** Moodle's `calendar.scss` uses `$calendarCurrentDateBackground: $primary` for the today circle -- YES it changes. But event type colours (course, user, group) are hardcoded with independent `!default` variables and do NOT follow `$primary`.
+
+**File modified:** `components/preview/BlocksDrawer.tsx`
+
+### Fix: "CFA Dark Mode" Preset Misleading Name
+
+| # | Issue | Action | Status |
+|---|---|---|---|
+| 58 | Preset named "CFA Dark Mode" but only darkens chrome (navbar/footer/drawers), content area stays white | Renamed to "CFA Dark Chrome" with accurate description | Fixed |
+
+**Research finding:** Full dark mode is not reliably achievable on Moodle Cloud because:
+- Moodle templates use hardcoded `.bg-white` CSS class (can't edit templates on Cloud)
+- TinyMCE editor iframe can't be styled via SCSS
+- Embedded content (H5P, SCORM) renders with its own styling
+- MDL-68037 (native dark mode) still unresolved since Moodle 3.8
+
+**File modified:** `lib/tokens.ts`
+
+### Fix: SCSS Generator Missing Export Rules
+
+| # | Issue | Action | Status |
+|---|---|---|---|
+| 59 | `pageBg` hardcoded as `$body-bg: #FFFFFF` -- never exported user changes | Now conditional: only exports `$body-bg` when `pageBg` differs from default | Fixed |
+| 60 | `cardBg` had no SCSS export rule at all | Added `$card-bg` in Block 1 + `.card { background-color }` in Block 2 | Fixed |
+| 61 | `loginCardBg` had no SCSS export rule | Added `body#page-login-index .card` override in Block 2 | Fixed |
+| 62 | `drawerText` not exported -- drawer rule only had bg + border | Added `color` property to drawer CSS rule | Fixed |
+
+**File modified:** `lib/scss-generator.ts`
+
+### Fix: Breadcrumb Hardcoded Tailwind Colors
+
+| # | Issue | Action | Status |
+|---|---|---|---|
+| 63 | `MoodleBreadcrumb.tsx` used `text-gray-500`/`text-gray-600` Tailwind classes instead of CSS variables | Replaced with `var(--cfa-muted-text)` and `var(--cfa-body-text)` inline styles | Fixed |
+
+**File modified:** `components/preview/MoodleBreadcrumb.tsx`
+
+### CLAUDE.md Enforcement Update
+
+Added mandatory enforcement rules after agent violated worktree-first workflow by coding directly on `main`:
+1. Worktree-first for all features
+2. Never modify files on `main`
+3. Follow all skill phases
+4. No code before spec approval
+
+**File modified:** `CLAUDE.md`
+
 ### Build Status
 - `npm run build` — zero errors
 - `npm run lint` — zero warnings/errors
 
 ### Git Status
-- **Branch:** feat/moodle-layout-restructure
-- **Commit:** `5a6f63a` — `feat(preview): restructure all pages to match real MoodleCloud screenshots`
+- **Branch:** `feat/moodle-layout-restructure` (layout restructure), `feat/quick-palette-typography` (typography + accuracy fixes)
+- **Commits:** `5a6f63a` (layout restructure), `53c4c5d` (typography controls), `fe3d159` (Moodle accuracy fixes)

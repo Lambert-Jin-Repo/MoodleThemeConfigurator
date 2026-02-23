@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useCallback } from 'react';
 import { useThemeStore } from '@/store/theme-store';
 import { tokenToCssVar } from '@/lib/tokens';
 import type { ThemeTokens, PreviewPage } from '@/lib/tokens';
@@ -119,11 +119,14 @@ export default function MoodleShell() {
   const tokens = useThemeStore((s) => s.tokens);
   const activePage = useThemeStore((s) => s.activePage);
   const activeControlSection = useThemeStore((s) => s.activeControlSection);
+  const setActiveControlSection = useThemeStore((s) => s.setActiveControlSection);
+  const requestScrollToSection = useThemeStore((s) => s.requestScrollToSection);
+  const setMobileTab = useThemeStore((s) => s.setMobileTab);
 
   const cssVars = useMemo(() => {
     const vars: Record<string, string> = {};
     for (const [key, value] of Object.entries(tokens)) {
-      if (IMAGE_TOKEN_KEYS.has(key)) continue; // skip large base64 from inline styles
+      if (IMAGE_TOKEN_KEYS.has(key)) continue;
       vars[tokenToCssVar(key)] = String(value);
     }
     return vars;
@@ -133,9 +136,31 @@ export default function MoodleShell() {
   const highlightStyles = useMemo(() => buildHighlightStyles(activeControlSection), [activeControlSection]);
   const bgImageStyles = useMemo(() => buildBackgroundImageStyles(tokens, activePage), [tokens, activePage]);
 
+  // Click-to-edit: click any [data-section] element → scroll controls to that section
+  const handlePreviewClick = useCallback((e: React.MouseEvent) => {
+    const target = (e.target as HTMLElement).closest('[data-section]');
+    if (!target) return;
+    const sectionId = target.getAttribute('data-section');
+    if (!sectionId) return;
+    setActiveControlSection(sectionId);
+    requestScrollToSection(sectionId);
+    setMobileTab('controls');
+  }, [setActiveControlSection, requestScrollToSection, setMobileTab]);
+
+  const clickToEditStyles = `
+    .moodle-preview [data-section] {
+      cursor: pointer;
+      transition: outline 0.15s ease;
+    }
+    .moodle-preview [data-section]:hover {
+      outline: 2px dashed rgba(242, 121, 39, 0.4);
+      outline-offset: 2px;
+    }
+  `;
+
   return (
-    <div className="moodle-preview" style={cssVars}>
-      <style dangerouslySetInnerHTML={{ __html: hoverStyles + highlightStyles + bgImageStyles }} />
+    <div className="moodle-preview" style={cssVars} onClick={handlePreviewClick}>
+      <style dangerouslySetInnerHTML={{ __html: hoverStyles + highlightStyles + bgImageStyles + clickToEditStyles }} />
       {activePage === 'login' ? (
         <LoginPage />
       ) : (
@@ -158,6 +183,19 @@ export default function MoodleShell() {
 
 function buildHoverStyles(tokens: ThemeTokens): string {
   return `
+    .moodle-preview {
+      font-family: var(--cfa-font-family);
+      font-size: calc(var(--cfa-body-font-size) * 1rem);
+      font-weight: var(--cfa-font-weight);
+      line-height: var(--cfa-line-height);
+    }
+    .moodle-preview h1,
+    .moodle-preview h2,
+    .moodle-preview h3,
+    .moodle-preview h4 {
+      font-family: var(--cfa-font-family);
+      font-weight: 700;
+    }
     .moodle-preview .moodle-link {
       color: var(--cfa-link-colour);
       text-decoration: underline;

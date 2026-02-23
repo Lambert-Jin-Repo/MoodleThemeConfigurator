@@ -7,10 +7,14 @@ import { generateScss } from '@/lib/scss-generator';
 import { contrastRatio, bestLogoAccentColour } from '@/lib/accessibility';
 import { CONTRAST_CHECKS } from '@/lib/accessibility';
 import type { ThemeTokens } from '@/lib/tokens';
+import ImportTab from './ImportTab';
+
+type ModalTab = 'export' | 'import';
 
 interface ExportModalProps {
   open: boolean;
   onClose: () => void;
+  initialTab?: 'export' | 'import';
 }
 
 function CopyButton({ label, text }: { label: string; text: string }) {
@@ -48,10 +52,11 @@ function CopyButton({ label, text }: { label: string; text: string }) {
   );
 }
 
-export default function ExportModal({ open, onClose }: ExportModalProps) {
+export default function ExportModal({ open, onClose, initialTab = 'export' }: ExportModalProps) {
   const tokens = useThemeStore((s) => s.tokens);
   const modalRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
+  const [activeTab, setActiveTab] = useState<ModalTab>(initialTab);
 
   const canExport = useMemo(() => {
     return !CONTRAST_CHECKS.some((check) => {
@@ -66,6 +71,11 @@ export default function ExportModal({ open, onClose }: ExportModalProps) {
   }, [tokens]);
 
   const scss = useMemo(() => generateScss(tokens), [tokens]);
+
+  // Sync active tab when modal opens
+  useEffect(() => {
+    if (open) setActiveTab(initialTab);
+  }, [open, initialTab]);
 
   // Focus trap + Escape
   useEffect(() => {
@@ -127,7 +137,7 @@ export default function ExportModal({ open, onClose }: ExportModalProps) {
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
       role="dialog"
       aria-modal="true"
-      aria-label="Apply on Moodle"
+      aria-label={activeTab === 'export' ? 'Apply on Moodle' : 'Import SCSS'}
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
@@ -138,7 +148,9 @@ export default function ExportModal({ open, onClose }: ExportModalProps) {
       >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-bold text-gray-800">Apply on Moodle</h3>
+          <h3 className="text-lg font-bold text-gray-800">
+            {activeTab === 'export' ? 'Apply on Moodle' : 'Import SCSS'}
+          </h3>
           <button
             ref={closeRef}
             onClick={onClose}
@@ -149,102 +161,158 @@ export default function ExportModal({ open, onClose }: ExportModalProps) {
           </button>
         </div>
 
-        {/* Body */}
-        <div className="px-6 py-5 space-y-5">
-          {!canExport && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700" role="alert">
-              Export is blocked — fix colour pairings with less than 3:1 contrast in the Audit panel first.
-            </div>
-          )}
-
-          {/* Step 1: Where to go */}
-          <div>
-            <div className="flex items-center gap-2 mb-3">
-              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-[#F27927] text-white text-xs font-bold">1</span>
-              <h4 className="text-sm font-bold text-gray-800">Go to your Moodle theme settings</h4>
-            </div>
-            <div className="bg-gray-50 rounded-lg p-3 text-sm text-gray-700 space-y-1.5 ml-8">
-              <p className="font-medium">Site administration &rarr; Appearance &rarr; Themes &rarr; Boost</p>
-              <div className="flex items-center gap-1 text-xs text-gray-500">
-                <ExternalLink size={12} />
-                <span>cfaa.moodlecloud.com &rarr; Site admin menu</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Step 2: Brand Colour */}
-          <div>
-            <div className="flex items-center gap-2 mb-3">
-              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-[#F27927] text-white text-xs font-bold">2</span>
-              <h4 className="text-sm font-bold text-gray-800">Set the Brand colour</h4>
-            </div>
-            <div className="ml-8 space-y-2">
-              <p className="text-sm text-gray-600">
-                Enter this value in the <span className="font-semibold">Brand colour</span> field:
-              </p>
-              <div className="flex items-center gap-3 bg-gray-50 rounded-lg p-3">
-                <div
-                  className="w-8 h-8 rounded border border-gray-300 flex-shrink-0"
-                  style={{ backgroundColor: scss.brandColour }}
-                />
-                <code className="text-sm font-mono font-bold text-gray-800">{scss.brandColour}</code>
-              </div>
-            </div>
-          </div>
-
-          {/* Step 3: Raw Initial SCSS */}
-          <div>
-            <div className="flex items-center gap-2 mb-3">
-              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-[#F27927] text-white text-xs font-bold">3</span>
-              <h4 className="text-sm font-bold text-gray-800">Paste into &ldquo;Raw initial SCSS&rdquo;</h4>
-            </div>
-            <div className="ml-8 space-y-2">
-              <p className="text-sm text-gray-600">
-                Expand <span className="font-semibold">Advanced settings</span>, then paste into the first SCSS box.
-              </p>
-              <CopyButton label="Raw Initial SCSS" text={scss.block1} />
-            </div>
-          </div>
-
-          {/* Step 4: Raw SCSS */}
-          <div>
-            <div className="flex items-center gap-2 mb-3">
-              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-[#F27927] text-white text-xs font-bold">4</span>
-              <h4 className="text-sm font-bold text-gray-800">Paste into &ldquo;Raw SCSS&rdquo;</h4>
-            </div>
-            <div className="ml-8 space-y-2">
-              <p className="text-sm text-gray-600">
-                Paste into the second SCSS box, directly below the first one.
-              </p>
-              <CopyButton label="Raw SCSS" text={scss.block2} />
-            </div>
-          </div>
-
-          {/* Step 5: Save & Purge */}
-          <div>
-            <div className="flex items-center gap-2 mb-3">
-              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-[#F27927] text-white text-xs font-bold">5</span>
-              <h4 className="text-sm font-bold text-gray-800">Save and purge caches</h4>
-            </div>
-            <div className="ml-8 text-sm text-gray-600 space-y-1">
-              <p>Click <span className="font-semibold">Save changes</span>, then go to:</p>
-              <p className="font-medium text-gray-700">Site administration &rarr; Development &rarr; Purge all caches</p>
-              <p className="text-xs text-gray-500 mt-1">Test in an incognito window to see changes immediately.</p>
-            </div>
-          </div>
-
-          {/* Download option */}
-          <div className="pt-2 border-t border-gray-200">
-            <button
-              onClick={handleDownload}
-              disabled={!canExport}
-              className="flex items-center justify-center gap-2 w-full px-4 py-2.5 text-sm font-medium bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              <Download size={16} />
-              Download all as .txt
-            </button>
-          </div>
+        {/* Tab bar */}
+        <div className="flex border-b border-gray-200 px-6" role="tablist" aria-label="Export or import SCSS">
+          <button
+            role="tab"
+            aria-selected={activeTab === 'export'}
+            aria-controls="export-tab-panel"
+            id="export-tab"
+            className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${
+              activeTab === 'export'
+                ? 'text-[#F27927]'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+            onClick={() => setActiveTab('export')}
+            aria-label="Export tab"
+          >
+            Export
+            {activeTab === 'export' && (
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#F27927] rounded-t" />
+            )}
+          </button>
+          <button
+            role="tab"
+            aria-selected={activeTab === 'import'}
+            aria-controls="import-tab-panel"
+            id="import-tab"
+            className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${
+              activeTab === 'import'
+                ? 'text-[#F27927]'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+            onClick={() => setActiveTab('import')}
+            aria-label="Import tab"
+          >
+            Import
+            {activeTab === 'import' && (
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#F27927] rounded-t" />
+            )}
+          </button>
         </div>
+
+        {/* Tab panels */}
+        {activeTab === 'export' ? (
+          <div
+            id="export-tab-panel"
+            role="tabpanel"
+            aria-labelledby="export-tab"
+            className="px-6 py-5 space-y-5"
+          >
+            {!canExport && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700" role="alert">
+                Export is blocked — fix colour pairings with less than 3:1 contrast in the Audit panel first.
+              </div>
+            )}
+
+            {/* Step 1: Where to go */}
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <span className="flex items-center justify-center w-6 h-6 rounded-full bg-[#F27927] text-white text-xs font-bold">1</span>
+                <h4 className="text-sm font-bold text-gray-800">Go to your Moodle theme settings</h4>
+              </div>
+              <div className="bg-gray-50 rounded-lg p-3 text-sm text-gray-700 space-y-1.5 ml-8">
+                <p className="font-medium">Site administration &rarr; Appearance &rarr; Themes &rarr; Boost</p>
+                <div className="flex items-center gap-1 text-xs text-gray-500">
+                  <ExternalLink size={12} />
+                  <span>cfaa.moodlecloud.com &rarr; Site admin menu</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Step 2: Brand Colour */}
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <span className="flex items-center justify-center w-6 h-6 rounded-full bg-[#F27927] text-white text-xs font-bold">2</span>
+                <h4 className="text-sm font-bold text-gray-800">Set the Brand colour</h4>
+              </div>
+              <div className="ml-8 space-y-2">
+                <p className="text-sm text-gray-600">
+                  Enter this value in the <span className="font-semibold">Brand colour</span> field:
+                </p>
+                <div className="flex items-center gap-3 bg-gray-50 rounded-lg p-3">
+                  <div
+                    className="w-8 h-8 rounded border border-gray-300 flex-shrink-0"
+                    style={{ backgroundColor: scss.brandColour }}
+                  />
+                  <code className="text-sm font-mono font-bold text-gray-800">{scss.brandColour}</code>
+                </div>
+              </div>
+            </div>
+
+            {/* Step 3: Raw Initial SCSS */}
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <span className="flex items-center justify-center w-6 h-6 rounded-full bg-[#F27927] text-white text-xs font-bold">3</span>
+                <h4 className="text-sm font-bold text-gray-800">Paste into &ldquo;Raw initial SCSS&rdquo;</h4>
+              </div>
+              <div className="ml-8 space-y-2">
+                <p className="text-sm text-gray-600">
+                  Expand <span className="font-semibold">Advanced settings</span>, then paste into the first SCSS box.
+                </p>
+                <CopyButton label="Raw Initial SCSS" text={scss.block1} />
+              </div>
+            </div>
+
+            {/* Step 4: Raw SCSS */}
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <span className="flex items-center justify-center w-6 h-6 rounded-full bg-[#F27927] text-white text-xs font-bold">4</span>
+                <h4 className="text-sm font-bold text-gray-800">Paste into &ldquo;Raw SCSS&rdquo;</h4>
+              </div>
+              <div className="ml-8 space-y-2">
+                <p className="text-sm text-gray-600">
+                  Paste into the second SCSS box, directly below the first one.
+                </p>
+                <CopyButton label="Raw SCSS" text={scss.block2} />
+              </div>
+            </div>
+
+            {/* Step 5: Save & Purge */}
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <span className="flex items-center justify-center w-6 h-6 rounded-full bg-[#F27927] text-white text-xs font-bold">5</span>
+                <h4 className="text-sm font-bold text-gray-800">Save and purge caches</h4>
+              </div>
+              <div className="ml-8 text-sm text-gray-600 space-y-1">
+                <p>Click <span className="font-semibold">Save changes</span>, then go to:</p>
+                <p className="font-medium text-gray-700">Site administration &rarr; Development &rarr; Purge all caches</p>
+                <p className="text-xs text-gray-500 mt-1">Test in an incognito window to see changes immediately.</p>
+              </div>
+            </div>
+
+            {/* Download option */}
+            <div className="pt-2 border-t border-gray-200">
+              <button
+                onClick={handleDownload}
+                disabled={!canExport}
+                className="flex items-center justify-center gap-2 w-full px-4 py-2.5 text-sm font-medium bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <Download size={16} />
+                Download all as .txt
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div
+            id="import-tab-panel"
+            role="tabpanel"
+            aria-labelledby="import-tab"
+            className="px-6 py-5"
+          >
+            <ImportTab onClose={onClose} />
+          </div>
+        )}
       </div>
     </div>
   );

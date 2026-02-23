@@ -66,6 +66,7 @@ export interface ThemeTokens {
   headingScale: number;
   lineHeight: number;
   fontFamily: string;
+  fontWeight: string;
   headingText: string;
   bodyText: string;
   mutedText: string;
@@ -96,8 +97,8 @@ export interface ThemeTokens {
 export const DEFAULT_TOKENS: ThemeTokens = {
   brandPrimary: '#0f6cbf',
 
-  navbarBg: '#0f6cbf',
-  navbarText: '#FFFFFF',
+  navbarBg: '#FFFFFF',
+  navbarText: '#404041',
   navbarBorder: 'none',
   navActiveUnderline: '#0f6cbf',
   navHoverBg: 'rgba(0,0,0,0.2)',
@@ -111,7 +112,7 @@ export const DEFAULT_TOKENS: ThemeTokens = {
   btnPrimaryBg: '#0f6cbf',
   btnPrimaryText: '#FFFFFF',
   btnPrimaryHover: '#0c5aa0',
-  btnRadius: 4,
+  btnRadius: 8,
 
   linkColour: '#0f6cbf',
   linkHover: '#0a4a82',
@@ -122,7 +123,7 @@ export const DEFAULT_TOKENS: ThemeTokens = {
   contentMaxWidth: 830,
   sectionAccent: 'none',
 
-  loginBg: '#0f6cbf',
+  loginBg: '#FFFFFF',
   loginCardBg: '#FFFFFF',
   loginHeading: '#404041',
   loginBtnBg: '#0f6cbf',
@@ -146,9 +147,10 @@ export const DEFAULT_TOKENS: ThemeTokens = {
   bodyFontSize: 0.9375,
   headingScale: 1.25,
   lineHeight: 1.5,
-  fontFamily: '"Source Sans Pro", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-  headingText: '#404041',
-  bodyText: '#404041',
+  fontFamily: '"Source Sans 3", "Source Sans Pro", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+  fontWeight: '400',
+  headingText: '#1d2125',
+  bodyText: '#1d2125',
   mutedText: '#6a737b',
 
   secondaryNavActive: '#0f6cbf',
@@ -209,11 +211,20 @@ export const BRAND_LINKED_KEYS: (keyof ThemeTokens)[] = [
   'footerLink',
 ];
 
+// ── Preset modification detection ──
+export function isModifiedFromPreset(tokens: ThemeTokens, baseline: ThemeTokens | null): boolean {
+  if (!baseline) return false;
+  return (Object.keys(baseline) as (keyof ThemeTokens)[]).some(
+    (k) => tokens[k] !== baseline[k]
+  );
+}
+
 // ── Font options ──
 export const FONT_OPTIONS = [
-  { label: 'Source Sans Pro', value: '"Source Sans Pro", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' },
-  { label: 'Inter', value: '"Inter", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' },
-  { label: 'System Default', value: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' },
+  { label: 'Source Sans Pro Bold', value: '"Source Sans 3", "Source Sans Pro", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif', weight: '700' },
+  { label: 'Source Sans Pro', value: '"Source Sans 3", "Source Sans Pro", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif', weight: '400' },
+  { label: 'Inter', value: '"Inter", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif', weight: '400' },
+  { label: 'System Default', value: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif', weight: '400' },
 ] as const;
 
 // ── Preview pages ──
@@ -342,9 +353,9 @@ export const PRESET_TEMPLATES: PresetTemplate[] = [
     },
   },
   {
-    id: 'cfa-dark-mode',
-    name: 'CFA Dark Mode',
-    description: 'Bold, modern with lime accents and dark drawer',
+    id: 'cfa-dark-chrome',
+    name: 'CFA Dark Chrome',
+    description: 'Dark navbar, footer & drawers with light content. Full dark mode is not reliably achievable on Moodle Cloud.',
     overrides: {
       brandPrimary: '#336E7B',
       navbarBg: '#1D2125',
