@@ -14,6 +14,7 @@ type ModalTab = 'export' | 'import';
 interface ExportModalProps {
   open: boolean;
   onClose: () => void;
+  initialTab?: 'export' | 'import';
 }
 
 function CopyButton({ label, text }: { label: string; text: string }) {
@@ -51,11 +52,11 @@ function CopyButton({ label, text }: { label: string; text: string }) {
   );
 }
 
-export default function ExportModal({ open, onClose }: ExportModalProps) {
+export default function ExportModal({ open, onClose, initialTab = 'export' }: ExportModalProps) {
   const tokens = useThemeStore((s) => s.tokens);
   const modalRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
-  const [activeTab, setActiveTab] = useState<ModalTab>('export');
+  const [activeTab, setActiveTab] = useState<ModalTab>(initialTab);
 
   const canExport = useMemo(() => {
     return !CONTRAST_CHECKS.some((check) => {
@@ -70,6 +71,11 @@ export default function ExportModal({ open, onClose }: ExportModalProps) {
   }, [tokens]);
 
   const scss = useMemo(() => generateScss(tokens), [tokens]);
+
+  // Sync active tab when modal opens
+  useEffect(() => {
+    if (open) setActiveTab(initialTab);
+  }, [open, initialTab]);
 
   // Focus trap + Escape
   useEffect(() => {
