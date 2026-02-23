@@ -66,6 +66,7 @@ export interface ThemeTokens {
   headingScale: number;
   lineHeight: number;
   fontFamily: string;
+  fontWeight: string;
   headingText: string;
   bodyText: string;
   mutedText: string;
@@ -148,7 +149,8 @@ export const DEFAULT_TOKENS: ThemeTokens = {
   bodyFontSize: 0.9375,
   headingScale: 1.25,
   lineHeight: 1.5,
-  fontFamily: '"Source Sans Pro", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+  fontFamily: '"Source Sans 3", "Source Sans Pro", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+  fontWeight: '400',
   headingText: '#1d2125',
   bodyText: '#1d2125',
   mutedText: '#6a737b',
@@ -221,9 +223,10 @@ export function isModifiedFromPreset(tokens: ThemeTokens, baseline: ThemeTokens 
 
 // ── Font options ──
 export const FONT_OPTIONS = [
-  { label: 'Source Sans Pro', value: '"Source Sans Pro", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' },
-  { label: 'Inter', value: '"Inter", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' },
-  { label: 'System Default', value: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' },
+  { label: 'Source Sans Pro Bold', value: '"Source Sans 3", "Source Sans Pro", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif', weight: '700' },
+  { label: 'Source Sans Pro', value: '"Source Sans 3", "Source Sans Pro", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif', weight: '400' },
+  { label: 'Inter', value: '"Inter", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif', weight: '400' },
+  { label: 'System Default', value: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif', weight: '400' },
 ] as const;
 
 // ── Preview pages ──
@@ -361,9 +364,9 @@ export const PRESET_TEMPLATES: PresetTemplate[] = [
     },
   },
   {
-    id: 'cfa-dark-mode',
-    name: 'CFA Dark Mode',
-    description: 'Bold, modern with lime accents and dark drawer',
+    id: 'cfa-dark-chrome',
+    name: 'CFA Dark Chrome',
+    description: 'Dark navbar, footer & drawers with light content. Full dark mode is not reliably achievable on Moodle Cloud.',
     overrides: {
       brandPrimary: '#336E7B',
       navbarBg: '#1D2125',

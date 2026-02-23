@@ -64,7 +64,7 @@ export default function CoursePage() {
             <button className="moodle-btn-primary text-sm">
               Mark all as complete
             </button>
-            <button className="moodle-btn-outline text-sm">
+            <button className="moodle-btn-secondary text-sm">
               Download resources
             </button>
           </div>

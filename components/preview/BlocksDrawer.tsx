@@ -32,6 +32,7 @@ export default function BlocksDrawer() {
           <h4
             className="text-xs font-semibold uppercase tracking-wide"
             style={{ color: 'var(--cfa-drawer-text)', opacity: 0.7 }}
+            title="Today highlight follows Brand Primary. Event type colours use their own fixed palette."
           >
             Calendar
           </h4>
@@ -64,16 +65,18 @@ export default function BlocksDrawer() {
             {CALENDAR_DAYS.map((day) => (
               <span
                 key={day}
-                className="text-center rounded"
+                className="text-center flex items-center justify-center"
                 style={{
-                  color: 'var(--cfa-drawer-text)',
+                  color: day === 15 ? 'var(--cfa-btn-primary-text)' : 'var(--cfa-drawer-text)',
                   fontSize: '9px',
-                  lineHeight: '18px',
+                  width: '18px',
+                  height: '18px',
+                  borderRadius: day === 15 ? '50%' : '2px',
                   backgroundColor:
                     day === 15
                       ? 'var(--cfa-btn-primary-bg)'
                       : 'transparent',
-                  ...(day === 15 ? { color: 'var(--cfa-btn-primary-text)' } : {}),
+                  margin: '0 auto',
                 }}
               >
                 {day}

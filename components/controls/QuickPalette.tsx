@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { HexColorPicker } from 'react-colorful';
 import { ChevronRight } from 'lucide-react';
 import { useThemeStore } from '@/store/theme-store';
-import { CFA_PALETTE } from '@/lib/tokens';
+import { CFA_PALETTE, FONT_OPTIONS } from '@/lib/tokens';
 import type { ThemeTokens } from '@/lib/tokens';
 
 interface SwatchDef {
@@ -96,6 +96,53 @@ export default function QuickPalette() {
             </button>
           );
         })}
+      </div>
+
+      {/* Typography quick controls */}
+      <div className="mt-3 flex flex-col gap-2">
+        <div>
+          <label htmlFor="qp-font-family" className="block text-[10px] font-medium text-gray-500 mb-0.5">
+            Font
+          </label>
+          <select
+            id="qp-font-family"
+            value={`${tokens.fontFamily}||${tokens.fontWeight}`}
+            onChange={(e) => {
+              const [family, weight] = e.target.value.split('||');
+              setToken('fontFamily', family);
+              setToken('fontWeight', weight);
+            }}
+            className="w-full text-xs border border-gray-300 rounded px-2 py-1.5 bg-white"
+            aria-label="Font family"
+          >
+            {FONT_OPTIONS.map((opt) => (
+              <option key={`${opt.value}||${opt.weight}`} value={`${opt.value}||${opt.weight}`}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <div className="flex items-center justify-between mb-0.5">
+            <label htmlFor="qp-font-size" className="text-[10px] font-medium text-gray-500">
+              Text Size
+            </label>
+            <span className="text-[10px] font-mono text-gray-400">
+              {tokens.bodyFontSize}rem
+            </span>
+          </div>
+          <input
+            id="qp-font-size"
+            type="range"
+            min={0.75}
+            max={1.25}
+            step={0.0625}
+            value={tokens.bodyFontSize}
+            onChange={(e) => setToken('bodyFontSize', Number(e.target.value))}
+            className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-gray-700"
+            aria-label="Base font size"
+          />
+        </div>
       </div>
 
       {/* Inline picker for active swatch */}

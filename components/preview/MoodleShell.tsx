@@ -19,7 +19,7 @@ const SECTION_HIGHLIGHT_MAP: Record<string, string> = {
   'navbar': '.moodle-preview nav',
   'edit-mode-toggle': '.moodle-preview .edit-mode-area',
   'links-&-focus': '.moodle-preview .moodle-link',
-  'buttons': '.moodle-preview .moodle-btn-primary, .moodle-preview .moodle-btn-outline',
+  'buttons': '.moodle-preview .moodle-btn-primary, .moodle-preview .moodle-btn-secondary',
   'content-area': '.moodle-preview .moodle-card, .moodle-preview .moodle-breadcrumb',
   'background-images': '.moodle-preview',
   'login-page': '.moodle-preview .login-area',
@@ -183,6 +183,19 @@ export default function MoodleShell() {
 
 function buildHoverStyles(tokens: ThemeTokens): string {
   return `
+    .moodle-preview {
+      font-family: var(--cfa-font-family);
+      font-size: calc(var(--cfa-body-font-size) * 1rem);
+      font-weight: var(--cfa-font-weight);
+      line-height: var(--cfa-line-height);
+    }
+    .moodle-preview h1,
+    .moodle-preview h2,
+    .moodle-preview h3,
+    .moodle-preview h4 {
+      font-family: var(--cfa-font-family);
+      font-weight: 700;
+    }
     .moodle-preview .moodle-link {
       color: var(--cfa-link-colour);
       text-decoration: underline;
@@ -206,20 +219,21 @@ function buildHoverStyles(tokens: ThemeTokens): string {
     .moodle-preview .moodle-btn-primary:hover {
       background-color: var(--cfa-btn-primary-hover);
     }
-    .moodle-preview .moodle-btn-outline {
-      background-color: transparent;
-      color: var(--cfa-btn-primary-bg);
-      border: 1px solid var(--cfa-btn-primary-bg);
+    .moodle-preview .moodle-btn-secondary {
+      background-color: #ced4da;
+      color: #1d2125;
+      border: 1px solid #ced4da;
       padding: 6px 16px;
       border-radius: ${tokens.btnRadius}px;
       cursor: pointer;
       font-size: 0.875rem;
       font-weight: 500;
-      transition: background-color 0.15s, color 0.15s;
+      transition: background-color 0.15s, border-color 0.15s;
     }
-    .moodle-preview .moodle-btn-outline:hover {
-      background-color: var(--cfa-btn-primary-bg);
-      color: var(--cfa-btn-primary-text);
+    .moodle-preview .moodle-btn-secondary:hover {
+      background-color: #b8bfc6;
+      border-color: #b8bfc6;
+      color: #1d2125;
     }
     .moodle-preview .moodle-nav-link {
       color: var(--cfa-navbar-text);
