@@ -114,6 +114,7 @@ Tested against Moodle 4.x Boost theme. Some may need updating for Moodle 5.x.
 | Block drawer | `#theme_boost-drawers-blocks` | Naming convention, verify in DevTools |
 | Content max width | `#page.drawers .main-inner` | Verify against specific version |
 | Trial banner | `.block_moodlecloudtrial.block.no-header.card` | MoodleCloud-only proprietary block; inner `.card-body` needs `background-color` override on dark themes; needs `!important` |
+| Course content section icons | `.card, .card-body` (within course content) | Section icons under course contents use `.card` containers; generic `.card` `background-color: cardBg` fix resolves white bg on dark themes |
 
 ### How to Verify Selectors
 1. Open the real CFA Moodle site in Chrome
