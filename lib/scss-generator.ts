@@ -431,15 +431,17 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push(`.breadcrumb { background-color: ${tokens.breadcrumbBg === 'transparent' ? tokens.pageBg : tokens.breadcrumbBg} !important; }`);
     rules.push('');
 
-    // Card text colour — critical for readability
+    // Card background + text colour — critical for readability
     rules.push(`.card, .card-body, .card-title, .card-text, .card-footer {`);
+    rules.push(`  background-color: ${tokens.cardBg} !important;`);
     rules.push(`  color: ${tokens.bodyText} !important;`);
     rules.push(`}`);
     rules.push('');
 
-    // Moodle block containers (dashboard blocks, calendar, timeline)
+    // Moodle block containers (dashboard blocks, calendar, timeline, trial banner)
     rules.push(`.block, .block_timeline, .block_recentlyaccessedcourses,`);
     rules.push(`.block_myoverview, .block_calendar_month {`);
+    rules.push(`  background-color: ${tokens.cardBg} !important;`);
     rules.push(`  color: ${tokens.bodyText} !important;`);
     rules.push(`}`);
     rules.push('');
