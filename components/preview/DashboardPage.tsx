@@ -415,7 +415,7 @@ export default function DashboardPage() {
                                 ? 'var(--cfa-btn-primary-bg)'
                                 : 'transparent',
                               color: isToday
-                                ? '#FFFFFF'
+                                ? 'var(--cfa-btn-primary-text)'
                                 : 'var(--cfa-body-text)',
                               fontWeight: isToday ? 700 : 400,
                             }}

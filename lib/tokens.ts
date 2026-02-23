@@ -79,8 +79,6 @@ export interface ThemeTokens {
   warning: string;
   error: string;
   info: string;
-  alertInfoBg: string;
-  progressBg: string;
   progressFill: string;
 
   // Focus
@@ -160,8 +158,6 @@ export const DEFAULT_TOKENS: ThemeTokens = {
   warning: '#f0ad4e',
   error: '#ca3120',
   info: '#0f6cbf',
-  alertInfoBg: '#d1ecf1',
-  progressBg: '#dee2e6',
   progressFill: '#0f6cbf',
 
   focusRing: '#0f6cbf',
@@ -208,6 +204,7 @@ export const BRAND_LINKED_KEYS: (keyof ThemeTokens)[] = [
   'progressFill',
   'focusRing',
   'loginBtnBg',
+  'loginBg',
   'info',
   'footerLink',
 ];
@@ -247,15 +244,6 @@ export function darkenHex(hex: string, percent: number): string {
   const r = Math.max(0, Math.round(((num >> 16) & 0xff) * (1 - percent / 100)));
   const g = Math.max(0, Math.round(((num >> 8) & 0xff) * (1 - percent / 100)));
   const b = Math.max(0, Math.round((num & 0xff) * (1 - percent / 100)));
-  return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase();
-}
-
-// ── Utility: lighten a hex colour ──
-export function lightenHex(hex: string, percent: number): string {
-  const num = parseInt(hex.replace('#', ''), 16);
-  const r = Math.min(255, Math.round(((num >> 16) & 0xff) + (255 - ((num >> 16) & 0xff)) * percent / 100));
-  const g = Math.min(255, Math.round(((num >> 8) & 0xff) + (255 - ((num >> 8) & 0xff)) * percent / 100));
-  const b = Math.min(255, Math.round((num & 0xff) + (255 - (num & 0xff)) * percent / 100));
   return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase();
 }
 

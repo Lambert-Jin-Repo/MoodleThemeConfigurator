@@ -75,7 +75,7 @@ export default function LoginPage() {
             style={{
               backgroundColor: 'var(--cfa-login-btn-bg)',
               color: 'var(--cfa-login-btn-text)',
-              borderRadius: '4px',
+              borderRadius: `${tokens.btnRadius}px`,
               padding: '8px 24px',
               border: 'none',
               cursor: 'pointer',
@@ -99,7 +99,7 @@ export default function LoginPage() {
         {/* Divider */}
         <hr
           className="my-5"
-          style={{ borderTop: '1px solid #dee2e6', borderBottom: 'none' }}
+          style={{ borderTop: '1px solid var(--cfa-card-border)', borderBottom: 'none' }}
         />
 
         {/* First time section */}
@@ -132,8 +132,8 @@ export default function LoginPage() {
             className="text-sm font-medium"
             style={{
               backgroundColor: 'var(--cfa-signup-btn-bg)',
-              color: '#FFFFFF',
-              borderRadius: '4px',
+              color: 'var(--cfa-btn-primary-text)',
+              borderRadius: `${tokens.btnRadius}px`,
               padding: '8px 20px',
               border: 'none',
               cursor: 'pointer',
@@ -147,7 +147,7 @@ export default function LoginPage() {
         {/* Second divider */}
         <hr
           className="my-5"
-          style={{ borderTop: '1px solid #dee2e6', borderBottom: 'none' }}
+          style={{ borderTop: '1px solid var(--cfa-card-border)', borderBottom: 'none' }}
         />
 
         {/* Footer section */}
@@ -168,7 +168,7 @@ export default function LoginPage() {
 
             <span
               style={{
-                backgroundColor: '#e9ecef',
+                backgroundColor: 'var(--cfa-card-border)',
                 color: 'var(--cfa-body-text)',
                 padding: '2px 10px',
                 borderRadius: '10px',

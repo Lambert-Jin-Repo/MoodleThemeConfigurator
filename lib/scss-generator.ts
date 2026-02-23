@@ -23,7 +23,7 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
 
   if (tokens.brandPrimary !== d.brandPrimary) vars.push(`$primary: ${tokens.brandPrimary};`);
   if (tokens.linkColour !== d.linkColour) vars.push(`$link-color: ${tokens.linkColour};`);
-  vars.push(`$body-bg: #FFFFFF;`);
+  if (tokens.pageBg !== d.pageBg) vars.push(`$body-bg: ${tokens.pageBg};`);
   if (tokens.bodyFontSize !== d.bodyFontSize) vars.push(`$font-size-base: ${tokens.bodyFontSize}rem;`);
   if (tokens.lineHeight !== d.lineHeight) vars.push(`$line-height-base: ${tokens.lineHeight};`);
   if (tokens.success !== d.success) vars.push(`$success: ${tokens.success};`);
@@ -205,11 +205,15 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
   }
 
   // --- Drawers ---
-  if (tokens.drawerBg !== d.drawerBg) {
+  if (tokens.drawerBg !== d.drawerBg || tokens.drawerText !== d.drawerText) {
     rules.push('// ── Drawers ──');
     rules.push(`[data-region="right-hand-drawer"], .drawer {`);
     rules.push(`  background-color: ${tokens.drawerBg} !important;`);
+    rules.push(`  color: ${tokens.drawerText} !important;`);
     rules.push(`  border-color: ${tokens.drawerBorder} !important;`);
+    rules.push(`}`);
+    rules.push(`[data-region="right-hand-drawer"] a, .drawer a {`);
+    rules.push(`  color: ${tokens.drawerText} !important;`);
     rules.push(`}`);
     rules.push('');
   }
