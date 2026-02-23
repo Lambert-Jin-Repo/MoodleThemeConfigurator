@@ -369,6 +369,39 @@ progressFill, focusRing, loginBtnBg, footerLink
 
 Tokens NOT in this list must be set independently: `loginBg`, `info`, `navbarBg`, `footerBg`, `drawerBg`, `signupBtnBg`.
 
+### Step 6b: Set Activity Icon Colours (Optional)
+
+Moodle 4.x uses purpose-based icon backgrounds — white monochrome SVG icons on coloured circles. These are customised via the `$activity-icon-colors` SCSS map in Block 1 (Raw initial SCSS).
+
+| Purpose | Default | Activities |
+|---|---|---|
+| `administration` | `#5d63f6` | Admin tools |
+| `assessment` | `#11a676` | Quiz, Assignment |
+| `collaboration` | `#eb66a2` | Wiki, Database, Glossary |
+| `communication` | `#f7634d` | Forum, Chat |
+| `content` | `#399be2` | Page, URL, File, Book |
+| `interface` | `#a378ff` | Label, LTI |
+
+**Tokens:** `actIconAdmin`, `actIconAssessment`, `actIconCollaboration`, `actIconCommunication`, `actIconContent`, `actIconInterface`
+
+**Rules:**
+- Only output the map when at least one colour differs from defaults
+- **Always include all 6 values** in the map — partial maps break SCSS compilation
+- For dark themes, consider using lighter/brighter icon colours for visibility
+- For brand-aligned presets, map the primary brand colour to `content` (most common) or `assessment`
+
+**Example SCSS output (Block 1):**
+```scss
+$activity-icon-colors: (
+    "administration": #BAF73C,
+    "assessment": #BAF73C,
+    "collaboration": #B500B5,
+    "communication": #F27927,
+    "content": #336E7B,
+    "interface": #A378FF
+);
+```
+
 ### Step 7: Test
 
 - [ ] Load preset in the sandbox preview -- check all three pages (dashboard, course, login)
