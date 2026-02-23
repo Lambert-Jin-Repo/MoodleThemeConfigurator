@@ -298,6 +298,10 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push(`[data-region="right-hand-drawer"] a, .drawer a {`);
     rules.push(`  color: ${tokens.drawerText} !important;`);
     rules.push(`}`);
+    if (tokens.drawerText !== d.drawerText) {
+      rules.push(`[data-region="right-hand-drawer"] .icon, [data-region="right-hand-drawer"] .fa,`);
+      rules.push(`.drawer .icon, .drawer .fa { color: ${tokens.drawerText} !important; }`);
+    }
     rules.push('');
   }
 
@@ -309,6 +313,28 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
   }
   if (tokens.bodyText !== d.bodyText) {
     rules.push(`body { color: ${tokens.bodyText} !important; }`);
+    rules.push('');
+
+    // Icon visibility fix — icons sit on light wrappers even on dark themes,
+    // so they need the default dark colour, not the light bodyText
+    rules.push('// ── Icon Visibility Fix ──');
+    rules.push(`.icon, .fa { color: ${d.bodyText} !important; }`);
+    rules.push(`.breadcrumb .icon, .breadcrumb .fa { color: ${d.bodyText} !important; }`);
+    rules.push(`.secondary-navigation .icon, .secondary-navigation .fa { color: ${d.bodyText} !important; }`);
+    rules.push(`.btn-previous .icon, .btn-previous .fa,`);
+    rules.push(`.btn-next .icon, .btn-next .fa { color: ${d.bodyText} !important; }`);
+    rules.push('');
+
+    // Icon hover — accent colour on hover
+    rules.push('// ── Icon Hover ──');
+    rules.push(`.ftoggler:hover .icon, .ftoggler:hover .fa,`);
+    rules.push(`.collapsed-icon:hover .icon, .collapsed-icon:hover .fa { color: ${tokens.linkColour} !important; }`);
+    rules.push(`.secondary-navigation .nav-link:hover .icon,`);
+    rules.push(`.secondary-navigation .nav-link:hover .fa { color: ${tokens.linkColour} !important; }`);
+    rules.push(`.breadcrumb a:hover .icon, .breadcrumb a:hover .fa { color: ${tokens.linkColour} !important; }`);
+    rules.push(`.btn-previous:hover .icon, .btn-previous:hover .fa,`);
+    rules.push(`.btn-next:hover .icon, .btn-next:hover .fa { color: ${tokens.linkColour} !important; }`);
+    rules.push('');
   }
 
   // --- Background Images ---
@@ -594,6 +620,22 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push(`}`);
     rules.push(`.activityiconcontainer.interface {`);
     rules.push(`  background-color: ${tokens.actIconInterface} !important;`);
+    rules.push(`}`);
+    rules.push('');
+
+    // Activity navigation (previous/next) buttons — invisible on dark backgrounds by default
+    rules.push('.activity-navigation .btn,');
+    rules.push('.course-content .activity-navigation .btn,');
+    rules.push('#page-content .activity-navigation .btn {');
+    rules.push(`  background-color: ${tokens.bodyText} !important;`);
+    rules.push(`  color: #404041 !important;`);
+    rules.push(`  border-color: ${tokens.bodyText} !important;`);
+    rules.push(`}`);
+    rules.push('.activity-navigation .btn .icon,');
+    rules.push('.activity-navigation .btn i,');
+    rules.push('.activity-navigation .btn .fa,');
+    rules.push('.activity-navigation .btn [class*="bi-"] {');
+    rules.push(`  color: #404041 !important;`);
     rules.push(`}`);
     rules.push('');
 
