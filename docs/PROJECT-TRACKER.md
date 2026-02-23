@@ -550,3 +550,35 @@ Replaced single-fire flash with a repeating glow animation for better discoverab
 - `npm run build` — zero errors
 - `npm run lint` — zero warnings/errors
 - Git repo: https://github.com/Lambert-Jin-Repo/MoodleThemeConfigurator
+
+---
+
+## Session: 2026-02-23 — Moodle Layout Restructure
+
+### Feature: Preview Layout Restructure to Match Real MoodleCloud Screenshots
+
+Restructured all three preview pages (Dashboard, Course, Login) to match real MoodleCloud screenshots pixel-for-pixel, using exact CFA course content and real Moodle UI patterns.
+
+### Files Modified
+| File | Changes |
+|---|---|
+| `components/preview/DashboardPage.tsx` | Complete rewrite: "Dashboard" heading, "Recently accessed courses" with 2 image cards (no progress/buttons), Timeline with filter dropdowns + empty state, Calendar with full Feb 2026 month grid and today highlight |
+| `components/preview/CourseCard.tsx` | Simplified: image + title + category only, new `imageType` prop for accessibility/moodle variants, removed progress bar and buttons |
+| `components/preview/CourseDrawer.tsx` | Expanded: X close + 3-dot menu header, 5 sections (General/Teleconference/Modules/Level A/Assessments) with completion circles, lock icons, truncated text matching real CFA course |
+| `components/preview/CoursePage.tsx` | Restructured: "Web Accessibility Compliance SC" title, collapsible General section with "Collapse all", activity rows with proper icons, hidden section banner with "Hidden from students" badge, Modules section |
+| `components/preview/SecondaryNav.tsx` | Added Activities + "More ▾" tabs (was 4 tabs, now 5 + More dropdown) |
+| `components/preview/LoginPage.tsx` | Restructured: removed "Log in" heading, small left-aligned login button, "Lost password?" link, "Is this your first time here?" signup section, "Create new account" grey button, footer with language/cookies |
+| `components/preview/MoodleShell.tsx` | Replaced `.moodle-btn-outline` with `.moodle-btn-secondary` in hover styles and SECTION_HIGHLIGHT_MAP |
+
+### Files Created
+| File | Purpose |
+|---|---|
+| `docs/features/2026-02-23-moodle-layout-restructure.md` | Feature spec with 6 tasks |
+
+### Build Status
+- `npm run build` — zero errors
+- `npm run lint` — zero warnings/errors
+
+### Git Status
+- **Branch:** feat/moodle-layout-restructure
+- **Commit:** `5a6f63a` — `feat(preview): restructure all pages to match real MoodleCloud screenshots`

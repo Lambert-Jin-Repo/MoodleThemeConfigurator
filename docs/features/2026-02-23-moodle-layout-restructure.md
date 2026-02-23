@@ -1,6 +1,6 @@
 # Feature: Moodle Layout Restructure
 Date: 2026-02-23
-Status: approved
+Status: shipped
 Branch: feat/moodle-layout-restructure
 
 ## Problem
