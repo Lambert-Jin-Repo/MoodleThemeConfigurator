@@ -1,15 +1,16 @@
 'use client';
 
-import { Undo2, Redo2, RotateCcw, Save, FileCode, ShieldCheck } from 'lucide-react';
+import { Undo2, Redo2, RotateCcw, Save, FileCode, Upload, ShieldCheck } from 'lucide-react';
 import { useStore } from 'zustand';
 import { useThemeStore } from '@/store/theme-store';
 
 interface ToolbarProps {
   onSave: () => void;
   onExport: () => void;
+  onImport: () => void;
 }
 
-export default function Toolbar({ onSave, onExport }: ToolbarProps) {
+export default function Toolbar({ onSave, onExport, onImport }: ToolbarProps) {
   const reset = useThemeStore((s) => s.reset);
   const auditDrawerOpen = useThemeStore((s) => s.auditDrawerOpen);
   const setAuditDrawerOpen = useThemeStore((s) => s.setAuditDrawerOpen);
@@ -56,6 +57,16 @@ export default function Toolbar({ onSave, onExport }: ToolbarProps) {
             active={auditDrawerOpen}
           />
         </div>
+
+        {/* Import button */}
+        <button
+          onClick={onImport}
+          className="flex items-center gap-1.5 px-2 md:px-3 py-1.5 border border-white/30 text-white text-xs font-semibold rounded hover:bg-white/10 transition-colors ml-1 min-h-[44px] md:min-h-0"
+          aria-label="Import SCSS"
+        >
+          <Upload size={14} />
+          <span className="hidden md:inline">Import SCSS</span>
+        </button>
 
         {/* Export button — icon-only on mobile, full on md+ */}
         <button

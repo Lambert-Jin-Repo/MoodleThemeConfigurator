@@ -14,18 +14,23 @@ import { useKeyboardShortcuts } from '@/lib/use-keyboard-shortcuts';
 
 export default function Home() {
   const [exportOpen, setExportOpen] = useState(false);
+  const [exportInitialTab, setExportInitialTab] = useState<'export' | 'import'>('export');
   const [saveOpen, setSaveOpen] = useState(false);
+
+  const openExport = () => { setExportInitialTab('export'); setExportOpen(true); };
+  const openImport = () => { setExportInitialTab('import'); setExportOpen(true); };
 
   useKeyboardShortcuts({
     onSave: () => setSaveOpen(true),
-    onExport: () => setExportOpen(true),
+    onExport: openExport,
   });
 
   return (
     <div className="h-screen flex flex-col">
       <Toolbar
         onSave={() => setSaveOpen(true)}
-        onExport={() => setExportOpen(true)}
+        onExport={openExport}
+        onImport={openImport}
       />
       <div className="flex-1 overflow-hidden">
         <ResponsiveLayout
@@ -34,7 +39,7 @@ export default function Home() {
           audit={<AuditPanel />}
         />
       </div>
-      <ExportModal open={exportOpen} onClose={() => setExportOpen(false)} />
+      <ExportModal open={exportOpen} onClose={() => setExportOpen(false)} initialTab={exportInitialTab} />
       <SaveLoadModal open={saveOpen} onClose={() => setSaveOpen(false)} />
       <Toast />
       <MobileTabBar />
