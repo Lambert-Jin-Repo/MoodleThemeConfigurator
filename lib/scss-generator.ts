@@ -20,6 +20,11 @@ function isDarkBg(hex: string): boolean {
   return lum < 0.179;
 }
 
+// Auto-select readable text colour for a given background
+function autoTextForHex(bgHex: string): string {
+  return isDarkBg(bgHex) ? '#FFFFFF' : '#404041';
+}
+
 export function generateScss(tokens: ThemeTokens): ScssOutput {
   const d = DEFAULT_TOKENS;
   const darkMode = isDarkBg(tokens.pageBg);
@@ -47,6 +52,31 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
   if (tokens.btnRadius !== d.btnRadius) vars.push(`$btn-border-radius: ${tokens.btnRadius}px;`);
   if (tokens.loginInputRadius !== d.loginInputRadius) vars.push(`$input-border-radius: ${tokens.loginInputRadius}px;`);
   if (tokens.fontFamily !== d.fontFamily) vars.push(`$font-family-sans-serif: ${tokens.fontFamily};`);
+  if (tokens.fontWeight !== d.fontWeight) vars.push(`$font-weight-base: ${tokens.fontWeight};`);
+  if (tokens.headingScale !== d.headingScale) {
+    const base = tokens.bodyFontSize || 0.9375;
+    vars.push(`$h1-font-size: ${(base * Math.pow(tokens.headingScale, 4)).toFixed(4)}rem;`);
+    vars.push(`$h2-font-size: ${(base * Math.pow(tokens.headingScale, 3)).toFixed(4)}rem;`);
+    vars.push(`$h3-font-size: ${(base * Math.pow(tokens.headingScale, 2)).toFixed(4)}rem;`);
+    vars.push(`$h4-font-size: ${(base * tokens.headingScale).toFixed(4)}rem;`);
+  }
+  // Activity icon colours (Moodle 4.x purpose-based)
+  const iconChanged = tokens.actIconAdmin !== d.actIconAdmin
+    || tokens.actIconAssessment !== d.actIconAssessment
+    || tokens.actIconCollaboration !== d.actIconCollaboration
+    || tokens.actIconCommunication !== d.actIconCommunication
+    || tokens.actIconContent !== d.actIconContent
+    || tokens.actIconInterface !== d.actIconInterface;
+  if (iconChanged) {
+    vars.push(`$activity-icon-colors: (`);
+    vars.push(`    "administration": ${tokens.actIconAdmin},`);
+    vars.push(`    "assessment": ${tokens.actIconAssessment},`);
+    vars.push(`    "collaboration": ${tokens.actIconCollaboration},`);
+    vars.push(`    "communication": ${tokens.actIconCommunication},`);
+    vars.push(`    "content": ${tokens.actIconContent},`);
+    vars.push(`    "interface": ${tokens.actIconInterface}`);
+    vars.push(`);`);
+  }
   // Dark theme: Bootstrap form control variables
   if (darkMode) {
     vars.push(`$input-color: ${tokens.bodyText};`);
@@ -151,9 +181,6 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
   // --- Links ---
   rules.push('// ── Links ──');
   rules.push(`a { text-decoration: underline; }`);
-  if (tokens.linkColour !== d.linkColour) {
-    rules.push(`a:hover { color: ${tokens.linkHover} !important; }`);
-  }
   rules.push('');
 
   // --- Focus ---
@@ -271,6 +298,10 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push(`[data-region="right-hand-drawer"] a, .drawer a {`);
     rules.push(`  color: ${tokens.drawerText} !important;`);
     rules.push(`}`);
+    if (tokens.drawerText !== d.drawerText) {
+      rules.push(`[data-region="right-hand-drawer"] .icon, [data-region="right-hand-drawer"] .fa,`);
+      rules.push(`.drawer .icon, .drawer .fa { color: ${tokens.drawerText} !important; }`);
+    }
     rules.push('');
   }
 
@@ -282,6 +313,28 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
   }
   if (tokens.bodyText !== d.bodyText) {
     rules.push(`body { color: ${tokens.bodyText} !important; }`);
+    rules.push('');
+
+    // Icon visibility fix — icons sit on light wrappers even on dark themes,
+    // so they need the default dark colour, not the light bodyText
+    rules.push('// ── Icon Visibility Fix ──');
+    rules.push(`.icon, .fa { color: ${d.bodyText} !important; }`);
+    rules.push(`.breadcrumb .icon, .breadcrumb .fa { color: ${d.bodyText} !important; }`);
+    rules.push(`.secondary-navigation .icon, .secondary-navigation .fa { color: ${d.bodyText} !important; }`);
+    rules.push(`.btn-previous .icon, .btn-previous .fa,`);
+    rules.push(`.btn-next .icon, .btn-next .fa { color: ${d.bodyText} !important; }`);
+    rules.push('');
+
+    // Icon hover — accent colour on hover
+    rules.push('// ── Icon Hover ──');
+    rules.push(`.ftoggler:hover .icon, .ftoggler:hover .fa,`);
+    rules.push(`.collapsed-icon:hover .icon, .collapsed-icon:hover .fa { color: ${tokens.linkColour} !important; }`);
+    rules.push(`.secondary-navigation .nav-link:hover .icon,`);
+    rules.push(`.secondary-navigation .nav-link:hover .fa { color: ${tokens.linkColour} !important; }`);
+    rules.push(`.breadcrumb a:hover .icon, .breadcrumb a:hover .fa { color: ${tokens.linkColour} !important; }`);
+    rules.push(`.btn-previous:hover .icon, .btn-previous:hover .fa,`);
+    rules.push(`.btn-next:hover .icon, .btn-next:hover .fa { color: ${tokens.linkColour} !important; }`);
+    rules.push('');
   }
 
   // --- Background Images ---
@@ -309,6 +362,51 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     if (tokens.cardBorder !== d.cardBorder) {
       rules.push(`.card { border-color: ${tokens.cardBorder} !important; }`);
     }
+    rules.push('');
+  }
+
+  // --- Content Max Width ---
+  if (tokens.contentMaxWidth !== d.contentMaxWidth) {
+    rules.push('// ── Content Max Width ──');
+    rules.push(`#region-main { max-width: ${tokens.contentMaxWidth}px; margin-left: auto; margin-right: auto; }`);
+    rules.push('');
+  }
+
+  // --- Signup Button ---
+  if (tokens.signupBtnBg !== d.signupBtnBg) {
+    rules.push('// ── Signup Button ──');
+    rules.push(`body#page-login-index .login-signup .btn,`);
+    rules.push(`body#page-login-index .btn-secondary {`);
+    rules.push(`  background-color: ${tokens.signupBtnBg} !important;`);
+    rules.push(`  border-color: ${tokens.signupBtnBg} !important;`);
+    rules.push(`}`);
+    rules.push('');
+  }
+
+  // --- Link Hover ---
+  if (tokens.linkHover !== d.linkHover) {
+    rules.push('// ── Link Hover ──');
+    rules.push(`a:hover, a:focus { color: ${tokens.linkHover} !important; }`);
+    rules.push('');
+  }
+
+  // --- Secondary Nav (non-dark) ---
+  if (tokens.secondaryNavText !== d.secondaryNavText && !darkMode) {
+    rules.push('// ── Secondary Navigation Text ──');
+    rules.push(`.secondary-navigation .nav-tabs .nav-link {`);
+    rules.push(`  color: ${tokens.secondaryNavText} !important;`);
+    rules.push(`}`);
+    rules.push('');
+  }
+
+  // --- Nav Hover Text ---
+  if (tokens.navHoverText !== d.navHoverText && (NAV_BG === d.navbarBg && NAV_TEXT === d.navbarText)) {
+    // Output nav hover text even when navbar section is otherwise default
+    rules.push('// ── Nav Hover Text ──');
+    rules.push(`.navbar .primary-navigation .nav-link:hover,`);
+    rules.push(`.navbar .primary-navigation .nav-link:focus {`);
+    rules.push(`  color: ${tokens.navHoverText} !important;`);
+    rules.push(`}`);
     rules.push('');
   }
 
@@ -348,17 +446,41 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
 
     // Muted text (helper labels, calendar day numbers, timestamps, category labels)
     rules.push(`.text-muted, .text-secondary, small, .small,`);
-    rules.push(`.coursecategory, .course-category, .coursecat, .dimmed_text {`);
+    rules.push(`.coursecategory, .course-category, .coursecat, .dimmed_text,`);
+    rules.push(`.categoryname, .categoryname.text-truncate {`);
     rules.push(`  color: ${tokens.mutedText} !important;`);
     rules.push(`}`);
     rules.push('');
 
-    // Progress bars — dark background behind progress track
+    // Progress bars — dark background behind progress track + text
     rules.push('.progress {');
     rules.push(`  background-color: ${tokens.cardBorder} !important;`);
     rules.push(`}`);
+    rules.push(`.progress-text, .progress .text, .progress .small {`);
+    rules.push(`  color: ${tokens.mutedText} !important;`);
+    rules.push(`}`);
     rules.push(`.dashboard-card-footer, .course-info-container {`);
     rules.push(`  background-color: ${tokens.cardBg} !important;`);
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push(`}`);
+    rules.push('');
+
+    // Course card body — "My courses" page card backgrounds
+    rules.push(`.dashboard-card-deck .dashboard-card,`);
+    rules.push(`.dashboard-card-deck .dashboard-card .card-body,`);
+    rules.push(`.dashboard-card-deck .dashboard-card .card-footer,`);
+    rules.push(`.course-summaryitem, .coursebox,`);
+    rules.push(`.block_myoverview .card, .block_myoverview .card-body,`);
+    rules.push(`.block_myoverview .card-footer {`);
+    rules.push(`  background-color: ${tokens.cardBg} !important;`);
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push(`}`);
+    rules.push('');
+
+    // Course overview filter bar & search area
+    rules.push(`.block_myoverview .d-flex, .block_myoverview .dropdown,`);
+    rules.push(`.block_myoverview [data-region="filter"],`);
+    rules.push(`.block_myoverview [data-region="courses-view"] {`);
     rules.push(`  color: ${tokens.bodyText} !important;`);
     rules.push(`}`);
     rules.push('');
@@ -372,10 +494,22 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push('');
 
     // Course section headers & hidden sections
-    rules.push('.course-section-header, .sectionname, .section-title {');
+    rules.push('.course-section-header, .sectionname, .section-title,');
+    rules.push('.sectionname a, .section-title a,');
+    rules.push('.course-section-header h3, .course-section-header h4,');
+    rules.push('.course-content h3.sectionname, .course-content .section-title h3 {');
     rules.push(`  color: ${tokens.headingText} !important;`);
     rules.push(`}`);
+    rules.push('.sectionname a:hover, .section-title a:hover {');
+    rules.push(`  color: ${tokens.linkColour} !important;`);
+    rules.push(`}`);
     rules.push(`.sectionhidden, .dimmed { color: ${tokens.mutedText} !important; }`);
+    rules.push('');
+
+    // Section collapse/toggle icons
+    rules.push(`.course-section-header .icons-collapse-expand,`);
+    rules.push(`.course-section-header .completion-info,`);
+    rules.push(`.course-content .section-chevron { color: ${tokens.mutedText} !important; }`);
     rules.push('');
 
     // Comment areas
@@ -436,14 +570,98 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
       rules.push('');
     }
 
+    // Secondary nav tab hover — use secondaryNavActive as bg, auto-contrast text
+    rules.push(`.secondary-navigation .nav-tabs .nav-link:hover,`);
+    rules.push(`.secondary-navigation .nav-tabs .nav-link:focus {`);
+    rules.push(`  background-color: ${tokens.secondaryNavActive} !important;`);
+    rules.push(`  color: ${autoTextForHex(tokens.secondaryNavActive)} !important;`);
+    rules.push(`  font-weight: 700;`);
+    rules.push(`}`);
+    rules.push('');
+
     // Breadcrumb text on dark background
     rules.push(`.breadcrumb-item, .breadcrumb-item a { color: ${tokens.bodyText} !important; }`);
     rules.push(`.breadcrumb-item + .breadcrumb-item::before { color: ${tokens.mutedText} !important; }`);
     rules.push('');
 
-    // Course content area
-    rules.push('.course-content, #region-main, #page-content,');
-    rules.push('.activity-item, .activity-header {');
+    // Course content area — backgrounds AND text
+    rules.push('.course-content, #region-main, #page-content {');
+    rules.push(`  background-color: ${tokens.pageBg} !important;`);
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push(`}`);
+    rules.push('');
+
+    // Activity items — force dark bg on each activity row
+    rules.push(`.activity-item, .activity-header, .activity-basis,`);
+    rules.push(`.activity-info, .activity-actions {`);
+    rules.push(`  background-color: transparent !important;`);
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push(`}`);
+    rules.push('');
+
+    // Activity icon containers — ensure purpose colours show on dark themes
+    rules.push(`.activityiconcontainer {`);
+    rules.push(`  filter: brightness(1.2) !important;`);
+    rules.push(`}`);
+    rules.push(`.activityiconcontainer.content {`);
+    rules.push(`  background-color: ${tokens.actIconContent} !important;`);
+    rules.push(`}`);
+    rules.push(`.activityiconcontainer.assessment {`);
+    rules.push(`  background-color: ${tokens.actIconAssessment} !important;`);
+    rules.push(`}`);
+    rules.push(`.activityiconcontainer.collaboration {`);
+    rules.push(`  background-color: ${tokens.actIconCollaboration} !important;`);
+    rules.push(`}`);
+    rules.push(`.activityiconcontainer.communication {`);
+    rules.push(`  background-color: ${tokens.actIconCommunication} !important;`);
+    rules.push(`}`);
+    rules.push(`.activityiconcontainer.administration {`);
+    rules.push(`  background-color: ${tokens.actIconAdmin} !important;`);
+    rules.push(`}`);
+    rules.push(`.activityiconcontainer.interface {`);
+    rules.push(`  background-color: ${tokens.actIconInterface} !important;`);
+    rules.push(`}`);
+    rules.push('');
+
+    // Activity navigation (previous/next) buttons — invisible on dark backgrounds by default
+    rules.push('.activity-navigation .btn,');
+    rules.push('.course-content .activity-navigation .btn,');
+    rules.push('#page-content .activity-navigation .btn {');
+    rules.push(`  background-color: ${tokens.bodyText} !important;`);
+    rules.push(`  color: #404041 !important;`);
+    rules.push(`  border-color: ${tokens.bodyText} !important;`);
+    rules.push(`}`);
+    rules.push('.activity-navigation .btn .icon,');
+    rules.push('.activity-navigation .btn i,');
+    rules.push('.activity-navigation .btn .fa,');
+    rules.push('.activity-navigation .btn [class*="bi-"] {');
+    rules.push(`  color: #404041 !important;`);
+    rules.push(`}`);
+    rules.push('');
+
+    // Course sections — entire section container + li items
+    rules.push(`.course-content .section, .course-content .section li,`);
+    rules.push(`.course-section, .course-section-header,`);
+    rules.push('#region-main .course-content ul.section {');
+    rules.push(`  background-color: transparent !important;`);
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push(`}`);
+    rules.push('');
+
+    // "Hidden from students" dimmed activity banners
+    rules.push(`.dimmed, .dimmed_text, .dimmed_category,`);
+    rules.push(`.isrestricted, .ishidden {`);
+    rules.push(`  background-color: rgba(255,255,255,0.05) !important;`);
+    rules.push(`  color: ${tokens.mutedText} !important;`);
+    rules.push(`}`);
+    rules.push('');
+
+    // Bootstrap badge overrides for dark themes (.bg-secondary .text-dark)
+    rules.push(`.badge.bg-secondary {`);
+    rules.push(`  background-color: ${tokens.cardBorder} !important;`);
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push(`}`);
+    rules.push(`.badge.text-dark, .text-dark {`);
     rules.push(`  color: ${tokens.bodyText} !important;`);
     rules.push(`}`);
     rules.push('');
@@ -478,6 +696,23 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
 
     // List-group items (used in drawers, course index)
     rules.push(`.list-group-item {`);
+    rules.push(`  background-color: ${tokens.cardBg} !important;`);
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push(`  border-color: ${tokens.cardBorder} !important;`);
+    rules.push(`}`);
+    rules.push('');
+
+    // Site administration tree — category rows
+    rules.push(`.adminlink, .admintree, .admin_settingspage,`);
+    rules.push(`#adminsettings, .adminsettingsflags {`);
+    rules.push(`  background-color: transparent !important;`);
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push(`}`);
+    rules.push('');
+
+    // General content containers — catch remaining white-bg panels
+    rules.push(`.generalbox, .box.py-3, .loginbox,`);
+    rules.push(`.well, .alert-info {`);
     rules.push(`  background-color: ${tokens.cardBg} !important;`);
     rules.push(`  color: ${tokens.bodyText} !important;`);
     rules.push(`  border-color: ${tokens.cardBorder} !important;`);

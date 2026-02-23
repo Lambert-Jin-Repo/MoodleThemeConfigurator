@@ -14,7 +14,7 @@ A client-side web app that lets non-technical CFA admins preview Moodle theme co
 |---|---|
 | `UNIFIED-SPEC.md` | **Source of truth** — the full build specification. Read this FIRST for any implementation work. |
 | `docs/cfa-brand-reference.md` | CFA brand palette, typography, logo system |
-| `docs/moodle-cloud-constraints.md` | What Moodle Cloud allows/restricts, verified selectors, SCSS field details |
+| `docs/moodle-cloud-constraints.md` | **Moodle theming reference** — platform limits, SCSS fields, verified selectors, dark theme support, preset checklist, activity icons |
 | `docs/implementation-plan.md` | 14-step build plan with dependency graph |
 | `docs/references/` | Screenshots, mockups, superseded docs (visual reference only) |
 

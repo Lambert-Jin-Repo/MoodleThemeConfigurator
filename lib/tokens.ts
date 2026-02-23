@@ -89,6 +89,14 @@ export interface ThemeTokens {
   // Signup
   signupBtnBg: string;
 
+  // Activity Icon Colours (Moodle 4.x purpose-based)
+  actIconAdmin: string;
+  actIconAssessment: string;
+  actIconCollaboration: string;
+  actIconCommunication: string;
+  actIconContent: string;
+  actIconInterface: string;
+
   // Logo
   logoAustraliaColour: string; // 'auto' or hex — colour of "AUSTRALIA" text in CFA logo
 }
@@ -166,6 +174,13 @@ export const DEFAULT_TOKENS: ThemeTokens = {
   focusRingWidth: 2,
 
   signupBtnBg: '#6c757d',
+
+  actIconAdmin: '#5d63f6',
+  actIconAssessment: '#11a676',
+  actIconCollaboration: '#eb66a2',
+  actIconCommunication: '#f7634d',
+  actIconContent: '#399be2',
+  actIconInterface: '#a378ff',
 
   logoAustraliaColour: 'auto',
 };
@@ -611,6 +626,58 @@ export const PRESET_TEMPLATES: PresetTemplate[] = [
       signupBtnBg: '#555556',
       success: '#BAF73C',
       logoAustraliaColour: '#BAF73C',
+    },
+  },
+  {
+    id: 'cfa-dark-ember',
+    name: 'CFA Dark Ember',
+    description: 'Dark background with warm orange accents — bold and energetic',
+    overrides: {
+      brandPrimary: '#336E7B',
+      pageBg: '#2B2B2C',
+      cardBg: '#3A3A3B',
+      cardBorder: '#555556',
+      navbarBg: '#1D2125',
+      navbarText: '#F0EEEE',
+      navbarBorder: 'none',
+      navActiveUnderline: '#F27927',
+      navHoverBg: 'rgba(255,255,255,0.08)',
+      navHoverText: '#F27927',
+      editModeOnColour: '#F27927',
+      editModeThumbColour: '#1D2125',
+      breadcrumbBg: '#333334',
+      btnPrimaryBg: '#F27927',
+      btnPrimaryText: '#FFFFFF',
+      btnPrimaryHover: '#D96820',
+      btnRadius: 4,
+      linkColour: '#F27927',
+      linkHover: '#FF9A52',
+      bodyText: '#F0EEEE',
+      headingText: '#FFFFFF',
+      mutedText: '#A0A0A1',
+      footerBg: '#1D2125',
+      footerText: '#F0EEEE',
+      footerLink: '#F27927',
+      footerAccent: '#00BFFF',
+      drawerBg: '#1D2125',
+      drawerText: '#F0EEEE',
+      drawerBorder: '#404041',
+      loginBg: '#1D2125',
+      loginCardBg: '#3A3A3B',
+      loginBtnBg: '#F27927',
+      loginBtnText: '#FFFFFF',
+      loginHeading: '#F27927',
+      loginGradientEnabled: false,
+      secondaryNavActive: '#F27927',
+      secondaryNavText: '#F0EEEE',
+      progressFill: '#F27927',
+      focusRing: '#F27927',
+      focusRingWidth: 2,
+      info: '#00BFFF',
+      sectionAccent: '#00BFFF',
+      signupBtnBg: '#555556',
+      success: '#4CAF50',
+      logoAustraliaColour: '#F27927',
     },
   },
   {
