@@ -440,6 +440,9 @@ These selectors were verified by applying the CFA Dark Lime preset to a live Moo
 | `#region-main`, `#page-content`, `.course-content` | White main content wrapper | `background-color: pageBg` |
 | `.dimmed`, `.isrestricted`, `.ishidden` | "Hidden from students" banners — invisible text | `background: rgba(255,255,255,0.05)`, `color: mutedText` |
 | `.completioninfo`, `.activity-completion` | White completion status area | `background: transparent`, `color: bodyText` |
+| `.sectionname a`, `.course-content h3.sectionname` | Section header text invisible | `color: headingText` |
+| `.activityiconcontainer` | Icon backgrounds black/invisible | Explicit purpose-colour background per class |
+| `.badge.bg-secondary`, `.text-dark` | "Hidden from students" badge unreadable | `bg: cardBorder`, `color: bodyText` |
 
 ### My Courses / Course Cards
 

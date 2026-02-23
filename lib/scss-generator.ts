@@ -468,10 +468,22 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push('');
 
     // Course section headers & hidden sections
-    rules.push('.course-section-header, .sectionname, .section-title {');
+    rules.push('.course-section-header, .sectionname, .section-title,');
+    rules.push('.sectionname a, .section-title a,');
+    rules.push('.course-section-header h3, .course-section-header h4,');
+    rules.push('.course-content h3.sectionname, .course-content .section-title h3 {');
     rules.push(`  color: ${tokens.headingText} !important;`);
     rules.push(`}`);
+    rules.push('.sectionname a:hover, .section-title a:hover {');
+    rules.push(`  color: ${tokens.linkColour} !important;`);
+    rules.push(`}`);
     rules.push(`.sectionhidden, .dimmed { color: ${tokens.mutedText} !important; }`);
+    rules.push('');
+
+    // Section collapse/toggle icons
+    rules.push(`.course-section-header .icons-collapse-expand,`);
+    rules.push(`.course-section-header .completion-info,`);
+    rules.push(`.course-content .section-chevron { color: ${tokens.mutedText} !important; }`);
     rules.push('');
 
     // Comment areas
@@ -561,6 +573,30 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push(`}`);
     rules.push('');
 
+    // Activity icon containers — ensure purpose colours show on dark themes
+    rules.push(`.activityiconcontainer {`);
+    rules.push(`  filter: brightness(1.2) !important;`);
+    rules.push(`}`);
+    rules.push(`.activityiconcontainer.content {`);
+    rules.push(`  background-color: ${tokens.actIconContent} !important;`);
+    rules.push(`}`);
+    rules.push(`.activityiconcontainer.assessment {`);
+    rules.push(`  background-color: ${tokens.actIconAssessment} !important;`);
+    rules.push(`}`);
+    rules.push(`.activityiconcontainer.collaboration {`);
+    rules.push(`  background-color: ${tokens.actIconCollaboration} !important;`);
+    rules.push(`}`);
+    rules.push(`.activityiconcontainer.communication {`);
+    rules.push(`  background-color: ${tokens.actIconCommunication} !important;`);
+    rules.push(`}`);
+    rules.push(`.activityiconcontainer.administration {`);
+    rules.push(`  background-color: ${tokens.actIconAdmin} !important;`);
+    rules.push(`}`);
+    rules.push(`.activityiconcontainer.interface {`);
+    rules.push(`  background-color: ${tokens.actIconInterface} !important;`);
+    rules.push(`}`);
+    rules.push('');
+
     // Course sections — entire section container + li items
     rules.push(`.course-content .section, .course-content .section li,`);
     rules.push(`.course-section, .course-section-header,`);
@@ -575,6 +611,16 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push(`.isrestricted, .ishidden {`);
     rules.push(`  background-color: rgba(255,255,255,0.05) !important;`);
     rules.push(`  color: ${tokens.mutedText} !important;`);
+    rules.push(`}`);
+    rules.push('');
+
+    // Bootstrap badge overrides for dark themes (.bg-secondary .text-dark)
+    rules.push(`.badge.bg-secondary {`);
+    rules.push(`  background-color: ${tokens.cardBorder} !important;`);
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push(`}`);
+    rules.push(`.badge.text-dark, .text-dark {`);
+    rules.push(`  color: ${tokens.bodyText} !important;`);
     rules.push(`}`);
     rules.push('');
 
