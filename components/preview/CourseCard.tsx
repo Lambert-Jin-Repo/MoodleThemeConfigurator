@@ -1,53 +1,106 @@
 'use client';
 
+import { BookOpen, GraduationCap } from 'lucide-react';
+
 interface CourseCardProps {
   title: string;
   category?: string;
+  imageType?: 'accessibility' | 'moodle';
 }
 
-export default function CourseCard({ title, category = 'General' }: CourseCardProps) {
+export default function CourseCard({
+  title,
+  category = 'General',
+  imageType = 'moodle',
+}: CourseCardProps) {
   return (
-    <div className="moodle-card overflow-hidden">
-      {/* Card image placeholder */}
-      <div
-        className="h-28 flex items-center justify-center"
-        style={{ backgroundColor: 'var(--cfa-btn-primary-bg)', opacity: 0.15 }}
-      >
-        <span className="text-gray-400 text-xs">Course Image</span>
-      </div>
-
-      <div className="p-4">
-        <p className="text-xs mb-1" style={{ color: 'var(--cfa-muted-text)' }}>
-          {category}
-        </p>
-        <h3
-          className="font-semibold text-sm mb-2"
-          style={{ color: 'var(--cfa-heading-text)' }}
+    <div className="moodle-card overflow-hidden" style={{ borderRadius: '0.5rem' }}>
+      {/* Image area */}
+      {imageType === 'accessibility' ? (
+        <div
+          className="flex flex-col items-center justify-center overflow-hidden"
+          style={{
+            height: '150px',
+            background: 'linear-gradient(135deg, #1a1a4e, #2a2a6e)',
+            borderTopLeftRadius: '0.5rem',
+            borderTopRightRadius: '0.5rem',
+          }}
         >
-          {title}
-        </h3>
-        <div className="flex items-center gap-2 mb-3">
-          {/* Progress bar */}
-          <div
-            className="flex-1 h-2 rounded-full"
-            style={{ backgroundColor: 'var(--cfa-progress-bg)' }}
+          <span
+            style={{
+              color: '#ffffff',
+              fontSize: '14px',
+              fontWeight: 300,
+              letterSpacing: '0.05em',
+              lineHeight: 1.3,
+            }}
           >
-            <div
-              className="h-full rounded-full"
-              style={{
-                backgroundColor: 'var(--cfa-progress-fill)',
-                width: '60%',
-              }}
-            />
-          </div>
-          <span className="text-xs" style={{ color: 'var(--cfa-muted-text)' }}>
-            60%
+            Centre for
+          </span>
+          <span
+            style={{
+              color: '#ffffff',
+              fontSize: '20px',
+              fontWeight: 700,
+              letterSpacing: '0.08em',
+              lineHeight: 1.3,
+            }}
+          >
+            Accessibili
+          </span>
+          <span
+            style={{
+              color: '#ffffff',
+              fontSize: '12px',
+              fontWeight: 600,
+              letterSpacing: '0.25em',
+              lineHeight: 1.5,
+            }}
+          >
+            AUSTRALIA
           </span>
         </div>
-        <div className="flex gap-2">
-          <button className="moodle-btn-primary text-xs">Continue</button>
-          <button className="moodle-btn-outline text-xs">View</button>
+      ) : (
+        <div
+          className="flex items-center justify-center gap-3 overflow-hidden"
+          style={{
+            height: '150px',
+            backgroundColor: '#e9ecef',
+            borderTopLeftRadius: '0.5rem',
+            borderTopRightRadius: '0.5rem',
+          }}
+        >
+          <BookOpen size={32} strokeWidth={1.5} style={{ color: '#adb5bd' }} />
+          <GraduationCap size={32} strokeWidth={1.5} style={{ color: '#adb5bd' }} />
         </div>
+      )}
+
+      {/* Content area */}
+      <div style={{ padding: '12px 14px' }}>
+        <a
+          className="moodle-link"
+          href="#"
+          onClick={(e) => e.preventDefault()}
+          style={{
+            fontSize: '14px',
+            lineHeight: 1.4,
+            display: 'block',
+            textDecoration: 'none',
+          }}
+          aria-label={`Open course: ${title}`}
+        >
+          {title}
+        </a>
+        <p
+          style={{
+            color: 'var(--cfa-muted-text)',
+            fontSize: '12px',
+            marginTop: '4px',
+            lineHeight: 1.4,
+          }}
+        >
+          {category}
+        </p>
       </div>
     </div>
   );
