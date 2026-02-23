@@ -1,11 +1,45 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
-import { HexColorPicker } from 'react-colorful';
-import { CFA_PALETTE } from '@/lib/tokens';
+import { useState, useEffect } from 'react';
 import type { ThemeTokens } from '@/lib/tokens';
-import { contrastRatio, isBlockedColour } from '@/lib/accessibility';
+import { contrastRatio, isBlockedColour, hexToRgb, hexToHsl, hslToHex } from '@/lib/accessibility';
 import LinkedIndicator from './LinkedIndicator';
+
+type ColourFormat = 'hex' | 'rgb' | 'hsl';
+const FORMAT_ORDER: ColourFormat[] = ['hex', 'rgb', 'hsl'];
+
+function formatColour(hex: string, format: ColourFormat): string {
+  switch (format) {
+    case 'hex':
+      return hex.toUpperCase();
+    case 'rgb': {
+      const [r, g, b] = hexToRgb(hex);
+      return `rgb(${r}, ${g}, ${b})`;
+    }
+    case 'hsl': {
+      const [h, s, l] = hexToHsl(hex);
+      return `hsl(${Math.round(h)}, ${Math.round(s * 100)}%, ${Math.round(l * 100)}%)`;
+    }
+  }
+}
+
+/** Parse an rgb(...) string back to hex, or null if invalid */
+function parseRgb(input: string): string | null {
+  const m = input.match(/^rgb\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)$/i);
+  if (!m) return null;
+  const [r, g, b] = [Number(m[1]), Number(m[2]), Number(m[3])];
+  if (r > 255 || g > 255 || b > 255) return null;
+  return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase();
+}
+
+/** Parse an hsl(...) string back to hex, or null if invalid */
+function parseHsl(input: string): string | null {
+  const m = input.match(/^hsl\(\s*(\d{1,3})\s*,\s*(\d{1,3})%?\s*,\s*(\d{1,3})%?\s*\)$/i);
+  if (!m) return null;
+  const [h, s, l] = [Number(m[1]), Number(m[2]), Number(m[3])];
+  if (h > 360 || s > 100 || l > 100) return null;
+  return hslToHex(h, s / 100, l / 100);
+}
 
 interface ColourPickerProps {
   label: string;
@@ -26,40 +60,41 @@ export default function ColourPicker({
   tokenKey,
   linkedToBrand = false,
 }: ColourPickerProps) {
-  const [popoverOpen, setPopoverOpen] = useState(false);
-  const [hexInput, setHexInput] = useState(value);
-  const popoverRef = useRef<HTMLDivElement>(null);
+  const [colourFormat, setColourFormat] = useState<ColourFormat>('hex');
+  const [textInput, setTextInput] = useState(value);
 
   useEffect(() => {
-    setHexInput(value);
-  }, [value]);
+    setTextInput(formatColour(value, colourFormat));
+  }, [value, colourFormat]);
 
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (popoverRef.current && !popoverRef.current.contains(e.target as Node)) {
-        setPopoverOpen(false);
-      }
-    }
-    if (popoverOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }
-  }, [popoverOpen]);
+  const cycleFormat = () => {
+    const next = FORMAT_ORDER[(FORMAT_ORDER.indexOf(colourFormat) + 1) % FORMAT_ORDER.length];
+    setColourFormat(next);
+  };
 
   const isLinkOrText = tokenKey === 'linkColour' || tokenKey === 'bodyText';
   const blocked = isLinkOrText && isBlockedColour(value);
   const ratio = showContrastOn ? contrastRatio(value, showContrastOn) : null;
 
-  const handleHexChange = (hex: string) => {
-    setHexInput(hex);
-    if (/^#[0-9A-Fa-f]{6}$/.test(hex)) {
-      onChange(hex.toUpperCase());
+  const handleTextInput = (input: string) => {
+    setTextInput(input);
+
+    // Try to parse based on current format
+    if (colourFormat === 'hex') {
+      if (/^#[0-9A-Fa-f]{6}$/.test(input)) {
+        onChange(input.toUpperCase());
+      }
+    } else if (colourFormat === 'rgb') {
+      const hex = parseRgb(input);
+      if (hex) onChange(hex);
+    } else if (colourFormat === 'hsl') {
+      const hex = parseHsl(input);
+      if (hex) onChange(hex);
     }
   };
 
   const handleNativeChange = (hex: string) => {
     onChange(hex.toUpperCase());
-    setHexInput(hex.toUpperCase());
   };
 
   const id = label.toLowerCase().replace(/\s+/g, '-');
@@ -86,23 +121,23 @@ export default function ColourPicker({
           aria-label={`${label} colour picker`}
         />
 
-        {/* Hex text input */}
+        {/* Format-aware text input */}
         <input
           type="text"
-          value={hexInput}
-          onChange={(e) => handleHexChange(e.target.value)}
+          value={textInput}
+          onChange={(e) => handleTextInput(e.target.value)}
           className="flex-1 text-xs border border-gray-300 rounded px-2 py-1.5 font-mono"
-          aria-label={`${label} hex value`}
-          maxLength={7}
+          aria-label={`${label} ${colourFormat.toUpperCase()} value`}
         />
 
-        {/* Popover toggle */}
+        {/* Format cycle button */}
         <button
-          className="text-xs text-gray-500 hover:text-gray-700 px-1 min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0 flex items-center justify-center"
-          onClick={() => setPopoverOpen(!popoverOpen)}
-          aria-label={`Advanced picker for ${label}`}
+          className="text-[10px] font-semibold font-mono text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded px-2 py-1 min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0 flex items-center justify-center transition-colors uppercase tracking-wide"
+          onClick={cycleFormat}
+          aria-label={`Cycle colour format (currently ${colourFormat.toUpperCase()})`}
+          title="Click to cycle: HEX / RGB / HSL"
         >
-          &#9660;
+          {colourFormat}
         </button>
       </div>
 
@@ -130,37 +165,6 @@ export default function ColourPicker({
         <p className="text-xs text-red-600 mt-1" role="alert">
           {value.toUpperCase()} has a {ratio?.toFixed(2)}:1 contrast ratio on white. WCAG AA requires at least 4.5:1. Choose a darker colour.
         </p>
-      )}
-
-      {/* Advanced popover */}
-      {popoverOpen && (
-        <div
-          ref={popoverRef}
-          className="absolute z-50 mt-1 p-3 bg-white rounded-lg shadow-xl border border-gray-200"
-        >
-          <HexColorPicker
-            color={value}
-            onChange={(c) => {
-              onChange(c.toUpperCase());
-              setHexInput(c.toUpperCase());
-            }}
-          />
-          <div className="flex flex-wrap gap-1 mt-2">
-            {CFA_PALETTE.map((swatch) => (
-              <button
-                key={swatch.hex}
-                className="w-8 h-8 md:w-6 md:h-6 rounded border border-gray-300 hover:ring-2 hover:ring-offset-1 hover:ring-gray-400"
-                style={{ backgroundColor: swatch.hex }}
-                onClick={() => {
-                  onChange(swatch.hex);
-                  setHexInput(swatch.hex);
-                }}
-                aria-label={`${swatch.name} (${swatch.hex})`}
-                title={swatch.name}
-              />
-            ))}
-          </div>
-        </div>
       )}
     </div>
   );

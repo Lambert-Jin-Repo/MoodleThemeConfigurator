@@ -46,7 +46,7 @@ export default function CourseCard({ title, category = 'General' }: CourseCardPr
         </div>
         <div className="flex gap-2">
           <button data-section="buttons" className="moodle-btn-primary text-xs">Continue</button>
-          <button data-section="buttons" className="moodle-btn-outline text-xs">View</button>
+          <button data-section="buttons" className="moodle-btn-secondary text-xs">View</button>
         </div>
       </div>
     </div>

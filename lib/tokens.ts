@@ -364,9 +364,9 @@ export const PRESET_TEMPLATES: PresetTemplate[] = [
     },
   },
   {
-    id: 'cfa-dark-mode',
-    name: 'CFA Dark Mode',
-    description: 'Bold, modern with lime accents and dark drawer',
+    id: 'cfa-dark-chrome',
+    name: 'CFA Dark Chrome',
+    description: 'Dark navbar, footer & drawers with light content. Full dark mode is not reliably achievable on Moodle Cloud.',
     overrides: {
       brandPrimary: '#336E7B',
       navbarBg: '#1D2125',

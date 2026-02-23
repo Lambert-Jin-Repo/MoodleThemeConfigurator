@@ -23,7 +23,12 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
 
   if (tokens.brandPrimary !== d.brandPrimary) vars.push(`$primary: ${tokens.brandPrimary};`);
   if (tokens.linkColour !== d.linkColour) vars.push(`$link-color: ${tokens.linkColour};`);
-  vars.push(`$body-bg: #FFFFFF;`);
+  if (tokens.pageBg !== d.pageBg) {
+    vars.push(`$body-bg: ${tokens.pageBg};`);
+  }
+  if (tokens.cardBg !== d.cardBg) {
+    vars.push(`$card-bg: ${tokens.cardBg};`);
+  }
   if (tokens.bodyFontSize !== d.bodyFontSize) vars.push(`$font-size-base: ${tokens.bodyFontSize}rem;`);
   if (tokens.lineHeight !== d.lineHeight) vars.push(`$line-height-base: ${tokens.lineHeight};`);
   if (tokens.success !== d.success) vars.push(`$success: ${tokens.success};`);
@@ -170,6 +175,11 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
       rules.push(`  background-color: ${tokens.loginBg} !important;`);
       rules.push(`}`);
     }
+    if (tokens.loginCardBg !== d.loginCardBg) {
+      rules.push(`body#page-login-index .card, body#page-login-index .login-container {`);
+      rules.push(`  background-color: ${tokens.loginCardBg} !important;`);
+      rules.push(`}`);
+    }
     if (tokens.loginBtnBg !== d.loginBtnBg) {
       rules.push(`#loginbtn {`);
       rules.push(`  background-color: ${tokens.loginBtnBg} !important;`);
@@ -205,11 +215,16 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
   }
 
   // --- Drawers ---
-  if (tokens.drawerBg !== d.drawerBg) {
+  if (tokens.drawerBg !== d.drawerBg || tokens.drawerText !== d.drawerText) {
     rules.push('// ── Drawers ──');
     rules.push(`[data-region="right-hand-drawer"], .drawer {`);
-    rules.push(`  background-color: ${tokens.drawerBg} !important;`);
-    rules.push(`  border-color: ${tokens.drawerBorder} !important;`);
+    if (tokens.drawerBg !== d.drawerBg) {
+      rules.push(`  background-color: ${tokens.drawerBg} !important;`);
+      rules.push(`  border-color: ${tokens.drawerBorder} !important;`);
+    }
+    if (tokens.drawerText !== d.drawerText) {
+      rules.push(`  color: ${tokens.drawerText} !important;`);
+    }
     rules.push(`}`);
     rules.push('');
   }
@@ -240,10 +255,15 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push('');
   }
 
-  // --- Card borders ---
-  if (tokens.cardBorder !== d.cardBorder) {
+  // --- Cards ---
+  if (tokens.cardBg !== d.cardBg || tokens.cardBorder !== d.cardBorder) {
     rules.push('// ── Cards ──');
-    rules.push(`.card { border-color: ${tokens.cardBorder} !important; }`);
+    if (tokens.cardBg !== d.cardBg) {
+      rules.push(`.card { background-color: ${tokens.cardBg} !important; }`);
+    }
+    if (tokens.cardBorder !== d.cardBorder) {
+      rules.push(`.card { border-color: ${tokens.cardBorder} !important; }`);
+    }
     rules.push('');
   }
 
