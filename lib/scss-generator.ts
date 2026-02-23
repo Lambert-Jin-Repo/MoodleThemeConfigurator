@@ -217,6 +217,18 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
       rules.push(`  color: ${tokens.loginBtnText} !important;`);
       rules.push(`}`);
     }
+    if (tokens.loginHeading !== d.loginHeading) {
+      rules.push(`body#page-login-index .login-heading { color: ${tokens.loginHeading} !important; }`);
+    }
+    // Dark login background with light card: ensure card text stays readable
+    if (isDarkBg(tokens.loginBg) && !isDarkBg(tokens.loginCardBg)) {
+      rules.push(`body#page-login-index .card,`);
+      rules.push(`body#page-login-index label,`);
+      rules.push(`body#page-login-index .login-form-forgotpassword a,`);
+      rules.push(`body#page-login-index .login-signup a {`);
+      rules.push(`  color: #404041 !important;`);
+      rules.push(`}`);
+    }
     rules.push('');
   }
 
