@@ -599,7 +599,44 @@ export default function ControlsPanel() {
         />
       </AccordionSection>
 
-      {/* 13. Alerts & Progress */}
+      {/* 13. Activity Icons */}
+      <AccordionSection title="Activity Icons" sectionId="activity-icons" ref={setAccordionRef('activity-icons')}>
+        <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded mb-2">
+          Moodle 4.x uses purpose-based icon backgrounds. White icons sit on coloured circles.
+        </div>
+        <ColourPicker
+          label="Administration"
+          value={tokens.actIconAdmin}
+          onChange={(v) => set('actIconAdmin')(v)}
+        />
+        <ColourPicker
+          label="Assessment (Quiz, Assignment)"
+          value={tokens.actIconAssessment}
+          onChange={(v) => set('actIconAssessment')(v)}
+        />
+        <ColourPicker
+          label="Collaboration (Wiki, Database)"
+          value={tokens.actIconCollaboration}
+          onChange={(v) => set('actIconCollaboration')(v)}
+        />
+        <ColourPicker
+          label="Communication (Forum, Chat)"
+          value={tokens.actIconCommunication}
+          onChange={(v) => set('actIconCommunication')(v)}
+        />
+        <ColourPicker
+          label="Content (Page, File, URL)"
+          value={tokens.actIconContent}
+          onChange={(v) => set('actIconContent')(v)}
+        />
+        <ColourPicker
+          label="Interface (Label, LTI)"
+          value={tokens.actIconInterface}
+          onChange={(v) => set('actIconInterface')(v)}
+        />
+      </AccordionSection>
+
+      {/* 14. Alerts & Progress */}
       <AccordionSection title="Alerts & Progress" sectionId="alerts-&-progress" ref={setAccordionRef('alerts-&-progress')}>
         <ColourPicker
           label="Success"

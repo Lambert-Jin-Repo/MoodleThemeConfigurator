@@ -60,6 +60,23 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     vars.push(`$h3-font-size: ${(base * Math.pow(tokens.headingScale, 2)).toFixed(4)}rem;`);
     vars.push(`$h4-font-size: ${(base * tokens.headingScale).toFixed(4)}rem;`);
   }
+  // Activity icon colours (Moodle 4.x purpose-based)
+  const iconChanged = tokens.actIconAdmin !== d.actIconAdmin
+    || tokens.actIconAssessment !== d.actIconAssessment
+    || tokens.actIconCollaboration !== d.actIconCollaboration
+    || tokens.actIconCommunication !== d.actIconCommunication
+    || tokens.actIconContent !== d.actIconContent
+    || tokens.actIconInterface !== d.actIconInterface;
+  if (iconChanged) {
+    vars.push(`$activity-icon-colors: (`);
+    vars.push(`    "administration": ${tokens.actIconAdmin},`);
+    vars.push(`    "assessment": ${tokens.actIconAssessment},`);
+    vars.push(`    "collaboration": ${tokens.actIconCollaboration},`);
+    vars.push(`    "communication": ${tokens.actIconCommunication},`);
+    vars.push(`    "content": ${tokens.actIconContent},`);
+    vars.push(`    "interface": ${tokens.actIconInterface}`);
+    vars.push(`);`);
+  }
   // Dark theme: Bootstrap form control variables
   if (darkMode) {
     vars.push(`$input-color: ${tokens.bodyText};`);

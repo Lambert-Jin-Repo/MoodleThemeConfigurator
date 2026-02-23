@@ -89,6 +89,14 @@ export interface ThemeTokens {
   // Signup
   signupBtnBg: string;
 
+  // Activity Icon Colours (Moodle 4.x purpose-based)
+  actIconAdmin: string;
+  actIconAssessment: string;
+  actIconCollaboration: string;
+  actIconCommunication: string;
+  actIconContent: string;
+  actIconInterface: string;
+
   // Logo
   logoAustraliaColour: string; // 'auto' or hex — colour of "AUSTRALIA" text in CFA logo
 }
@@ -166,6 +174,13 @@ export const DEFAULT_TOKENS: ThemeTokens = {
   focusRingWidth: 2,
 
   signupBtnBg: '#6c757d',
+
+  actIconAdmin: '#5d63f6',
+  actIconAssessment: '#11a676',
+  actIconCollaboration: '#eb66a2',
+  actIconCommunication: '#f7634d',
+  actIconContent: '#399be2',
+  actIconInterface: '#a378ff',
 
   logoAustraliaColour: 'auto',
 };
