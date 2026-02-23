@@ -446,6 +446,14 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push(`}`);
     rules.push('');
 
+    // Icons inside cards — override global dark icon colour for dark card backgrounds
+    rules.push(`.card .icon, .card .fa, .card [class*="fa-"],`);
+    rules.push(`.dashboard-card .icon, .dashboard-card .fa,`);
+    rules.push(`.block_myoverview .card .icon, .block_myoverview .card .fa {`);
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push(`}`);
+    rules.push('');
+
     // Muted text (helper labels, calendar day numbers, timestamps, category labels)
     rules.push(`.text-muted, .text-secondary, small, .small,`);
     rules.push(`.coursecategory, .course-category, .coursecat, .dimmed_text,`);

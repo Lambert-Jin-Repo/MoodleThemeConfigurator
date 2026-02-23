@@ -99,6 +99,7 @@ Tested against Moodle 4.x Boost theme. Some may need updating for Moodle 5.x.
 | Progress bars | `.progress-bar` | Bootstrap class |
 | Alerts | `.alert-info` | Bootstrap class |
 | FontAwesome icons | `.icon, .fa` | Inherit parent color; need explicit override on dark themes |
+| Card icons (action menus) | `.card .icon, .card .fa, .dashboard-card .fa` | Need `bodyText` color on dark themes (opposite of global icon rule); auto-adapts via `isDarkBg()` |
 | Section toggle wrapper | `.ftoggler` | Contains `.collapsed-icon.icon-no-margin` with icon inside |
 | Inner icon wrapper | `.collapsed-icon.icon-no-margin` | Sits on light background even in dark themes |
 | Module prev/next nav | `.btn-previous, .btn-next` | `btn btn-link` style; icons need dark color on light wrapper |
