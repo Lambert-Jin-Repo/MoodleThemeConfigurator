@@ -99,6 +99,7 @@ Tested against Moodle 4.x Boost theme. Some may need updating for Moodle 5.x.
 | Progress bars | `.progress-bar` | Bootstrap class |
 | Alerts | `.alert-info` | Bootstrap class |
 | FontAwesome icons | `.icon, .fa` | Inherit parent color; need explicit override on dark themes |
+| Card icons (action menus) | `.card .icon, .card .fa, .dashboard-card .fa` | Need `bodyText` color on dark themes (opposite of global icon rule); auto-adapts via `isDarkBg()` |
 | Section toggle wrapper | `.ftoggler` | Contains `.collapsed-icon.icon-no-margin` with icon inside |
 | Inner icon wrapper | `.collapsed-icon.icon-no-margin` | Sits on light background even in dark themes |
 | Module prev/next nav | `.btn-previous, .btn-next` | `btn btn-link` style; icons need dark color on light wrapper |
@@ -114,6 +115,7 @@ Tested against Moodle 4.x Boost theme. Some may need updating for Moodle 5.x.
 | Block drawer | `#theme_boost-drawers-blocks` | Naming convention, verify in DevTools |
 | Content max width | `#page.drawers .main-inner` | Verify against specific version |
 | Trial banner | `.block_moodlecloudtrial.block.no-header.card` | MoodleCloud-only proprietary block; inner `.card-body` needs `background-color` override on dark themes; needs `!important` |
+| Course content section icons | `.card, .card-body` (within course content) | Section icons under course contents use `.card` containers; generic `.card` `background-color: cardBg` fix resolves white bg on dark themes |
 
 ### How to Verify Selectors
 1. Open the real CFA Moodle site in Chrome
