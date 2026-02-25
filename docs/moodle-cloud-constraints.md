@@ -1,6 +1,7 @@
 # Moodle Cloud Constraints & Theming Reference
 
 > Research-verified as of February 2026. The CFA site is hosted on Moodle Cloud (Standard plan).
+> MoodleCloud auto-upgrades; likely running **Moodle 5.1.x** with **Bootstrap 5.3** as of Feb 2026.
 
 ## What Moodle Cloud Allows
 
@@ -37,7 +38,7 @@
 ```
 1. theme_boost_get_pre_scss()    ← Brand colour → $brand-primary variable
 2. Raw initial SCSS field        ← YOUR VARIABLES ($primary, $body-bg, etc.)
-3. Bootstrap 4/5 _variables.scss ← Uses !default, so your values win
+3. Bootstrap 5.3 _variables.scss ← Uses !default, so your values win
 4. Moodle's own SCSS files       ← theme/boost/scss/**
 5. Raw SCSS field                ← YOUR OVERRIDES (CSS rules)
 ```
@@ -79,9 +80,61 @@ Setting `$primary` (or the Brand colour field which maps to `$brand-primary`) au
 
 This is WHY the sandbox must replicate this cascading behaviour — it's the single most impactful setting.
 
+## Verified SCSS Variables (Moodle 5.0+ / Bootstrap 5.3)
+
+### Core Colour Variables (from `preset/default.scss`)
+
+| Variable | Default | Notes |
+|---|---|---|
+| `$primary` / `$blue` | `#0f6cbf` | Unchanged from Moodle 4.x |
+| `$secondary` / `$gray-400` | `#ced4da` | Moodle overrides BS default of `$gray-600` |
+| `$success` / `$green` | `#357a32` | Moodle-specific |
+| `$info` / `$cyan` | `#008196` | **NOT same as `$primary`** |
+| `$warning` / `$orange` | `#f0ad4e` | Moodle-specific |
+| `$danger` / `$red` | `#ca3120` | Moodle-specific |
+
+### Layout & Typography Variables
+
+| Variable | Default | Notes |
+|---|---|---|
+| `$body-bg` | `#FFFFFF` | Bootstrap default |
+| `$body-color` / `$gray-900` | `#1d2125` | Moodle-specific |
+| `$font-size-base` | `0.9375rem` | Moodle override (BS default is `1rem`) |
+| `$line-height-base` | `1.5` | Bootstrap default |
+| `$font-family-sans-serif` | System stack | Moodle does NOT bundle any web fonts |
+| `$headings-font-weight` | `700` | Moodle override (BS default is `500`) |
+| `$border-radius` | `.5rem` (8px) | Moodle override (BS default is `.25rem`) |
+
+### Bootstrap 5.3 CSS Custom Property Chain
+
+In Moodle 5.0+, several variables derive from CSS custom properties:
+
+| Variable | Now References | Impact |
+|---|---|---|
+| `$card-bg` | `var(--bs-body-bg)` | Setting `$body-bg` cascades to cards |
+| `$dropdown-bg` | `var(--bs-body-bg)` | Setting `$body-bg` cascades to dropdowns |
+| `$input-bg` | `var(--bs-body-bg)` | Setting `$body-bg` cascades to inputs |
+| `$input-color` | `var(--bs-body-color)` | Setting `$body-color` cascades to inputs |
+| `$btn-border-radius` | `var(--bs-border-radius)` | Setting `$border-radius` cascades |
+
+### Activity Icon Variables (Moodle 5.0+)
+
+Individual background colour variables (use these, NOT the `$activity-icon-colors` map):
+
+| Variable | Default | Category |
+|---|---|---|
+| `$activity-icon-administration-bg` | `#da58ef` | Admin tools |
+| `$activity-icon-assessment-bg` | `#f90086` | Quizzes, assignments |
+| `$activity-icon-collaboration-bg` | `#5b40ff` | Wikis, databases |
+| `$activity-icon-communication-bg` | `#eb6200` | Forums, messaging |
+| `$activity-icon-content-bg` | `#0099ad` | Pages, files, URLs |
+| `$activity-icon-interactivecontent-bg` | `#8d3d1b` | H5P, SCORM |
+
+> Note: The old `$activity-icon-colors` SCSS map used CSS filter values, not hex colours. The individual `$activity-icon-*-bg` variables accept hex colours directly.
+
 ## Verified CSS Selectors
 
-Tested against Moodle 4.x Boost theme. Some may need updating for Moodle 5.x.
+Tested against Moodle 5.0+ Boost theme. All confirmed to survive Bootstrap 5 migration.
 
 ### High Confidence (Verified in docs/forums/source)
 
@@ -103,6 +156,7 @@ Tested against Moodle 4.x Boost theme. Some may need updating for Moodle 5.x.
 | Section toggle wrapper | `.ftoggler` | Contains `.collapsed-icon.icon-no-margin` with icon inside |
 | Inner icon wrapper | `.collapsed-icon.icon-no-margin` | Sits on light background even in dark themes |
 | Module prev/next nav | `.btn-previous, .btn-next` | `btn btn-link` style; icons need dark color on light wrapper |
+| Group mode icon | `.activity-groupmode-info img.icon` | Rendered as `<img>` not FontAwesome; needs `filter: invert(1)` on dark themes |
 
 ### Medium Confidence (Convention-based, verify per version)
 
@@ -110,7 +164,7 @@ Tested against Moodle 4.x Boost theme. Some may need updating for Moodle 5.x.
 |---|---|---|
 | Dashboard page | `body#page-my-index` | Body ID from `/my/index.php` |
 | Dashboard cards | `.card.dashboard-card` | May vary between versions |
-| Course drawers | `.drawer` | Generic drawer class in Moodle 4.x |
+| Course drawers | `.drawer` | Generic drawer class in Moodle 4.x+ |
 | Course index drawer | `#theme_boost-drawers-courseindex` | Naming convention, verify in DevTools |
 | Block drawer | `#theme_boost-drawers-blocks` | Naming convention, verify in DevTools |
 | Content max width | `#page.drawers .main-inner` | Verify against specific version |
@@ -134,15 +188,25 @@ FontAwesome icons (`.icon`, `.fa`) on dark themes need the **DEFAULT dark text c
 
 **Key principle:** `$body-color` in Block 1 handles most text but does NOT fix icons that sit on light-background wrappers.
 
-## Bootstrap 5 Migration Warning
+## Bootstrap 5.3 Migration (Moodle 5.0+)
 
-Moodle 5.0+ migrates from Bootstrap 4 to Bootstrap 5:
-- **SCSS variables still work** — `$primary`, `$body-bg`, etc. are unchanged
-- **Utility classes change** — `.ml-*` → `.ms-*`, `.mr-*` → `.me-*`, `.float-left` → `.float-start`
-- **Some component markup changes** — card, modal, dropdown HTML structure may differ
-- **Backward compat layer exists** until Moodle 6.0
+Moodle 5.0+ uses **Bootstrap 5.3** (upgraded from Bootstrap 4 in Moodle 4.x):
 
-The SCSS variables in Block 1 (Raw initial SCSS) are safe. The CSS selectors in Block 2 (Raw SCSS) may need updating — particularly any that rely on Bootstrap utility classes.
+### What Still Works
+- **All SCSS variables** — `$primary`, `$body-bg`, `$font-size-base`, etc. unchanged
+- **Core selectors** — `.navbar.fixed-top`, `#page-footer`, `body#page-login-index`, `.card`, `.breadcrumb`, `.drawer`
+- **`!default` mechanism** — Raw initial SCSS overrides still win
+
+### What Changed
+- **Utility classes** — `.ml-*` → `.ms-*`, `.mr-*` → `.me-*`, `.float-left` → `.float-start`
+- **Data attributes** — `data-toggle` → `data-bs-toggle`, `data-target` → `data-bs-target`
+- **Navbar classes** — `.navbar-light` deprecated; use default or `data-bs-theme="dark"`
+- **CSS custom properties** — Components now use `var(--bs-*)` internally
+- **Font Awesome 6.7.2** — `.fa` still works, adds solid/regular/brands families
+
+### Backward Compatibility
+- **BS4 compat layer exists until Moodle 6.0** — old class names still work
+- **Silent data attribute replacement** — old BS4 `data-toggle` auto-converts
 
 ## Cache Purging
 

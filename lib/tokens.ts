@@ -19,11 +19,13 @@ export interface ThemeTokens {
   // Breadcrumb
   breadcrumbBg: string;
 
-  // Buttons
+  // Buttons & Borders
   btnPrimaryBg: string;
   btnPrimaryText: string;
   btnPrimaryHover: string;
   btnRadius: number;
+  borderRadius: number;        // global $border-radius (rem * 16 → px)
+  secondaryColour: string;     // $secondary
 
   // Links
   linkColour: string;
@@ -67,6 +69,7 @@ export interface ThemeTokens {
   lineHeight: number;
   fontFamily: string;
   fontWeight: string;
+  headingsFontWeight: string;  // $headings-font-weight
   headingText: string;
   bodyText: string;
   mutedText: string;
@@ -89,12 +92,13 @@ export interface ThemeTokens {
   // Signup
   signupBtnBg: string;
 
-  // Activity Icon Colours (Moodle 4.x purpose-based)
+  // Activity Icon Colours (Moodle 5.0+ purpose-based)
   actIconAdmin: string;
   actIconAssessment: string;
   actIconCollaboration: string;
   actIconCommunication: string;
   actIconContent: string;
+  actIconInteractiveContent: string;
   actIconInterface: string;
 
   // Logo
@@ -121,6 +125,8 @@ export const DEFAULT_TOKENS: ThemeTokens = {
   btnPrimaryText: '#FFFFFF',
   btnPrimaryHover: '#0c5aa0',
   btnRadius: 8,
+  borderRadius: 8,           // Moodle Boost overrides BS default to .5rem (8px)
+  secondaryColour: '#ced4da', // Moodle Boost $secondary = $gray-400
 
   linkColour: '#0f6cbf',
   linkHover: '#0a4a82',
@@ -136,7 +142,7 @@ export const DEFAULT_TOKENS: ThemeTokens = {
   loginHeading: '#404041',
   loginBtnBg: '#0f6cbf',
   loginBtnText: '#FFFFFF',
-  loginInputRadius: 4,
+  loginInputRadius: 8,
   loginGradientEnabled: false,
   loginGradientEnd: '#0f6cbf',
 
@@ -155,8 +161,9 @@ export const DEFAULT_TOKENS: ThemeTokens = {
   bodyFontSize: 0.9375,
   headingScale: 1.25,
   lineHeight: 1.5,
-  fontFamily: '"Source Sans 3", "Source Sans Pro", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+  fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans", "Liberation Sans", Arial, sans-serif',
   fontWeight: '400',
+  headingsFontWeight: '700',  // Moodle Boost overrides BS default of 500
   headingText: '#1d2125',
   bodyText: '#1d2125',
   mutedText: '#6a737b',
@@ -167,19 +174,21 @@ export const DEFAULT_TOKENS: ThemeTokens = {
   success: '#357a32',
   warning: '#f0ad4e',
   error: '#ca3120',
-  info: '#0f6cbf',
+  info: '#008196',
   progressFill: '#0f6cbf',
 
   focusRing: '#0f6cbf',
   focusRingWidth: 2,
 
-  signupBtnBg: '#6c757d',
+  signupBtnBg: '#ced4da',
 
-  actIconAdmin: '#5d63f6',
-  actIconAssessment: '#11a676',
-  actIconCollaboration: '#eb66a2',
-  actIconCommunication: '#f7634d',
-  actIconContent: '#399be2',
+  // Activity icon colours — verified against Moodle 5.0+ $activity-icon-*-bg variables
+  actIconAdmin: '#da58ef',
+  actIconAssessment: '#f90086',
+  actIconCollaboration: '#5b40ff',
+  actIconCommunication: '#eb6200',
+  actIconContent: '#0099ad',
+  actIconInteractiveContent: '#8d3d1b',
   actIconInterface: '#a378ff',
 
   logoAustraliaColour: 'auto',
@@ -234,10 +243,10 @@ export function isModifiedFromPreset(tokens: ThemeTokens, baseline: ThemeTokens 
 
 // ── Font options ──
 export const FONT_OPTIONS = [
+  { label: 'System Default (Moodle)', value: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans", "Liberation Sans", Arial, sans-serif', weight: '400' },
   { label: 'Source Sans Pro Bold', value: '"Source Sans 3", "Source Sans Pro", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif', weight: '700' },
   { label: 'Source Sans Pro', value: '"Source Sans 3", "Source Sans Pro", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif', weight: '400' },
   { label: 'Inter', value: '"Inter", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif', weight: '400' },
-  { label: 'System Default', value: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif', weight: '400' },
 ] as const;
 
 // ── Preview pages ──

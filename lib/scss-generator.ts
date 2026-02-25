@@ -1,5 +1,6 @@
-// ── SCSS Generator — Complete Rewrite ──
+// ── SCSS Generator ──
 // Generates all 3 output blocks for Moodle Cloud Boost theme
+// Verified against Moodle 5.0+ / Bootstrap 5.3
 
 import { ThemeTokens, DEFAULT_TOKENS } from './tokens';
 
@@ -39,46 +40,74 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
   vars.push('');
 
   if (tokens.brandPrimary !== d.brandPrimary) vars.push(`$primary: ${tokens.brandPrimary};`);
+  if (tokens.secondaryColour !== d.secondaryColour) vars.push(`$secondary: ${tokens.secondaryColour};`);
   if (tokens.linkColour !== d.linkColour) vars.push(`$link-color: ${tokens.linkColour};`);
   if (tokens.pageBg !== d.pageBg) vars.push(`$body-bg: ${tokens.pageBg};`);
   if (tokens.bodyText !== d.bodyText) vars.push(`$body-color: ${tokens.bodyText};`);
   if (tokens.cardBg !== d.cardBg) vars.push(`$card-bg: ${tokens.cardBg};`);
   if (tokens.bodyFontSize !== d.bodyFontSize) vars.push(`$font-size-base: ${tokens.bodyFontSize}rem;`);
   if (tokens.lineHeight !== d.lineHeight) vars.push(`$line-height-base: ${tokens.lineHeight};`);
+  if (tokens.fontFamily !== d.fontFamily) vars.push(`$font-family-sans-serif: ${tokens.fontFamily};`);
+  if (tokens.fontWeight !== d.fontWeight) vars.push(`$font-weight-base: ${tokens.fontWeight};`);
+  if (tokens.headingsFontWeight !== d.headingsFontWeight) vars.push(`$headings-font-weight: ${tokens.headingsFontWeight};`);
+  if (tokens.headingText !== d.headingText) vars.push(`$headings-color: ${tokens.headingText};`);
   if (tokens.success !== d.success) vars.push(`$success: ${tokens.success};`);
   if (tokens.warning !== d.warning) vars.push(`$warning: ${tokens.warning};`);
   if (tokens.error !== d.error) vars.push(`$danger: ${tokens.error};`);
   if (tokens.info !== d.info) vars.push(`$info: ${tokens.info};`);
-  if (tokens.btnRadius !== d.btnRadius) vars.push(`$btn-border-radius: ${tokens.btnRadius}px;`);
-  if (tokens.loginInputRadius !== d.loginInputRadius) vars.push(`$input-border-radius: ${tokens.loginInputRadius}px;`);
-  if (tokens.fontFamily !== d.fontFamily) vars.push(`$font-family-sans-serif: ${tokens.fontFamily};`);
-  if (tokens.fontWeight !== d.fontWeight) vars.push(`$font-weight-base: ${tokens.fontWeight};`);
+
+  // Border radius — use rem units to scale with font size
+  if (tokens.borderRadius !== d.borderRadius) {
+    vars.push(`$border-radius: ${(tokens.borderRadius / 16).toFixed(4)}rem;`);
+  }
+  if (tokens.btnRadius !== d.btnRadius && tokens.btnRadius !== tokens.borderRadius) {
+    vars.push(`$btn-border-radius: ${(tokens.btnRadius / 16).toFixed(4)}rem;`);
+  }
+  if (tokens.loginInputRadius !== d.loginInputRadius && tokens.loginInputRadius !== tokens.borderRadius) {
+    vars.push(`$input-border-radius: ${(tokens.loginInputRadius / 16).toFixed(4)}rem;`);
+  }
+
+  // Heading sizes — use Bootstrap's discrete multipliers
   if (tokens.headingScale !== d.headingScale) {
     const base = tokens.bodyFontSize || 0.9375;
-    vars.push(`$h1-font-size: ${(base * Math.pow(tokens.headingScale, 4)).toFixed(4)}rem;`);
-    vars.push(`$h2-font-size: ${(base * Math.pow(tokens.headingScale, 3)).toFixed(4)}rem;`);
-    vars.push(`$h3-font-size: ${(base * Math.pow(tokens.headingScale, 2)).toFixed(4)}rem;`);
-    vars.push(`$h4-font-size: ${(base * tokens.headingScale).toFixed(4)}rem;`);
+    // Bootstrap 5 multipliers: h1=2.5, h2=2.0, h3=1.75, h4=1.5
+    // Scale factor adjusts these proportionally
+    const scaleFactor = tokens.headingScale / d.headingScale;
+    vars.push(`$h1-font-size: ${(base * 2.5 * scaleFactor).toFixed(4)}rem;`);
+    vars.push(`$h2-font-size: ${(base * 2.0 * scaleFactor).toFixed(4)}rem;`);
+    vars.push(`$h3-font-size: ${(base * 1.75 * scaleFactor).toFixed(4)}rem;`);
+    vars.push(`$h4-font-size: ${(base * 1.5 * scaleFactor).toFixed(4)}rem;`);
   }
-  // Activity icon colours (Moodle 4.x purpose-based)
+
+  // Progress bar fill — only emit when different from $primary
+  if (tokens.progressFill !== tokens.brandPrimary) {
+    vars.push(`$progress-bar-bg: ${tokens.progressFill};`);
+  }
+
+  // Activity icon colours (Moodle 5.0+ individual $activity-icon-*-bg variables)
   const iconChanged = tokens.actIconAdmin !== d.actIconAdmin
     || tokens.actIconAssessment !== d.actIconAssessment
     || tokens.actIconCollaboration !== d.actIconCollaboration
     || tokens.actIconCommunication !== d.actIconCommunication
     || tokens.actIconContent !== d.actIconContent
+    || tokens.actIconInteractiveContent !== d.actIconInteractiveContent
     || tokens.actIconInterface !== d.actIconInterface;
   if (iconChanged) {
-    vars.push(`$activity-icon-colors: (`);
-    vars.push(`    "administration": ${tokens.actIconAdmin},`);
-    vars.push(`    "assessment": ${tokens.actIconAssessment},`);
-    vars.push(`    "collaboration": ${tokens.actIconCollaboration},`);
-    vars.push(`    "communication": ${tokens.actIconCommunication},`);
-    vars.push(`    "content": ${tokens.actIconContent},`);
-    vars.push(`    "interface": ${tokens.actIconInterface}`);
-    vars.push(`);`);
+    vars.push('');
+    vars.push('// Activity icon background colours');
+    if (tokens.actIconAdmin !== d.actIconAdmin) vars.push(`$activity-icon-administration-bg: ${tokens.actIconAdmin};`);
+    if (tokens.actIconAssessment !== d.actIconAssessment) vars.push(`$activity-icon-assessment-bg: ${tokens.actIconAssessment};`);
+    if (tokens.actIconCollaboration !== d.actIconCollaboration) vars.push(`$activity-icon-collaboration-bg: ${tokens.actIconCollaboration};`);
+    if (tokens.actIconCommunication !== d.actIconCommunication) vars.push(`$activity-icon-communication-bg: ${tokens.actIconCommunication};`);
+    if (tokens.actIconContent !== d.actIconContent) vars.push(`$activity-icon-content-bg: ${tokens.actIconContent};`);
+    if (tokens.actIconInteractiveContent !== d.actIconInteractiveContent) vars.push(`$activity-icon-interactivecontent-bg: ${tokens.actIconInteractiveContent};`);
+    if (tokens.actIconInterface !== d.actIconInterface) vars.push(`$activity-icon-interface-bg: ${tokens.actIconInterface};`);
   }
+
   // Dark theme: Bootstrap form control variables
   if (darkMode) {
+    vars.push('');
+    vars.push('// Dark theme form control variables');
     vars.push(`$input-color: ${tokens.bodyText};`);
     vars.push(`$input-bg: ${tokens.cardBg};`);
     vars.push(`$input-border-color: ${tokens.cardBorder};`);
@@ -141,7 +170,7 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push('');
     rules.push('// Nav hover overlay');
     rules.push(`.navbar .primary-navigation .nav-link:hover,`);
-    rules.push(`.navbar .primary-navigation .nav-link:focus {`);
+    rules.push(`.navbar .primary-navigation .nav-link:focus-visible {`);
     rules.push(`  background-color: ${tokens.navHoverBg} !important;`);
     if (tokens.navHoverText !== NAV_TEXT) {
       rules.push(`  color: ${tokens.navHoverText} !important;`);
@@ -178,18 +207,22 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push('');
   }
 
-  // --- Links ---
-  rules.push('// ── Links ──');
-  rules.push(`a { text-decoration: underline; }`);
-  rules.push('');
+  // --- Links (conditional — only emit underline if changed from default) ---
+  if (tokens.linkColour !== d.linkColour) {
+    rules.push('// ── Links ──');
+    rules.push(`a:hover { color: ${tokens.linkHover} !important; }`);
+    rules.push('');
+  }
 
-  // --- Focus ---
-  rules.push('// ── Focus Ring ──');
-  rules.push(`*:focus {`);
-  rules.push(`  outline: ${tokens.focusRingWidth}px solid ${tokens.focusRing} !important;`);
-  rules.push(`  outline-offset: 2px;`);
-  rules.push(`}`);
-  rules.push('');
+  // --- Focus (use :focus-visible for modern keyboard-only focus) ---
+  if (tokens.focusRing !== d.focusRing || tokens.focusRingWidth !== d.focusRingWidth) {
+    rules.push('// ── Focus Ring ──');
+    rules.push(`*:focus-visible {`);
+    rules.push(`  outline: ${tokens.focusRingWidth}px solid ${tokens.focusRing} !important;`);
+    rules.push(`  outline-offset: 2px;`);
+    rules.push(`}`);
+    rules.push('');
+  }
 
   // --- Buttons ---
   if (tokens.btnPrimaryBg !== d.btnPrimaryBg || tokens.btnPrimaryText !== d.btnPrimaryText) {
@@ -199,7 +232,7 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push(`  border-color: ${tokens.btnPrimaryBg} !important;`);
     rules.push(`  color: ${tokens.btnPrimaryText} !important;`);
     rules.push(`}`);
-    rules.push(`.btn-primary:hover, .btn-primary:focus {`);
+    rules.push(`.btn-primary:hover, .btn-primary:focus-visible {`);
     rules.push(`  background-color: ${tokens.btnPrimaryHover} !important;`);
     rules.push(`  border-color: ${tokens.btnPrimaryHover} !important;`);
     rules.push(`}`);
@@ -221,7 +254,7 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
   }
 
   // --- Login ---
-  if (tokens.loginBg !== d.loginBg) {
+  if (tokens.loginBg !== d.loginBg || tokens.loginBtnBg !== d.loginBtnBg || tokens.signupBtnBg !== d.signupBtnBg || tokens.loginHeading !== d.loginHeading) {
     rules.push('// ── Login Page ──');
     if (tokens.loginGradientEnabled) {
       rules.push(`body#page-login-index {`);
@@ -256,6 +289,13 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
       rules.push(`  color: #404041 !important;`);
       rules.push(`}`);
     }
+    if (tokens.signupBtnBg !== d.signupBtnBg) {
+      rules.push(`body#page-login-index .login-signup .btn,`);
+      rules.push(`body#page-login-index .btn-secondary {`);
+      rules.push(`  background-color: ${tokens.signupBtnBg} !important;`);
+      rules.push(`  border-color: ${tokens.signupBtnBg} !important;`);
+      rules.push(`}`);
+    }
     rules.push('');
   }
 
@@ -284,16 +324,12 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
   }
 
   // --- Drawers ---
-  if (tokens.drawerBg !== d.drawerBg || tokens.drawerText !== d.drawerText) {
+  if (tokens.drawerBg !== d.drawerBg || tokens.drawerText !== d.drawerText || tokens.drawerBorder !== d.drawerBorder) {
     rules.push('// ── Drawers ──');
     rules.push(`[data-region="right-hand-drawer"], .drawer {`);
-    if (tokens.drawerBg !== d.drawerBg) {
-      rules.push(`  background-color: ${tokens.drawerBg} !important;`);
-      rules.push(`  border-color: ${tokens.drawerBorder} !important;`);
-    }
-    if (tokens.drawerText !== d.drawerText) {
-      rules.push(`  color: ${tokens.drawerText} !important;`);
-    }
+    rules.push(`  background-color: ${tokens.drawerBg} !important;`);
+    rules.push(`  color: ${tokens.drawerText} !important;`);
+    rules.push(`  border-color: ${tokens.drawerBorder} !important;`);
     rules.push(`}`);
     rules.push(`[data-region="right-hand-drawer"] a, .drawer a {`);
     rules.push(`  color: ${tokens.drawerText} !important;`);
@@ -305,19 +341,11 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push('');
   }
 
-  // --- Typography ---
-  if (tokens.headingText !== d.headingText) {
-    rules.push('// ── Typography ──');
-    rules.push(`h1, h2, h3, h4, h5, h6 { color: ${tokens.headingText} !important; }`);
-    rules.push('');
-  }
+  // --- Typography (heading color via $headings-color in Block 1, body color via $body-color) ---
+  // Only emit CSS overrides for body text if needed beyond $body-color variable
   if (tokens.bodyText !== d.bodyText) {
-    rules.push(`body { color: ${tokens.bodyText} !important; }`);
-    rules.push('');
-
-    // Icon visibility fix — icons sit on light wrappers even on dark themes,
-    // so they need the default dark colour, not the light bodyText
     rules.push('// ── Icon Visibility Fix ──');
+    rules.push('// Icons sit on light wrappers even on dark themes — keep them dark');
     rules.push(`.icon, .fa { color: ${d.bodyText} !important; }`);
     rules.push(`.breadcrumb .icon, .breadcrumb .fa { color: ${d.bodyText} !important; }`);
     rules.push(`.secondary-navigation .icon, .secondary-navigation .fa { color: ${d.bodyText} !important; }`);
@@ -334,6 +362,13 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push(`.breadcrumb a:hover .icon, .breadcrumb a:hover .fa { color: ${tokens.linkColour} !important; }`);
     rules.push(`.btn-previous:hover .icon, .btn-previous:hover .fa,`);
     rules.push(`.btn-next:hover .icon, .btn-next:hover .fa { color: ${tokens.linkColour} !important; }`);
+    rules.push('');
+  }
+
+  // --- Content Max Width ---
+  if (tokens.contentMaxWidth !== d.contentMaxWidth) {
+    rules.push('// ── Content Max Width ──');
+    rules.push(`#region-main { max-width: ${tokens.contentMaxWidth}px; margin-left: auto; margin-right: auto; }`);
     rules.push('');
   }
 
@@ -365,14 +400,7 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push('');
   }
 
-  // --- Content Max Width ---
-  if (tokens.contentMaxWidth !== d.contentMaxWidth) {
-    rules.push('// ── Content Max Width ──');
-    rules.push(`#region-main { max-width: ${tokens.contentMaxWidth}px; margin-left: auto; margin-right: auto; }`);
-    rules.push('');
-  }
-
-  // --- Signup Button ---
+  // --- Signup Button (standalone, outside login gate) ---
   if (tokens.signupBtnBg !== d.signupBtnBg) {
     rules.push('// ── Signup Button ──');
     rules.push(`body#page-login-index .login-signup .btn,`);

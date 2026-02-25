@@ -311,8 +311,8 @@ export default function ControlsPanel() {
         />
       </AccordionSection>
 
-      {/* 6. Buttons */}
-      <AccordionSection title="Buttons" sectionId="buttons" ref={setAccordionRef('buttons')}>
+      {/* 6. Buttons & Borders */}
+      <AccordionSection title="Buttons & Borders" sectionId="buttons" ref={setAccordionRef('buttons')}>
         <ColourPicker
           label="Button Primary BG"
           value={tokens.btnPrimaryBg}
@@ -330,6 +330,20 @@ export default function ControlsPanel() {
           label="Button Hover"
           value={tokens.btnPrimaryHover}
           onChange={(v) => set('btnPrimaryHover')(v)}
+        />
+        <ColourPicker
+          label="Secondary Colour"
+          value={tokens.secondaryColour}
+          onChange={(v) => set('secondaryColour')(v)}
+        />
+        <SliderControl
+          label="Global Border Radius"
+          value={tokens.borderRadius}
+          onChange={(v) => set('borderRadius')(v)}
+          min={0}
+          max={24}
+          step={1}
+          unit="px"
         />
         <SliderControl
           label="Button Radius"
@@ -534,6 +548,17 @@ export default function ControlsPanel() {
           max={1.5}
           step={0.05}
         />
+        <SelectControl
+          label="Heading Font Weight"
+          value={tokens.headingsFontWeight}
+          onChange={(v) => set('headingsFontWeight')(v)}
+          options={[
+            { label: 'Bold (700) — Moodle default', value: '700' },
+            { label: 'Semi-bold (600)', value: '600' },
+            { label: 'Medium (500) — Bootstrap default', value: '500' },
+            { label: 'Normal (400)', value: '400' },
+          ]}
+        />
         <SliderControl
           label="Line Height"
           value={tokens.lineHeight}
@@ -602,7 +627,7 @@ export default function ControlsPanel() {
       {/* 13. Activity Icons */}
       <AccordionSection title="Activity Icons" sectionId="activity-icons" ref={setAccordionRef('activity-icons')}>
         <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded mb-2">
-          Moodle 4.x uses purpose-based icon backgrounds. White icons sit on coloured circles.
+          Moodle 5.0+ uses purpose-based icon backgrounds. White icons sit on coloured circles.
         </div>
         <ColourPicker
           label="Administration"
@@ -633,6 +658,11 @@ export default function ControlsPanel() {
           label="Interface (Label, LTI)"
           value={tokens.actIconInterface}
           onChange={(v) => set('actIconInterface')(v)}
+        />
+        <ColourPicker
+          label="Interactive Content (H5P, SCORM)"
+          value={tokens.actIconInteractiveContent}
+          onChange={(v) => set('actIconInteractiveContent')(v)}
         />
       </AccordionSection>
 
