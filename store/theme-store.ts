@@ -79,6 +79,13 @@ export const useThemeStore = create<ThemeState>()(
             if (key === 'drawerBg' && typeof value === 'string') {
               newTokens.drawerText = autoTextColour(value);
             }
+            // Info icon colour follows linkColour (main theme colour) unless manually overridden
+            if (key === 'linkColour' && typeof value === 'string') {
+              const oldLink = state.tokens.linkColour;
+              if (state.tokens.infoIconColour.toUpperCase() === oldLink.toUpperCase()) {
+                newTokens.infoIconColour = value;
+              }
+            }
             return { tokens: newTokens };
           });
         },
