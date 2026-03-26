@@ -687,7 +687,12 @@ export default function ControlsPanel() {
           label="Info"
           value={tokens.info}
           onChange={(v) => set('info')(v)}
-          tokenKey="info"
+        />
+        <ColourPicker
+          label="Info Icon"
+          value={tokens.infoIconColour}
+          onChange={(v) => set('infoIconColour')(v)}
+          tokenKey="infoIconColour"
           linkedToBrand
         />
         <ColourPicker

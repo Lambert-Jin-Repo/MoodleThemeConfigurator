@@ -198,7 +198,7 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
       rules.push('// Dropdowns on white background');
       rules.push(`.navbar .dropdown-menu, .navbar .popover-region-container,`);
       rules.push(`.navbar .usermenu .dropdown-menu {`);
-      rules.push(`  .dropdown-item, .nav-link, a { color: #404041 !important; }`);
+      rules.push(`  .dropdown-item, .nav-link, a { color: ${d.bodyText} !important; }`);
       rules.push(`}`);
     }
     rules.push('');
@@ -286,7 +286,7 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
       rules.push(`body#page-login-index label,`);
       rules.push(`body#page-login-index .login-form-forgotpassword a,`);
       rules.push(`body#page-login-index .login-signup a {`);
-      rules.push(`  color: #404041 !important;`);
+      rules.push(`  color: ${d.bodyText} !important;`);
       rules.push(`}`);
     }
     if (tokens.signupBtnBg !== d.signupBtnBg) {
@@ -500,10 +500,111 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push(`}`);
     rules.push('');
 
+    // Completion icons — light-bg buttons inside course content, force dark icon
+    rules.push(`.btn-subtle-success .fa, .btn-subtle-success .icon,`);
+    rules.push(`.btn-subtle-warning .fa, .btn-subtle-warning .icon,`);
+    rules.push(`.btn-subtle-info .fa, .btn-subtle-info .icon {`);
+    rules.push(`  color: ${d.bodyText} !important;`);
+    rules.push(`}`);
+    rules.push('');
+
+    // Bootstrap text-utility icons — restore semantic colours that the generic
+    // .icon/.fa dark override clobbers. Uses token values so colours stay dynamic.
+    rules.push('// Semantic icon colours — override generic .icon/.fa dark rule');
+    rules.push(`.icon.text-info, .fa.text-info {`);
+    rules.push(`  color: ${tokens.infoIconColour} !important;`);
+    rules.push(`}`);
+    rules.push(`.icon.text-danger, .fa.text-danger {`);
+    rules.push(`  color: ${tokens.error} !important;`);
+    rules.push(`}`);
+    rules.push(`.icon.text-warning, .fa.text-warning {`);
+    rules.push(`  color: ${tokens.warning} !important;`);
+    rules.push(`}`);
+    rules.push(`.icon.text-success, .fa.text-success {`);
+    rules.push(`  color: ${tokens.success} !important;`);
+    rules.push(`}`);
+    rules.push('// Link-style button icons (calendar picker, etc.) — follow link colour');
+    rules.push(`.btn-link .icon, .btn-link .fa, .btn-link [class*="fa-"] {`);
+    rules.push(`  color: ${tokens.linkColour} !important;`);
+    rules.push(`}`);
+    rules.push('// File manager — folder icon is a background-image on the span');
+    rules.push('// Double-invert: invert span (fixes icon), counter-invert link (restores text)');
+    rules.push(`.fp-path-folder {`);
+    rules.push(`  filter: invert(1) !important;`);
+    rules.push(`}`);
+    rules.push(`.fp-path-folder a {`);
+    rules.push(`  filter: invert(1) !important;`);
+    rules.push(`  color: ${tokens.linkColour} !important;`);
+    rules.push(`}`);
+    rules.push('// File manager toolbar icons — follow link colour');
+    rules.push(`.fp-pathbar .icon, .fp-pathbar .fa,`);
+    rules.push(`.filemanager-toolbar .icon, .filemanager-toolbar .fa,`);
+    rules.push(`.filemanager-toolbar [class*="fa-"] {`);
+    rules.push(`  color: ${tokens.linkColour} !important;`);
+    rules.push(`}`);
+    rules.push('');
+
+    // Link icons on dark page bg — action icons inside <a> follow link colour
+    rules.push('// Link action icons — follow main theme colour');
+    rules.push(`a .icon, a .fa, a [class*="fa-"] {`);
+    rules.push(`  color: ${tokens.linkColour} !important;`);
+    rules.push(`}`);
+    rules.push('');
+
+    // White-background containers — Moodle hardcodes .bg-white, dialogs, and
+    // YUI3 widgets keep white bg. Force dark text so it's readable.
+    // NOTE: must come AFTER message-app rule so .bg-white wins inside conversation area
+    rules.push('// Force dark text on white-background containers');
+    rules.push(`.bg-white, .bg-white *,`);
+    rules.push(`.moodle-dialogue-bd, .moodle-dialogue-bd *,`);
+    rules.push(`.fp-select, .fp-select *,`);
+    rules.push(`.yui3-datatable, .yui3-datatable *,`);
+    rules.push(`.yui3-widget-bd, .yui3-widget-bd * {`);
+    rules.push(`  color: ${d.bodyText} !important;`);
+    rules.push(`}`);
+    rules.push('// Preserve link colour inside white containers');
+    rules.push(`.bg-white a, .moodle-dialogue-bd a, .fp-select a,`);
+    rules.push(`.yui3-datatable a, .yui3-widget-bd a {`);
+    rules.push(`  color: ${tokens.linkColour} !important;`);
+    rules.push(`}`);
+    rules.push('');
+    // Messaging drawer sidebar — dark bg, white text, main colour for interactive
+    rules.push('// Messaging drawer sidebar');
+    rules.push(`.message-app {`);
+    rules.push(`  background-color: ${tokens.drawerBg} !important;`);
+    rules.push(`}`);
+    rules.push(`.message-app .view-overview-body,`);
+    rules.push(`.message-app .view-overview-body *,`);
+    rules.push(`.message-app .section, .message-app .section *,`);
+    rules.push(`.message-app .card-header, .message-app .card-header * {`);
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push(`  background-color: transparent !important;`);
+    rules.push(`}`);
+    rules.push(`.message-app .view-overview-body a,`);
+    rules.push(`.message-app .section a,`);
+    rules.push(`.message-app .card-header a {`);
+    rules.push(`  color: ${tokens.linkColour} !important;`);
+    rules.push(`}`);
+    rules.push(`.message-app .view-overview-body .icon,`);
+    rules.push(`.message-app .view-overview-body .fa,`);
+    rules.push(`.message-app .section .icon, .message-app .section .fa {`);
+    rules.push(`  color: ${tokens.linkColour} !important;`);
+    rules.push(`}`);
+    rules.push(`.message-app .text-muted, .message-app small {`);
+    rules.push(`  color: ${tokens.mutedText} !important;`);
+    rules.push(`}`);
+    rules.push('// Search icon inside white input — force dark');
+    rules.push(`.simplesearchform .btn-submit .icon,`);
+    rules.push(`.simplesearchform .btn-submit .fa {`);
+    rules.push(`  color: ${d.bodyText} !important;`);
+    rules.push(`}`);
+    rules.push('');
+
     // Muted text (helper labels, calendar day numbers, timestamps, category labels)
     rules.push(`.text-muted, .text-secondary, small, .small,`);
     rules.push(`.coursecategory, .course-category, .coursecat, .dimmed_text,`);
-    rules.push(`.categoryname, .categoryname.text-truncate {`);
+    rules.push(`.categoryname, .categoryname.text-truncate,`);
+    rules.push(`.resourcelinkdetails, .activity-altcontent, .activity-dates {`);
     rules.push(`  color: ${tokens.mutedText} !important;`);
     rules.push(`}`);
     rules.push('');
@@ -515,8 +616,12 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push(`.progress-text, .progress .text, .progress .small {`);
     rules.push(`  color: ${tokens.mutedText} !important;`);
     rules.push(`}`);
-    rules.push(`.dashboard-card-footer, .course-info-container {`);
+    rules.push(`.dashboard-card-footer, .course-info-container,`);
+    rules.push(`.course-card .card-footer, .card.course-card .card-footer.bg-white {`);
     rules.push(`  background-color: ${tokens.cardBg} !important;`);
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push(`}`);
+    rules.push(`.course-card .progress-text, .block-cards .progress-text {`);
     rules.push(`  color: ${tokens.bodyText} !important;`);
     rules.push(`}`);
     rules.push('');
@@ -591,6 +696,16 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
 
     // Form labels
     rules.push(`label, .form-label, .form-check-label { color: ${tokens.bodyText} !important; }`);
+    // Toggle switches — main theme colour when checked, white when unchecked
+    rules.push(`.form-check-input:checked {`);
+    rules.push(`  background-color: ${tokens.linkColour} !important;`);
+    rules.push(`  border-color: ${tokens.linkColour} !important;`);
+    rules.push(`  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23000'/%3e%3c/svg%3e") !important;`);
+    rules.push(`}`);
+    rules.push(`.form-check-input:not(:checked) {`);
+    rules.push(`  background-color: #FFFFFF !important;`);
+    rules.push(`  border-color: #dee2e6 !important;`);
+    rules.push(`}`);
     rules.push('');
 
     // Tables (calendar grid, participant lists)
@@ -655,9 +770,12 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push(`}`);
     rules.push('');
 
-    // Activity icon containers — ensure purpose colours show on dark themes
-    rules.push(`.activityiconcontainer {`);
-    rules.push(`  filter: brightness(1.2) !important;`);
+    // Activity icon containers — ensure icons are visible on dark themes
+    // Do NOT set filter on the container — it overrides Moodle's SVG filter
+    // that makes the icon image white. Instead ensure the icon img is white.
+    rules.push(`.activityiconcontainer .activityicon,`);
+    rules.push(`.activityiconcontainer .icon {`);
+    rules.push(`  filter: brightness(0) invert(1) !important;`);
     rules.push(`}`);
     rules.push(`.activityiconcontainer.content {`);
     rules.push(`  background-color: ${tokens.actIconContent} !important;`);
@@ -684,14 +802,14 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push('.course-content .activity-navigation .btn,');
     rules.push('#page-content .activity-navigation .btn {');
     rules.push(`  background-color: ${tokens.bodyText} !important;`);
-    rules.push(`  color: #404041 !important;`);
+    rules.push(`  color: ${autoTextForHex(tokens.bodyText)} !important;`);
     rules.push(`  border-color: ${tokens.bodyText} !important;`);
     rules.push(`}`);
     rules.push('.activity-navigation .btn .icon,');
     rules.push('.activity-navigation .btn i,');
     rules.push('.activity-navigation .btn .fa,');
     rules.push('.activity-navigation .btn [class*="bi-"] {');
-    rules.push(`  color: #404041 !important;`);
+    rules.push(`  color: ${autoTextForHex(tokens.bodyText)} !important;`);
     rules.push(`}`);
     rules.push('');
 
@@ -720,6 +838,9 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push(`.badge.text-dark, .text-dark {`);
     rules.push(`  color: ${tokens.bodyText} !important;`);
     rules.push(`}`);
+    rules.push(`.badge.bg-success, .badge.bg-info, .badge.bg-warning {`);
+    rules.push(`  color: ${d.bodyText} !important;`);
+    rules.push(`}`);
     rules.push('');
 
     // Btn-secondary / btn-outline on dark
@@ -730,6 +851,44 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push(`}`);
     rules.push(`.btn-secondary:hover, .btn-outline-secondary:hover {`);
     rules.push(`  background-color: rgba(255,255,255,0.08) !important;`);
+    rules.push(`}`);
+    // Btn-outline-primary on dark — white text/border, main colour on hover
+    rules.push(`.btn-outline-primary {`);
+    rules.push(`  color: #FFFFFF !important;`);
+    rules.push(`  border-color: #FFFFFF !important;`);
+    rules.push(`  background-color: transparent !important;`);
+    rules.push(`}`);
+    rules.push(`.btn-outline-primary:hover, .btn-outline-primary:focus {`);
+    rules.push(`  color: ${autoTextForHex(tokens.linkColour)} !important;`);
+    rules.push(`  background-color: ${tokens.linkColour} !important;`);
+    rules.push(`  border-color: ${tokens.linkColour} !important;`);
+    rules.push(`}`);
+    // Course section collapse/expand arrow — 3 states
+    rules.push('// Section toggle arrow — default: main colour bg + white arrow');
+    rules.push(`.icons-collapse-expand {`);
+    rules.push(`  background-color: ${tokens.linkColour} !important;`);
+    rules.push(`  border-radius: 4px !important;`);
+    rules.push(`}`);
+    rules.push(`.icons-collapse-expand .icon, .icons-collapse-expand .fa,`);
+    rules.push(`.icons-collapse-expand [class*="fa-"] {`);
+    rules.push(`  color: ${d.bodyText} !important;`);
+    rules.push(`}`);
+    rules.push('// Hover: dark bg + white arrow');
+    rules.push(`.icons-collapse-expand:hover {`);
+    rules.push(`  background-color: ${d.bodyText} !important;`);
+    rules.push(`}`);
+    rules.push(`.icons-collapse-expand:hover .icon, .icons-collapse-expand:hover .fa,`);
+    rules.push(`.icons-collapse-expand:hover [class*="fa-"] {`);
+    rules.push(`  color: #FFFFFF !important;`);
+    rules.push(`}`);
+    rules.push('// Expanded: white bg + dark arrow');
+    rules.push(`.icons-collapse-expand[aria-expanded="true"] {`);
+    rules.push(`  background-color: #FFFFFF !important;`);
+    rules.push(`}`);
+    rules.push(`.icons-collapse-expand[aria-expanded="true"] .icon,`);
+    rules.push(`.icons-collapse-expand[aria-expanded="true"] .fa,`);
+    rules.push(`.icons-collapse-expand[aria-expanded="true"] [class*="fa-"] {`);
+    rules.push(`  color: ${d.bodyText} !important;`);
     rules.push(`}`);
     rules.push('');
 
@@ -773,6 +932,69 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push(`  color: ${tokens.bodyText} !important;`);
     rules.push(`  border-color: ${tokens.cardBorder} !important;`);
     rules.push(`}`);
+    rules.push('');
+
+    // FINAL: White-bg container overrides — MUST be last so they beat all
+    // dark-theme button/form rules above that set light text colour.
+    rules.push('// White-bg final overrides — highest cascade priority');
+    rules.push(`.bg-white .form-select, .bg-white .form-control,`);
+    rules.push(`.bg-white .btn, .bg-white .btn-secondary,`);
+    rules.push(`.bg-white .btn-link, .bg-white label,`);
+    rules.push(`.bg-white span, .bg-white p, .bg-white div,`);
+    rules.push(`.bg-white legend, .bg-white option {`);
+    rules.push(`  color: ${d.bodyText} !important;`);
+    rules.push(`}`);
+    rules.push(`.bg-white .form-select, .bg-white .form-control {`);
+    rules.push(`  background-color: #FFFFFF !important;`);
+    rules.push(`  border-color: #dee2e6 !important;`);
+    rules.push(`}`);
+    rules.push(`.bg-white a:not(.btn-primary) {`);
+    rules.push(`  color: ${tokens.linkColour} !important;`);
+    rules.push(`}`);
+    // Filter join text ("and"/"or", "Match All of the following")
+    rules.push(`[data-filterregion="joinadverb"],`);
+    rules.push(`[data-filterregion="joinadverb"] div,`);
+    rules.push(`[data-filterregion="filtermatch"],`);
+    rules.push(`[data-filterregion="filtermatch"] label,`);
+    rules.push(`[data-filterregion="filtermatch"] span {`);
+    rules.push(`  color: ${d.bodyText} !important;`);
+    rules.push(`}`);
+    // Filter action buttons — visually on white panel but outside .bg-white DOM
+    rules.push(`[data-filterregion="actions"] .btn-link,`);
+    rules.push(`[data-filterregion="actions"] .btn-link span,`);
+    rules.push(`[data-filterregion="actions"] .btn-link .icon,`);
+    rules.push(`[data-filterregion="actions"] .btn-link .fa {`);
+    rules.push(`  color: ${d.bodyText} !important;`);
+    rules.push(`}`);
+    rules.push(`[data-filterregion="actions"] .btn-secondary {`);
+    rules.push(`  color: ${d.bodyText} !important;`);
+    rules.push(`  border-color: ${d.bodyText} !important;`);
+    rules.push(`  background-color: #FFFFFF !important;`);
+    rules.push(`}`);
+    rules.push(`.bg-white .btn-primary {`);
+    rules.push(`  color: ${tokens.btnPrimaryText} !important;`);
+    rules.push(`  background-color: ${tokens.btnPrimaryBg} !important;`);
+    rules.push(`}`);
+    rules.push('');
+    // VERY LAST: Course card progress text — must beat .bg-white span override
+    rules.push('.course-card .card-footer .progress-text,');
+    rules.push('.course-card .card-footer .progress-text span,');
+    rules.push('.block-cards .card-footer .progress-text,');
+    rules.push('.block-cards .card-footer .progress-text span {');
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push('}');
+    rules.push('');
+    // Footer popover — dark bg, #page-footer ID beats .bg-white class specificity
+    rules.push('#page-footer, #page-footer *,');
+    rules.push('#page-footer .footer-content-popover,');
+    rules.push('#page-footer .footer-content-popover *,');
+    rules.push('#page-footer .logininfo, #page-footer .logininfo * {');
+    rules.push(`  color: ${tokens.footerText} !important;`);
+    rules.push('}');
+    rules.push('#page-footer a, #page-footer .footer-content-popover a,');
+    rules.push('#page-footer .logininfo a {');
+    rules.push(`  color: ${tokens.footerLink} !important;`);
+    rules.push('}');
     rules.push('');
   }
 

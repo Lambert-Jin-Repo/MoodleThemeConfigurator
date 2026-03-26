@@ -740,3 +740,320 @@ Added mandatory enforcement rules after agent violated worktree-first workflow b
 ### Git Status
 - **Branch:** `feat/moodle-layout-restructure` (layout restructure), `feat/quick-palette-typography` (typography + accuracy fixes)
 - **Commits:** `5a6f63a` (layout restructure), `53c4c5d` (typography controls), `fe3d159` (Moodle accuracy fixes)
+
+## Session: 2026-03-26 — Dark Theme Icon Visibility Fixes
+
+### Issues Found During User Review
+
+| # | Issue | Reported By | Status |
+|---|---|---|---|
+| 64 | Help icons (`.icon.text-info`) invisible on dark theme — dark teal on dark bg | User (screenshot) | Fixed |
+| 65 | Required field icons (`.icon.text-danger`) invisible — generic `.icon, .fa` rule clobbers `.text-danger` | User (screenshot) | Fixed |
+| 66 | Calendar picker icon (`.btn-link .icon`) invisible — not covered by any dark override | User (screenshot) | Fixed |
+| 67 | File manager folder icon (`.fp-path-folder`) invisible — image-based icon, CSS `color` doesn't work | User (screenshot) | Fixed |
+| 68 | Initial fix for folder icon inverted child link text — `filter: invert(1)` on parent span affected all children | Self-caught during verify | Fixed |
+
+### Root Cause Analysis
+
+The generic dark theme icon rule `.icon, .fa { color: #1d2125 !important; }` was clobbering ALL icon colours, including:
+1. **Bootstrap text-utility icons** (`.text-info`, `.text-danger`, `.text-warning`, `.text-success`) — equal specificity, cascade order loses
+2. **Button link icons** (`.btn-link .icon`) — no specific override existed
+3. **Image-based icons** (`.fp-path-folder`) — CSS `color` property has no effect on background-image icons
+
+### Actions Taken
+
+#### Fix 64: Help Icon Visibility (`.text-info`)
+- **Problem:** Help icons (`fa-circle-question`) with `.text-info` class were invisible on dark backgrounds. Bootstrap applies `.text-info` with `!important`, but the generic `.icon, .fa` rule overrides it due to cascade order.
+- **Fix:** Added new token `infoIconColour` linked to `brandPrimary` via `BRAND_LINKED_KEYS`. SCSS generator emits `.icon.text-info, .fa.text-info { color: ${tokens.infoIconColour} !important; }` in dark mode Block 2.
+- **Design decision:** Initially linked to `info` token, later changed to follow `brandPrimary`/`linkColour` so it adapts to the main theme colour. Warning/danger icons intentionally keep their semantic colours.
+- **Files:** `lib/tokens.ts`, `store/theme-store.ts`, `lib/scss-generator.ts`, `components/controls/ControlsPanel.tsx`
+
+#### Fix 65: Semantic Icon Colours (`.text-danger`, `.text-warning`, `.text-success`)
+- **Problem:** All Bootstrap text-utility icon classes were overridden by the generic dark icon rule.
+- **Fix:** Added targeted overrides for all 4 semantic classes using token values: `infoIconColour` (follows brand), `error`, `warning`, `success`. All dynamic — no hardcoded hex.
+- **File:** `lib/scss-generator.ts`
+
+#### Fix 66: Calendar Picker Icon
+- **Problem:** Calendar icon inside `<button class="btn btn-link">` had no dark theme override.
+- **Fix:** Added `.btn-link .icon, .btn-link .fa, .btn-link [class*="fa-"] { color: ${tokens.linkColour} }` in dark mode section. Follows `brandPrimary` via `linkColour`.
+- **File:** `lib/scss-generator.ts`
+
+#### Fix 67–68: File Manager Folder Icon
+- **Problem:** Folder icon is a CSS `background-image` on `<span class="fp-path-folder">`, not FontAwesome. CSS `color` has no effect.
+- **First attempt:** `filter: invert(1)` on span — inverted the icon BUT also inverted the "Files" link text inside.
+- **Second attempt:** `::before` pseudo-element target — folder icon isn't rendered via pseudo-element, no effect.
+- **Final fix:** Double-invert trick — `filter: invert(1)` on `.fp-path-folder` (fixes icon), counter `filter: invert(1)` + `color: ${tokens.linkColour}` on `.fp-path-folder a` (restores text + applies theme colour).
+- **File:** `lib/scss-generator.ts`
+
+### New Token: `infoIconColour`
+
+| Property | Value |
+|---|---|
+| Interface field | `infoIconColour: string` |
+| Default | `#0f6cbf` (matches `brandPrimary` default) |
+| Linked to | `brandPrimary` via `BRAND_LINKED_KEYS` + `linkColour` via `setToken` cascade |
+| Dark presets | `#BAF73C` (lime green) in `cfa-dark-chrome`, `cfa-dark-lime`, `cfa-dark-ember` |
+| Control | "Info Icon" colour picker in Alerts & Progress section, marked `linkedToBrand` |
+
+### Skill Update: `/moodle-issue`
+
+Updated `.claude/skills/moodle-issue/SKILL.md` with two new rules:
+1. **Never hardcode hex in SCSS generator** — all colour values must use `${tokens.xxx}` references so colours adapt dynamically when users change theme tokens
+2. **Token linking pattern** — when adding derived tokens, implement auto-follow logic in `store/theme-store.ts` `setToken()` so colours cascade from parent tokens
+
+### Documentation Updates
+
+- `docs/moodle-cloud-constraints.md` — added 7 new verified selectors + "Bootstrap Text-Utility Icon Overrides" section + "Non-FontAwesome Dark Icon Patterns" section
+- `MEMORY.md` — saved dark theme icon override patterns (3 strategies)
+- All 10 presets verified — 3 dark presets updated with `infoIconColour: '#BAF73C'`
+
+### Lessons Learned
+
+1. **`filter: invert()` affects all children** — when inverting image-based icons, always check if the container has text children. Use double-invert trick if needed.
+2. **CSS `color` doesn't work on background-image icons** — identify whether an icon is FontAwesome (text-based, use `color`) or image-based (use `filter`).
+3. **Always use token references in SCSS generator** — hardcoded hex values break when users change theme colours. Every colour value should be `${tokens.xxx}`.
+4. **Link icon colours to `brandPrimary`, not `info`** — `info` is a semantic alert colour that may be dark even on dark themes. Interactive/UI icons should follow the main theme colour.
+
+### Phase 2: Agent Code Review + Additional Fixes
+
+Dispatched 4 review agents to audit all changes. Findings and fixes:
+
+#### Fix: 4 hardcoded `#404041` in SCSS generator
+
+| Line | Context | Changed to |
+|---|---|---|
+| 201 | Light-mode dropdown text | `${d.bodyText}` (fixed — Moodle default `#1d2125`) |
+| 289 | Login card text (dark bg + light card) | `${d.bodyText}` (fixed) |
+| 723 | Dark-mode activity nav button text | `autoTextForHex(tokens.bodyText)` (computed) |
+| 730 | Dark-mode activity nav button icon | `autoTextForHex(tokens.bodyText)` (computed) |
+
+#### Fix: 6 presets missing `infoIconColour`
+
+All presets now explicitly set `infoIconColour` to match their `linkColour`:
+
+| Preset | `infoIconColour` |
+|---|---|
+| cfa-teal-pro | `#336E7B` (teal) |
+| cfa-teal-orange | `#336E7B` (teal) |
+| cfa-purple | `#8A008A` (dark purple, matches linkColour) |
+| cfa-warm-cream | `#336E7B` (teal) |
+| cfa-high-contrast | `#245058` (dark teal) |
+| cfa-burnt-orange | `#9E4E12` (burnt orange) |
+
+#### Fix: Dark preset `error` token — CFA Red
+
+Moodle default `#ca3120` fails contrast on dark backgrounds. Changed to CFA brand Red `#F64747` (3.58:1 on Charcoal, AA Large pass) in all 3 dark presets.
+
+#### Fix: Dark-lime `info` token
+
+Changed from `#336E7B` (teal, 1.80:1 on Charcoal = invisible) to `#00BFFF` (CFA Sky Blue, 4.12:1 = AA Large pass).
+
+#### Fix: `info` picker false `linkedToBrand`
+
+Removed `linkedToBrand` and `tokenKey` from the `info` colour picker — `info` is NOT in `BRAND_LINKED_KEYS`, so the UI indicator was misleading.
+
+### Phase 3: White-Background Container Text Fix
+
+| # | Issue | Reported By | Status |
+|---|---|---|---|
+| 69 | Text invisible in `.bg-white` containers (messaging settings, notifications) — light `$body-color` on white bg | User (screenshot) | Fixed |
+| 70 | Text invisible in file manager dialog (`.moodle-dialogue-bd`, `.fp-select`) — labels white on white | User (screenshot) | Fixed |
+| 71 | Text invisible in file manager table (`.yui3-datatable`) — file data white on white | User (screenshot) | Fixed |
+| 72 | Messaging drawer sidebar dark text on dark bg (Starred, Group, Private sections) | User (screenshot) | **Not fixed — selector mismatch, deferred** |
+
+**Root cause (69–71):** Moodle hardcodes `.bg-white` class and uses YUI3 widgets that retain white backgrounds. Dark theme `$body-color` is light → invisible text on white.
+
+**Fix:** Added Block 2 rules forcing `${d.bodyText}` (`#1d2125`, fixed Moodle default dark text) on `.bg-white *`, `.moodle-dialogue-bd *`, `.fp-select *`, `.yui3-datatable *`, `.yui3-widget-bd *`, `.message-app .body-container *`. Links inside preserved with `${tokens.linkColour}` (dynamic).
+
+**Issue 72 deferred:** Messaging drawer sidebar text not fixed. Tried `[data-region="message-drawer"]` and `.message-app` selectors — neither matched. Needs live DOM investigation to find correct selector. Removed non-working code.
+
+### Lessons Learned (continued)
+
+5. **White-background containers on dark themes are a major category** — Moodle uses `.bg-white`, YUI3 widgets, and dialog containers that keep white bg regardless of theme. Must force dark text with `${d.bodyText}` (fixed Moodle default), not dynamic token.
+6. **Cascade order matters with `!important`** — when two rules both use `!important` with equal specificity, the later rule wins. Place light-text rules BEFORE white-bg dark-text rules.
+7. **CFA brand colours for dark themes** — use Red `#F64747` for errors (not Moodle default `#ca3120`), Sky Blue `#00BFFF` for info, Lime Green `#BAF73C` for success/highlights. All verified against CFA Brand Style Guide contrast tables.
+8. **Messaging drawer selector unknown** — `[data-region="message-drawer"]`, `.message-drawer`, and `.message-app` did not match. Needs live DOM inspection to identify correct selector.
+
+### Phase 4: Link Action Icon Fixes
+
+| # | Issue | Reported By | Status |
+|---|---|---|---|
+| 73 | Message icon (`i.icon.fa.fa-message.fa-fw`) dark/invisible on profile page dark bg | User (screenshot) | Fixed |
+| 74 | Edit password pen icon (`i.icon.fa.fa-pen.fa-fw`) dark/invisible inside form link | User (screenshot) | Fixed |
+
+**Root cause:** Both are plain FontAwesome icons inside `<a>` links on the dark page background. No Bootstrap text-utility class. The generic `.icon, .fa { color: #1d2125 }` rule forces them dark.
+
+**Fix:** Added `a .icon, a .fa, a [class*="fa-"] { color: ${tokens.linkColour} !important; }` in dark mode Block 2, placed BEFORE the `.bg-white` rule so white containers override it back to dark text. Uses `${tokens.linkColour}` (dynamic, follows `brandPrimary` via `BRAND_LINKED_KEYS`).
+
+**Impact:** All icons inside `<a>` links on dark backgrounds now follow main theme colour. Card/nav icons unaffected (higher specificity rules win). Light themes unaffected (rule only emits when `isDarkBg(pageBg)`).
+
+### Phase 5: Additional Dark Theme Fixes
+
+| # | Issue | Colour type | Token/Value | Status |
+|---|---|---|---|---|
+| 75 | "Manage courses" `.btn-outline-primary` invisible on dark bg | Default: fixed white; Hover: dynamic | `#FFFFFF` / `${tokens.linkColour}` | Fixed |
+| 76 | Section collapse/expand arrow not themed | Default bg: dynamic; Arrow: fixed dark | `${tokens.linkColour}` / `${d.bodyText}` | Fixed |
+| 77 | Activity icons — shape not visible, only bg colour showing | Fixed (white icon on coloured bg) | `filter: brightness(0) invert(1)` | Fixed |
+| 78 | "Done" check icon invisible on light `.btn-subtle-success` button | Fixed dark | `${d.bodyText}` | Fixed |
+| 79 | `.resourcelinkdetails` (file size) text invisible — `color: #555` on dark bg | Static muted | `${tokens.mutedText}` | Fixed |
+| 80 | Message icon (`fa-message`) on profile page invisible | Dynamic (main colour) | `${tokens.linkColour}` | Fixed |
+| 81 | Edit pen icon (`fa-pen`) inside form link invisible | Dynamic (main colour) | `${tokens.linkColour}` | Fixed |
+
+#### Colour classification for all recent fixes
+
+**Dynamic — follows main theme colour (`brandPrimary` → `linkColour`):**
+- `.icon.text-info` → `${tokens.infoIconColour}` (in `BRAND_LINKED_KEYS`)
+- `.btn-link .icon` → `${tokens.linkColour}` (calendar picker, actions)
+- `.fp-path-folder a` → `${tokens.linkColour}` (file manager link)
+- `.filemanager-toolbar .icon` → `${tokens.linkColour}`
+- `a .icon, a .fa` → `${tokens.linkColour}` (all link action icons)
+- `.btn-outline-primary:hover` bg → `${tokens.linkColour}`
+- `.icons-collapse-expand` default bg → `${tokens.linkColour}`
+- `.bg-white a` (links inside white containers) → `${tokens.linkColour}`
+
+**Semantic — keeps alert/status colour (same across all dark themes):**
+- `.icon.text-danger` → `${tokens.error}` (CFA Red `#F64747` on dark presets)
+- `.icon.text-warning` → `${tokens.warning}`
+- `.icon.text-success` → `${tokens.success}`
+
+**Fixed dark — always dark text on always-light backgrounds:**
+- `.bg-white *` → `${d.bodyText}` (`#1d2125`)
+- `.moodle-dialogue-bd *` → `${d.bodyText}`
+- `.fp-select *`, `.yui3-datatable *` → `${d.bodyText}`
+- `.btn-subtle-success .fa` → `${d.bodyText}` (completion check on light button)
+- `.icons-collapse-expand[aria-expanded] .icon` → `${d.bodyText}` (dark arrow on white bg)
+- Light-mode dropdown text → `${d.bodyText}`
+- Login card text → `${d.bodyText}`
+
+**Fixed white — always white on always-dark backgrounds:**
+- `.btn-outline-primary` text/border → `#FFFFFF`
+- `.icons-collapse-expand:hover .icon` → white (via hover rule inheriting from container)
+- `.activityiconcontainer .activityicon` → white via `filter: brightness(0) invert(1)`
+
+**Computed — auto-contrast based on background:**
+- Activity nav button text → `autoTextForHex(tokens.bodyText)`
+- `.btn-outline-primary:hover` text → `autoTextForHex(tokens.linkColour)`
+
+**Static muted — same muted grey across all dark themes:**
+- `.text-muted`, `.resourcelinkdetails`, `.activity-dates` → `${tokens.mutedText}`
+- `.dimmed`, `.ishidden` → `${tokens.mutedText}`
+
+**Image-based — filter invert (not colour-controllable):**
+- `.fp-path-folder` → `filter: invert(1)` + double-invert on child `a`
+- `.activity-groupmode-info img.icon` → `filter: invert(1)`
+- `.activityiconcontainer .activityicon` → `filter: brightness(0) invert(1)`
+
+**Activity icon backgrounds — per-category Moodle 5.0+ purpose colours:**
+- `.activityiconcontainer.content` → `${tokens.actIconContent}` (`#0099ad`)
+- `.activityiconcontainer.assessment` → `${tokens.actIconAssessment}` (`#f90086`)
+- `.activityiconcontainer.collaboration` → `${tokens.actIconCollaboration}` (`#5b40ff`)
+- `.activityiconcontainer.communication` → `${tokens.actIconCommunication}` (`#eb6200`)
+- `.activityiconcontainer.administration` → `${tokens.actIconAdmin}` (`#da58ef`)
+- `.activityiconcontainer.interface` → `${tokens.actIconInterface}` (`#a378ff`)
+
+### Phase 6: Button, Badge, Filter & Progress Text Fixes
+
+| # | Issue | Colour type | Token/Value | Status |
+|---|---|---|---|---|
+| 82 | `.btn-outline-primary` ("Manage courses") invisible on dark bg | Default: fixed white; Hover: dynamic | `#FFFFFF` / `${tokens.linkColour}` | Fixed |
+| 83 | Section toggle arrow not themed — 3-state interaction | Default bg: dynamic; Arrow: fixed dark; Hover: dark bg + white arrow; Expanded: white bg + dark arrow | `${tokens.linkColour}` / `${d.bodyText}` / `#FFFFFF` | Fixed |
+| 84 | Activity icon shapes not visible — only bg colour showing | Fixed white via filter | `filter: brightness(0) invert(1)` | Fixed |
+| 85 | "Done" check icon invisible on `.btn-subtle-success` | Fixed dark | `${d.bodyText}` | Fixed |
+| 86 | `.resourcelinkdetails` file size text invisible | Static muted | `${tokens.mutedText}` | Fixed |
+| 87 | Message icon (`fa-message`) on profile invisible | Dynamic | `${tokens.linkColour}` | Fixed |
+| 88 | Edit pen icon (`fa-pen`) in form link invisible | Dynamic | `${tokens.linkColour}` | Fixed |
+| 89 | Filter `.form-select` dropdown text invisible in `.bg-white` panel | Fixed dark | `${d.bodyText}` via `.bg-white` final overrides | Fixed |
+| 90 | "Add condition" text + plus icon invisible on white filter panel | Fixed dark | `${d.bodyText}` | Fixed |
+| 91 | "Clear filters" `.btn-secondary` text invisible on white filter panel | Fixed dark + white bg | `${d.bodyText}` + `#FFFFFF` bg | Fixed |
+| 92 | Filter "Match" label + "of the following:" span invisible | Fixed dark | `${d.bodyText}` | Fixed |
+| 93 | Filter "AND"/"OR" join text invisible | Fixed dark | `${d.bodyText}` | Fixed |
+| 94 | "Active" badge text on `.bg-success` hard to read (white on green) | Fixed dark | `${d.bodyText}` | Fixed |
+| 95 | "0% complete" text + number on course card invisible (`.bg-white` override conflict) | Dynamic bodyText | `${tokens.bodyText}` at end of cascade | Fixed |
+| 96 | BUG: Section toggle hover — dark icon on dark bg (invisible) | Fixed white | `#FFFFFF` on hover | Fixed in review |
+
+#### Full colour audit of all Phase 5–6 additions
+
+All changes verified against classification system:
+
+**Dynamic (follows main theme colour):**
+- `a .icon, a .fa` → `${tokens.linkColour}` ✓
+- `.btn-outline-primary:hover` bg → `${tokens.linkColour}` ✓
+- `.icons-collapse-expand` default bg → `${tokens.linkColour}` ✓
+- `.bg-white a` links → `${tokens.linkColour}` ✓
+- `.btn-primary` inside `.bg-white` → `${tokens.btnPrimaryBg}` / `${tokens.btnPrimaryText}` ✓
+- Course card footer bg → `${tokens.cardBg}` ✓
+- Course card progress text → `${tokens.bodyText}` ✓
+
+**Fixed dark (always dark on light backgrounds):**
+- `.bg-white` final overrides (forms, buttons, labels) → `${d.bodyText}` ✓
+- Filter join text, match label, action buttons → `${d.bodyText}` ✓
+- `.btn-subtle-success .fa` (completion) → `${d.bodyText}` ✓
+- `.badge.bg-success/info/warning` text → `${d.bodyText}` ✓
+- `.icons-collapse-expand` default arrow → `${d.bodyText}` ✓
+- `.icons-collapse-expand[aria-expanded]` arrow → `${d.bodyText}` ✓
+
+**Fixed white (always white on dark backgrounds):**
+- `.btn-outline-primary` default text/border → `#FFFFFF` ✓
+- `.icons-collapse-expand:hover` arrow → `#FFFFFF` ✓
+- `.icons-collapse-expand[aria-expanded]` bg → `#FFFFFF` ✓
+- `.activityiconcontainer .activityicon` → white via filter ✓
+
+**Computed:**
+- `.btn-outline-primary:hover` text → `autoTextForHex(tokens.linkColour)` ✓
+
+**Static muted:**
+- `.resourcelinkdetails`, `.activity-altcontent`, `.activity-dates` → `${tokens.mutedText}` ✓
+
+**No hardcoded hex found in new additions** (except `#FFFFFF` for fixed-white contexts, which is justified).
+
+### Phase 7: Toggles, Badges, Filters, Progress, Messaging Drawer
+
+| # | Issue | Colour type | Token/Value | Status |
+|---|---|---|---|---|
+| 97 | Toggle switches not themed — default blue on dark themes | Checked: dynamic; Unchecked: fixed white; Circle: fixed black | `${tokens.linkColour}` / `#FFFFFF` / SVG `#000` | Fixed |
+| 98 | "Active" badge `.bg-success` white text hard to read on green | Fixed dark | `${d.bodyText}` | Fixed |
+| 99 | Filter `.form-select` dropdown text invisible in `.bg-white` panel | Fixed dark via final cascade | `${d.bodyText}` | Fixed |
+| 100 | "Add condition" + plus icon invisible on white filter panel | Fixed dark | `${d.bodyText}` | Fixed |
+| 101 | "Clear filters" `.btn-secondary` invisible on white filter panel | Fixed dark + white bg | `${d.bodyText}` + `#FFFFFF` | Fixed |
+| 102 | Filter "Match" label + "of the following:" span invisible | Fixed dark | `${d.bodyText}` | Fixed |
+| 103 | Filter "AND"/"OR" join text invisible | Fixed dark | `${d.bodyText}` | Fixed |
+| 104 | "0% complete" text + number on course card invisible | Dynamic bodyText at end of cascade | `${tokens.bodyText}` | Fixed |
+| 105 | BUG: Section toggle hover — dark icon on dark bg (caught in review) | Fixed white | `#FFFFFF` on hover | Fixed |
+| 106 | Messaging drawer sidebar — dark text on grey bg (previously unsolved #72) | Dynamic: body/link/muted | `${tokens.bodyText}` / `${tokens.linkColour}` / `${tokens.mutedText}` | **Fixed** |
+| 107 | Messaging sidebar background too light | Dynamic drawer bg | `${tokens.drawerBg}` | Fixed |
+| 108 | Search icon in messaging search bar invisible (white on white input) | Fixed dark | `${d.bodyText}` | Fixed |
+
+#### Messaging Drawer Fix Details (previously unsolved issue #72, now resolved)
+
+**Root cause:** `.message-app .body-container *` was in the white-bg container rule, forcing dark text on the ENTIRE messaging app including the dark-bg sidebar.
+
+**Fix (3 parts):**
+1. Removed `.message-app .body-container *` from white-bg rule (conversation area still handled by its own `.bg-white` class)
+2. Added `.message-app` background: `${tokens.drawerBg}` (dark, matches other drawers)
+3. Added sidebar text hierarchy:
+   - Primary text (headings, names) → `${tokens.bodyText}` (white on dark themes)
+   - Interactive (links, icons) → `${tokens.linkColour}` (dynamic, main theme colour)
+   - Secondary (muted, counts) → `${tokens.mutedText}` (grey)
+4. Added `.simplesearchform .btn-submit .icon` → `${d.bodyText}` (dark icon on white search input)
+
+**Works on all dark presets** — all values are token-based: `drawerBg`, `bodyText`, `linkColour`, `mutedText` adapt per preset.
+
+### Phase 8: Footer Popover Text Fix
+
+| # | Issue | Colour type | Token/Value | Status |
+|---|---|---|---|---|
+| 109 | Footer popover text (login info, Cookie Settings, Policies, etc.) dark on dark bg | Dynamic footer tokens | `${tokens.footerText}` / `${tokens.footerLink}` | Fixed |
+
+**Root cause:** `#page-footer` has `.bg-white` class. The `.bg-white *` rule forced dark text on the footer popover content which has a dark background.
+
+**Fix:** Used `#page-footer` ID selector (specificity 1,0,0) which beats `.bg-white div` (specificity 0,1,1). Text uses `${tokens.footerText}`, links use `${tokens.footerLink}` — both dynamic, follow each preset's footer colour tokens.
+
+**Lesson:** When `.bg-white` is on a container that has dark-bg children (like footer popover), ID selectors are needed to beat the class-based `.bg-white` overrides. Class-only selectors with `!important` lose on specificity.
+
+### Build Status
+- Dev server running — all changes verified via hot reload
+- Previously unsolved issue #72 (messaging drawer) now resolved as #106–108
+
+### Git Status
+- **Branch:** `fix/dark-theme-info-icon`
+- **Files modified:** `lib/tokens.ts`, `store/theme-store.ts`, `lib/scss-generator.ts`, `components/controls/ControlsPanel.tsx`, `docs/moodle-cloud-constraints.md`, `.claude/skills/moodle-issue/SKILL.md`, `docs/PROJECT-TRACKER.md`

@@ -157,6 +157,28 @@ Tested against Moodle 5.0+ Boost theme. All confirmed to survive Bootstrap 5 mig
 | Inner icon wrapper | `.collapsed-icon.icon-no-margin` | Sits on light background even in dark themes |
 | Module prev/next nav | `.btn-previous, .btn-next` | `btn btn-link` style; icons need dark color on light wrapper |
 | Group mode icon | `.activity-groupmode-info img.icon` | Rendered as `<img>` not FontAwesome; needs `filter: invert(1)` on dark themes |
+| Help/info icons | `.icon.text-info, .fa.text-info` | Bootstrap `text-info` has `!important`; generic `.icon` rule loses specificity fight. Needs targeted override with `infoIconColour` token |
+| Danger icons | `.icon.text-danger, .fa.text-danger` | Same issue as `.text-info`; needs override with `error` token |
+| Warning icons | `.icon.text-warning, .fa.text-warning` | Same pattern; uses `warning` token |
+| Success icons | `.icon.text-success, .fa.text-success` | Same pattern; uses `success` token |
+| Link button icons | `.btn-link .icon, .btn-link .fa` | Calendar picker, etc.; uses `linkColour` token |
+| File manager folder | `.fp-path-folder` | Background-image icon; needs `filter: invert(1)` with double-invert on child `a` to preserve link text |
+| File manager toolbar | `.filemanager-toolbar .icon, .filemanager-toolbar .fa` | Uses `linkColour` token |
+| Link action icons | `a .icon, a .fa, a [class*="fa-"]` | Plain FA icons inside links on dark bg; uses `linkColour` token (dynamic). Placed before `.bg-white` rule so white containers override |
+| Outline-primary button | `.btn-outline-primary` | Default: white text/border. Hover: `linkColour` bg (dynamic). Moodle uses this for "Manage courses" etc. |
+| Section toggle arrow | `.icons-collapse-expand` | Default: `linkColour` bg + dark arrow. Hover: dark bg. Expanded: white bg + dark arrow |
+| Activity icon shape | `.activityiconcontainer .activityicon` | Icon image needs `filter: brightness(0) invert(1)` to show white on coloured bg. Do NOT filter the container — breaks Moodle's SVG filter |
+| Completion button icons | `.btn-subtle-success .fa`, `.btn-subtle-warning .fa` | Light-bg buttons inside course content; force `d.bodyText` dark icon |
+| Resource link details | `.resourcelinkdetails`, `.activity-altcontent`, `.activity-dates` | Metadata text uses Moodle `color: #555`; needs `mutedText` token override |
+| Status badges | `.badge.bg-success`, `.badge.bg-info`, `.badge.bg-warning` | Force `d.bodyText` dark text on colored bg for readability |
+| Filter controls | `.bg-white .form-select`, `.bg-white .btn`, `[data-filterregion]` | Multiple elements inside `.bg-white` filter panel; need final-cascade dark text + specific button/join text overrides |
+| Course card progress | `.course-card .card-footer .progress-text span` | Must come AFTER `.bg-white span` override to win cascade; card footer bg also needs `cardBg` override |
+| Toggle switches | `.form-check-input:checked` / `:not(:checked)` | Checked: `linkColour` bg + black SVG circle. Unchecked: white bg. Circle override via `background-image` SVG |
+| Messaging drawer sidebar | `.message-app`, `.message-app .view-overview-body *` | Background: `drawerBg`. Text: `bodyText`. Links/icons: `linkColour`. Muted: `mutedText`. Do NOT include `.message-app .body-container` in white-bg rule — it's too broad |
+| Search form icon | `.simplesearchform .btn-submit .icon` | Force `d.bodyText` dark — sits on white input background |
+| Footer popover | `#page-footer`, `#page-footer *` | Footer has `.bg-white` class but popover has dark bg. Must use ID selector to beat `.bg-white` specificity. Uses `footerText`/`footerLink` tokens |
+| White-bg containers | `.bg-white`, `.moodle-dialogue-bd`, `.fp-select`, `.yui3-datatable`, `.yui3-widget-bd` | Retain white bg on dark themes; force `d.bodyText` (`#1d2125`) for text, preserve `linkColour` for links |
+| Message conversation | `.message-app .body-container` | White bg inside messaging; force dark text |
 
 ### Medium Confidence (Convention-based, verify per version)
 
@@ -187,6 +209,23 @@ FontAwesome icons (`.icon`, `.fa`) on dark themes need the **DEFAULT dark text c
 **The fix:** In Block 2 (Raw SCSS), set `.icon, .fa` to the Moodle default dark text color (`#1d2125`) so icons remain visible on light wrapper backgrounds. Hover states for interactive wrappers (`.ftoggler`, secondary nav, breadcrumb, `.btn-previous`, `.btn-next`) use `linkColour` for accent. Drawer icons are handled separately via the `drawerText` token.
 
 **Key principle:** `$body-color` in Block 1 handles most text but does NOT fix icons that sit on light-background wrappers.
+
+### Bootstrap Text-Utility Icon Overrides
+
+Icons with Bootstrap semantic classes (`.text-info`, `.text-danger`, `.text-warning`, `.text-success`) get clobbered by the generic `.icon, .fa { color: #1d2125 }` rule because it has equal specificity and comes later in the cascade. These need **targeted overrides** in Block 2 using higher-specificity selectors (e.g., `.icon.text-info`) with token-based dynamic colours:
+
+| Icon class | Token used | Example elements |
+|---|---|---|
+| `.icon.text-info` | `infoIconColour` (linked to `info`) | Help icons (`fa-circle-question`) |
+| `.icon.text-danger` | `error` | Required field indicators (`fa-circle-exclamation`) |
+| `.icon.text-warning` | `warning` | Warning indicators |
+| `.icon.text-success` | `success` | Completion indicators |
+
+### Non-FontAwesome Dark Icon Patterns
+
+Some Moodle icons are image-based (CSS `background-image`), not FontAwesome. CSS `color` doesn't work on these — use `filter: invert(1)` instead. If the image container also contains text children, use the **double-invert trick**: invert the parent (fixes icon), counter-invert the child `a`/text element (restores readability), then apply `color` token to the child.
+
+Known image-based icons: `.fp-path-folder` (file manager), `.activity-groupmode-info img.icon` (group mode).
 
 ## Bootstrap 5.3 Migration (Moodle 5.0+)
 

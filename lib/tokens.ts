@@ -92,6 +92,9 @@ export interface ThemeTokens {
   // Signup
   signupBtnBg: string;
 
+  // Info Icon Colour (dark theme override for .icon.text-info / help icons)
+  infoIconColour: string;
+
   // Activity Icon Colours (Moodle 5.0+ purpose-based)
   actIconAdmin: string;
   actIconAssessment: string;
@@ -182,6 +185,9 @@ export const DEFAULT_TOKENS: ThemeTokens = {
 
   signupBtnBg: '#ced4da',
 
+  // Info icon colour — linked to brandPrimary via linkColour, overridden for dark themes
+  infoIconColour: '#0f6cbf',
+
   // Activity icon colours — verified against Moodle 5.0+ $activity-icon-*-bg variables
   actIconAdmin: '#da58ef',
   actIconAssessment: '#f90086',
@@ -231,6 +237,7 @@ export const BRAND_LINKED_KEYS: (keyof ThemeTokens)[] = [
   'focusRing',
   'loginBtnBg',
   'footerLink',
+  'infoIconColour',
 ];
 
 // ── Preset modification detection ──
@@ -335,6 +342,7 @@ export const PRESET_TEMPLATES: PresetTemplate[] = [
       focusRing: '#336E7B',
       focusRingWidth: 2,
       info: '#336E7B',
+      infoIconColour: '#336E7B',
       sectionAccent: 'none',
       signupBtnBg: '#6c757d',
     },
@@ -374,6 +382,7 @@ export const PRESET_TEMPLATES: PresetTemplate[] = [
       focusRing: '#9E4E12',
       focusRingWidth: 2,
       info: '#336E7B',
+      infoIconColour: '#336E7B',
       sectionAccent: '#F27927',
       signupBtnBg: '#6c757d',
     },
@@ -415,7 +424,9 @@ export const PRESET_TEMPLATES: PresetTemplate[] = [
       progressFill: '#336E7B',
       focusRing: '#336E7B',
       focusRingWidth: 2,
+      error: '#F64747',
       info: '#336E7B',
+      infoIconColour: '#BAF73C',
       sectionAccent: 'none',
       signupBtnBg: '#6c757d',
     },
@@ -455,6 +466,7 @@ export const PRESET_TEMPLATES: PresetTemplate[] = [
       focusRing: '#B500B5',
       focusRingWidth: 2,
       info: '#B500B5',
+      infoIconColour: '#8A008A',
       sectionAccent: '#B500B5',
       signupBtnBg: '#336E7B',
     },
@@ -497,6 +509,7 @@ export const PRESET_TEMPLATES: PresetTemplate[] = [
       focusRing: '#336E7B',
       focusRingWidth: 2,
       info: '#336E7B',
+      infoIconColour: '#336E7B',
       sectionAccent: 'none',
       signupBtnBg: '#6c757d',
     },
@@ -541,6 +554,7 @@ export const PRESET_TEMPLATES: PresetTemplate[] = [
       focusRingWidth: 3,
       bodyFontSize: 1.0625,
       info: '#245058',
+      infoIconColour: '#245058',
       sectionAccent: 'none',
       signupBtnBg: '#6c757d',
     },
@@ -581,6 +595,7 @@ export const PRESET_TEMPLATES: PresetTemplate[] = [
       focusRing: '#9E4E12',
       focusRingWidth: 2,
       info: '#9E4E12',
+      infoIconColour: '#9E4E12',
       sectionAccent: '#336E7B',
       signupBtnBg: '#336E7B',
     },
@@ -630,7 +645,9 @@ export const PRESET_TEMPLATES: PresetTemplate[] = [
       progressFill: '#BAF73C',
       focusRing: '#BAF73C',
       focusRingWidth: 2,
-      info: '#336E7B',
+      error: '#F64747',
+      info: '#00BFFF',
+      infoIconColour: '#BAF73C',
       sectionAccent: '#B500B5',
       signupBtnBg: '#555556',
       success: '#BAF73C',
@@ -682,7 +699,9 @@ export const PRESET_TEMPLATES: PresetTemplate[] = [
       progressFill: '#F27927',
       focusRing: '#F27927',
       focusRingWidth: 2,
+      error: '#F64747',
       info: '#00BFFF',
+      infoIconColour: '#BAF73C',
       sectionAccent: '#00BFFF',
       signupBtnBg: '#555556',
       success: '#4CAF50',

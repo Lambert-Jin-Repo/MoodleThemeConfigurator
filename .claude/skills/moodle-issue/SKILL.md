@@ -124,7 +124,9 @@ Implement the approved fix. Typical changes:
 
 **Rules:**
 - ALL preview colours MUST use `var(--cfa-*)` — NEVER hardcode
-- SCSS overrides in Block 2 often need `!important` due to Moodle Boost's high specificity. Known selectors requiring it: `.navbar.fixed-top`, `.secondary-navigation .nav-tabs .nav-link`, `#page-footer`. When in doubt, include `!important`
+- **ALL SCSS colour values MUST reference token values dynamically** (e.g., `${tokens.error}`, `${tokens.info}`), NEVER hardcode hex values like `#BAF73C` or `#F64747` in the SCSS generator. This ensures when users change the main colour tokens, all related overrides update consistently. If a colour override needs to differ from an existing token, create a NEW token linked to the parent (e.g., `infoIconColour` linked to `info`), so users can customise it independently.
+- **Token linking pattern:** When adding a derived token, implement auto-follow logic in `store/theme-store.ts` `setToken()` — if the derived token still matches the parent's old value, cascade the change. This prevents stale colours when users change theme colours.
+- SCSS overrides in Block 2 often need `!important` due to Moodle Boost's high specificity. Known selectors requiring it: `.navbar.fixed-top`, `.secondary-navigation .nav-tabs .nav-link`, `#page-footer`, `.icon.text-info`, `.icon.text-danger`. When in doubt, include `!important`
 - If a new token is added, it must be included in the Zustand store defaults
 
 After implementing, restart the dev server:
@@ -211,6 +213,7 @@ Only after all four are checked may you tell the user the issue is fully resolve
 - NEVER skip CONFIRM. User approval required before implementation.
 - NEVER skip DOCUMENT. Every fix must be recorded in constraints doc, MEMORY.md, presets, and controls audit (all four sub-steps).
 - NEVER hardcode colours in preview components. Use `var(--cfa-*)`.
+- **NEVER hardcode hex colours in the SCSS generator.** All colour values in `scss-generator.ts` MUST use token references (e.g., `${tokens.error}`, `${tokens.infoIconColour}`). This ensures colours stay dynamic — when a user changes a main token (like `info`, `error`, `success`), all derived overrides update automatically. If you need a colour that doesn't map to an existing token, create a new token and link it to the appropriate parent.
 - ALWAYS update ALL affected presets, not just the one the user is testing.
 - ALWAYS restart the dev server after implementing changes.
 - **Trivial fix shortcut:** If the fix changes a single property on a single already-documented selector, requires no new tokens, and affects no presets — you may abbreviate RESEARCH to Agent B only (skip external docs lookup) and shorten CONFIRM to a concise fix summary. The user MUST still explicitly approve before you implement. NEVER skip documentation.

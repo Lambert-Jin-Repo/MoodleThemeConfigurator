@@ -142,6 +142,61 @@ All agents MUST follow this workflow. No exceptions.
 | Course tabs | `.secondary-navigation .nav-tabs .nav-link.active` | Moodle 4.x+ |
 | Footer | `#page-footer` | Verified |
 
+## Dark Theme SCSS Generator Rules (MANDATORY)
+
+When adding or modifying dark theme overrides in `lib/scss-generator.ts`, every colour MUST be classified into one of these categories. **NEVER hardcode hex values** — always use token references or Moodle defaults.
+
+### Colour Classification System
+
+| Category | When to use | Token/Value | Example |
+|---|---|---|---|
+| **Dynamic** | Interactive elements that should follow the main theme colour | `${tokens.linkColour}`, `${tokens.infoIconColour}` | Link icons, toggle bg, hover states |
+| **Semantic** | Alert/status colours that keep their meaning | `${tokens.error}`, `${tokens.warning}`, `${tokens.success}` | `.text-danger` icons, `.text-warning` icons |
+| **Fixed dark** | Dark text on always-light backgrounds (`.bg-white`, dialogs, light buttons) | `${d.bodyText}` (`#1d2125`) | White container text, completion icons, filter labels |
+| **Fixed white** | White text/elements on always-dark backgrounds | `#FFFFFF` | `.btn-outline-primary` text, activity icon filter |
+| **Computed** | Auto-contrast text based on background brightness | `autoTextForHex(tokens.xxx)` | Button text on dynamic bg |
+| **Static muted** | Secondary/metadata text, same across all dark themes | `${tokens.mutedText}` | File sizes, timestamps, category labels |
+| **Image-based** | Icons rendered as CSS background-image, not FontAwesome | `filter: invert(1)` or `brightness(0) invert(1)` | Folder icon, group mode icon, activity icons |
+
+### Cascade Order (Critical)
+
+The SCSS generator dark mode section has a strict cascade order. Later rules override earlier ones when `!important` and specificity are equal:
+
+1. **General dark theme rules** — light text for dark backgrounds (`${tokens.bodyText}`)
+2. **Messaging drawer sidebar** — light text for sidebar (`${tokens.bodyText}`)
+3. **White-bg container overrides** — dark text for `.bg-white`, dialogs, YUI3 (`${d.bodyText}`) — beats layer 1 & 2
+4. **Filter/form-specific overrides** — dark text for filter panel elements outside `.bg-white` DOM
+5. **`.bg-white` final overrides** — highest-specificity dark text for forms/buttons inside white containers
+6. **Exceptions** — course card progress text, etc. that must beat `.bg-white span` — placed at very end
+
+### Key Dark Theme Tokens
+
+| Token | Default | Dark Presets | Linked to |
+|---|---|---|---|
+| `infoIconColour` | `#0f6cbf` | `#BAF73C` (lime green) | `brandPrimary` via `BRAND_LINKED_KEYS` + `linkColour` via `setToken` |
+| `error` | `#ca3120` | `#F64747` (CFA Red) | Independent (semantic) |
+| `info` | `#008196` | `#00BFFF` (CFA Sky Blue on dark-lime) | Independent (semantic, NOT `linkedToBrand`) |
+| `mutedText` | `#6a737b` | `#A0A0A1` | Independent |
+| `drawerBg` | `#FFFFFF` | `#1D2125` | Independent |
+
+### When fixing dark theme display issues (`/moodle-issue` skill)
+
+1. Identify: is the element on a dark bg or inside a white container?
+2. Classify: should the colour be dynamic (follows main theme), fixed, semantic, or muted?
+3. Check: is it FontAwesome (use `color`) or image-based (use `filter`)?
+4. Place: add the rule at the correct cascade layer (see above)
+5. Verify: does it work on ALL dark presets, not just the one being tested?
+6. Document: update `docs/moodle-cloud-constraints.md` and `docs/PROJECT-TRACKER.md`
+
+### Current Status (2026-03-26)
+
+- **Branch:** `fix/dark-theme-info-icon`
+- **Issues fixed this session:** #64–#108 (45 issues)
+- **Categories covered:** icons, text, buttons, badges, filters, toggles, progress text, messaging drawer, activity icons, white-bg containers
+- **Remaining known issue:** None currently open — messaging drawer sidebar (#72) resolved as #106–108
+- **Files modified:** `lib/tokens.ts`, `store/theme-store.ts`, `lib/scss-generator.ts`, `components/controls/ControlsPanel.tsx`, `docs/moodle-cloud-constraints.md`, `docs/PROJECT-TRACKER.md`, `.claude/skills/moodle-issue/SKILL.md`
+- **Not yet committed** — run `/safe-commit` when ready
+
 ## Code Conventions
 
 - TypeScript strict mode
@@ -149,6 +204,7 @@ All agents MUST follow this workflow. No exceptions.
 - Component files: PascalCase (`MoodleNavbar.tsx`)
 - Lib files: kebab-case (`scss-generator.ts`)
 - All preview colours: `var(--cfa-*)` — never hardcoded
+- All SCSS generator colours: `${tokens.xxx}` or `${d.xxx}` — never hardcoded hex
 - All interactive elements: `aria-label` + keyboard support
 - Icons: `lucide-react`
 - Colour pickers: `react-colorful`
