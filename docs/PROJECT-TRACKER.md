@@ -1057,3 +1057,74 @@ All changes verified against classification system:
 ### Git Status
 - **Branch:** `fix/dark-theme-info-icon`
 - **Files modified:** `lib/tokens.ts`, `store/theme-store.ts`, `lib/scss-generator.ts`, `components/controls/ControlsPanel.tsx`, `docs/moodle-cloud-constraints.md`, `.claude/skills/moodle-issue/SKILL.md`, `docs/PROJECT-TRACKER.md`
+
+---
+
+## Session 2026-05-10 — Book Chapter Nav Button Visibility
+
+### Phase 9: Book Module Chapter Navigation Buttons (Issue #110)
+
+| # | Issue | Colour type | Token/Value | Status |
+|---|---|---|---|---|
+| 110 | `.path-mod-book .btn-previous` and `.btn-next` floating chapter nav buttons invisible on dark theme — Moodle ships them with hardcoded `#dee2e6` light grey bg from core `mod/book/styles.css` (no SCSS variable available) | Default: dynamic bg + fixed dark icon. Hover: fixed white bg + fixed dark icon | bg `${tokens.infoIconColour}` (lime green on all `cfa-dark-*` presets); icon `${d.bodyText}` (`#1d2125`); hover bg `#FFFFFF` | **Fixed** |
+
+**Root cause:** Core `mod/book/styles.css` hardcodes `background: #dee2e6` for the floating prev/next chapter nav buttons. There is no Bootstrap or Boost SCSS variable to override — the styling comes from the module's own stylesheet. On dark themes the bg blends into the dark page; the existing project rule at `lib/scss-generator.ts:352-354` covered the chevron colour but not the button itself.
+
+**Fix:** Added a new dark-mode block at `lib/scss-generator.ts:367-393` (gated by the existing `if (tokens.bodyText !== d.bodyText)` guard) targeting `.path-mod-book .btn-previous` and `.btn-next`:
+
+```scss
+// Default state — lime green bg + black chevron
+.path-mod-book .btn-previous,
+.path-mod-book .btn-next {
+  background: ${tokens.infoIconColour} !important;
+  border-color: ${tokens.infoIconColour} !important;
+}
+.path-mod-book .btn-previous .icon, .path-mod-book .btn-previous .fa, .path-mod-book .btn-previous svg,
+.path-mod-book .btn-next .icon, .path-mod-book .btn-next .fa, .path-mod-book .btn-next svg {
+  color: ${d.bodyText} !important;
+  fill: ${d.bodyText} !important;
+}
+
+// Hover — white bg + black chevron
+.path-mod-book .btn-previous:hover,
+.path-mod-book .btn-next:hover {
+  background: #FFFFFF !important;
+  border-color: #FFFFFF !important;
+}
+.path-mod-book .btn-previous:hover .icon, .path-mod-book .btn-previous:hover .fa, .path-mod-book .btn-previous:hover svg,
+.path-mod-book .btn-next:hover .icon, .path-mod-book .btn-next:hover .fa, .path-mod-book .btn-next:hover svg {
+  color: ${d.bodyText} !important;
+  fill: ${d.bodyText} !important;
+}
+```
+
+**Why both `color` and `fill` + `svg` selector:** Defensive coverage. Moodle 5.0 + 4.5 verified to render the chevron as FontAwesome `<i class="icon fa fa-...">` via `pix_icon_fontawesome.mustache` — `color` alone is sufficient for current Moodle. The `svg` selector and `fill` property are forward-compatible insurance against the icon system being switched to inline SVG (a possibility Moodle has flirted with). Cost: two unused CSS rules. Benefit: zero risk of regression on alternative icon-system configurations.
+
+**Cascade specificity check:**
+- Existing `.btn-next .icon` global rule (0,2,0) — beaten by new `.path-mod-book .btn-next .icon` (0,3,0) at default state (same `d.bodyText` value, no visual change)
+- Existing `.btn-next:hover .icon { color: linkColour }` global rule (0,3,0) — beaten by new `.path-mod-book .btn-next:hover .icon { color: d.bodyText }` (0,4,0) — critical: prevents chevron turning lime green on lime green hover bg
+
+**Scope considerations:**
+- Rule emits when `bodyText !== d.bodyText` — i.e. on every CFA preset (light AND dark). Light presets get `infoIconColour` accent (teal/purple/orange/etc.) instead of Moodle's `#dee2e6` light grey. Visible and on-brand on light themes; not a regression.
+- `.path-mod-book` body class scope means `mod_lesson` / `mod_scorm` activity nav buttons (also using `.btn-previous` / `.btn-next` classes) are unaffected.
+- Mobile responsive (`@max-width: 768px`) and RTL `transform: scale(-1, -1)` behaviours preserved — fix does not touch `border-radius`, `width`, `height`, `padding`, `opacity`, or `transform`.
+
+### Verification against Moodle 5.0 source
+Cross-referenced against `MOODLE_500_STABLE`:
+- `mod/book/styles.css` — selectors and `#dee2e6` default confirmed
+- `mod/book/templates/main_action_menu.mustache` — chevron rendered via `{{#pix}} i/next, core {{/pix}}`
+- `lib/templates/pix_icon_fontawesome.mustache` — pix helper outputs `<i class="icon fa-... fa-fw">` (FontAwesome, not SVG)
+- No `:hover` rule shipped by Moodle in either 4.5 or 5.0 — our white-bg hover ADDS affordance rather than overriding existing behaviour
+
+### Files modified this session
+- `lib/scss-generator.ts` — +25 lines (new Phase 9 block)
+- `docs/moodle-cloud-constraints.md` — added `.path-mod-book .btn-previous, .btn-next` row under Verified Selectors
+- `docs/PROJECT-TRACKER.md` — this Phase 9 entry
+- `CLAUDE.md` — Current Status updated
+- `memory/project_dark_theme_icon_patterns.md` — added section 7b (Inline SVG icons / Moodle 4.5+)
+
+### Git Status (Session 2)
+- **Branch:** `fix/dark-theme-info-icon` (continued)
+- **Commit:** `c2d6ae4` — `fix(scss): make book chapter nav buttons visible on dark theme`
+- **Pushed to:** `origin/fix/dark-theme-info-icon`
+- **PR:** not yet opened — the branch now contains both the prior big fix batch (#64–#109, commit `bc27ffc`) and this Phase 9 fix (#110, commit `c2d6ae4`). When opening a PR to `main`, both will go together.

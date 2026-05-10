@@ -188,14 +188,16 @@ The SCSS generator dark mode section has a strict cascade order. Later rules ove
 5. Verify: does it work on ALL dark presets, not just the one being tested?
 6. Document: update `docs/moodle-cloud-constraints.md` and `docs/PROJECT-TRACKER.md`
 
-### Current Status (2026-03-26)
+### Current Status (2026-05-10)
 
-- **Branch:** `fix/dark-theme-info-icon`
-- **Issues fixed this session:** #64–#108 (45 issues)
-- **Categories covered:** icons, text, buttons, badges, filters, toggles, progress text, messaging drawer, activity icons, white-bg containers
-- **Remaining known issue:** None currently open — messaging drawer sidebar (#72) resolved as #106–108
-- **Files modified:** `lib/tokens.ts`, `store/theme-store.ts`, `lib/scss-generator.ts`, `components/controls/ControlsPanel.tsx`, `docs/moodle-cloud-constraints.md`, `docs/PROJECT-TRACKER.md`, `.claude/skills/moodle-issue/SKILL.md`
-- **Not yet committed** — run `/safe-commit` when ready
+- **Branch:** `fix/dark-theme-info-icon` (pushed; PR not yet opened)
+- **Issues fixed on branch:** #64–#110 (46 issues across 9 phases)
+  - Phases 1–8 (commit `bc27ffc`, 2026-03-26): icons, text, buttons, badges, filters, toggles, progress text, messaging drawer, activity icons, white-bg containers, footer popover
+  - Phase 9 (commit `c2d6ae4`, 2026-05-10): `.path-mod-book .btn-previous` / `.btn-next` chapter nav button visibility
+- **Last fix verified by user:** Phase 9 — book chapter nav button (lime green bg + black chevron, white bg on hover). Verified against Moodle 5.0 + 4.5 source.
+- **Remaining known issue:** None currently open
+- **Branch state:** committed and pushed to `origin/fix/dark-theme-info-icon`. Ready to open PR to `main`.
+- **Branch contents (committed files):** `lib/tokens.ts`, `store/theme-store.ts`, `lib/scss-generator.ts`, `components/controls/ControlsPanel.tsx`, `docs/moodle-cloud-constraints.md`, `docs/PROJECT-TRACKER.md`, `.claude/skills/moodle-issue/SKILL.md`
 
 ## Code Conventions
 
