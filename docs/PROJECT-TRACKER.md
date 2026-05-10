@@ -1123,8 +1123,11 @@ Cross-referenced against `MOODLE_500_STABLE`:
 - `CLAUDE.md` — Current Status updated
 - `memory/project_dark_theme_icon_patterns.md` — added section 7b (Inline SVG icons / Moodle 4.5+)
 
-### Git Status (Session 2)
-- **Branch:** `fix/dark-theme-info-icon` (continued)
-- **Commit:** `c2d6ae4` — `fix(scss): make book chapter nav buttons visible on dark theme`
-- **Pushed to:** `origin/fix/dark-theme-info-icon`
-- **PR:** not yet opened — the branch now contains both the prior big fix batch (#64–#109, commit `bc27ffc`) and this Phase 9 fix (#110, commit `c2d6ae4`). When opening a PR to `main`, both will go together.
+### Git Status (Session 2, post-merge)
+- **Branch:** `fix/dark-theme-info-icon` — merged into `main`
+- **Phase 9 commit:** `c2d6ae4` — `fix(scss): make book chapter nav buttons visible on dark theme`
+- **Merged via:**
+  - PR #11 (`8d6e55f`) — Phases 1–8 (commit `bc27ffc`)
+  - PR #12 (`ca29c5c`) — Phase 9 (commit `c2d6ae4`)
+- **Post-merge docs sync:** the Phase 9 PROJECT-TRACKER entry above + matching CLAUDE.md status update were authored after PR #12 merged, and are coming to main via a separate `docs/post-merge-status` branch.
+- **Branch `fix/dark-theme-info-icon`:** safe to delete locally and on remote.

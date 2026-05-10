@@ -188,16 +188,16 @@ The SCSS generator dark mode section has a strict cascade order. Later rules ove
 5. Verify: does it work on ALL dark presets, not just the one being tested?
 6. Document: update `docs/moodle-cloud-constraints.md` and `docs/PROJECT-TRACKER.md`
 
-### Current Status (2026-05-10)
+### Current Status (2026-05-10, post-merge)
 
-- **Branch:** `fix/dark-theme-info-icon` (pushed; PR not yet opened)
-- **Issues fixed on branch:** #64–#110 (46 issues across 9 phases)
-  - Phases 1–8 (commit `bc27ffc`, 2026-03-26): icons, text, buttons, badges, filters, toggles, progress text, messaging drawer, activity icons, white-bg containers, footer popover
-  - Phase 9 (commit `c2d6ae4`, 2026-05-10): `.path-mod-book .btn-previous` / `.btn-next` chapter nav button visibility
-- **Last fix verified by user:** Phase 9 — book chapter nav button (lime green bg + black chevron, white bg on hover). Verified against Moodle 5.0 + 4.5 source.
+- **Active branch:** `main` (clean, up to date with origin)
+- **Last merged work:** dark-theme visibility fixes — issues #64–#110 across 9 phases, merged via two PRs:
+  - **PR #11** (`8d6e55f`) — Phases 1–8: icons, text, buttons, badges, filters, toggles, progress text, messaging drawer, activity icons, white-bg containers, footer popover (commit `bc27ffc`)
+  - **PR #12** (`ca29c5c`) — Phase 9: `.path-mod-book .btn-previous` / `.btn-next` chapter nav button visibility (commit `c2d6ae4`), verified against Moodle 5.0 + 4.5 STABLE source
+- **Branch `fix/dark-theme-info-icon`:** merged into main; safe to delete locally and on remote when convenient
 - **Remaining known issue:** None currently open
-- **Branch state:** committed and pushed to `origin/fix/dark-theme-info-icon`. Ready to open PR to `main`.
-- **Branch contents (committed files):** `lib/tokens.ts`, `store/theme-store.ts`, `lib/scss-generator.ts`, `components/controls/ControlsPanel.tsx`, `docs/moodle-cloud-constraints.md`, `docs/PROJECT-TRACKER.md`, `.claude/skills/moodle-issue/SKILL.md`
+- **Touched files (now in main):** `lib/tokens.ts`, `store/theme-store.ts`, `lib/scss-generator.ts`, `components/controls/ControlsPanel.tsx`, `docs/moodle-cloud-constraints.md`, `docs/PROJECT-TRACKER.md`, `.claude/skills/moodle-issue/SKILL.md`
+- **Pending docs sync (this branch):** `docs/post-merge-status` brings the Phase 9 PROJECT-TRACKER entry and updated Current Status into main — was authored after PR #12 merged and so is not yet on main
 
 ## Code Conventions
 
