@@ -363,6 +363,36 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push(`.btn-previous:hover .icon, .btn-previous:hover .fa,`);
     rules.push(`.btn-next:hover .icon, .btn-next:hover .fa { color: ${tokens.linkColour} !important; }`);
     rules.push('');
+
+    // Book chapter nav buttons — lime green bg + black chevron on dark theme
+    rules.push('// ── Book Chapter Nav Buttons ──');
+    rules.push(`.path-mod-book .btn-previous,`);
+    rules.push(`.path-mod-book .btn-next {`);
+    rules.push(`  background: ${tokens.infoIconColour} !important;`);
+    rules.push(`  border-color: ${tokens.infoIconColour} !important;`);
+    rules.push(`}`);
+    // Chevron — cover FontAwesome <i> AND inline <svg> (Moodle 4.5+ ships SVG)
+    rules.push(`.path-mod-book .btn-previous .icon, .path-mod-book .btn-previous .fa,`);
+    rules.push(`.path-mod-book .btn-previous svg,`);
+    rules.push(`.path-mod-book .btn-next .icon, .path-mod-book .btn-next .fa,`);
+    rules.push(`.path-mod-book .btn-next svg {`);
+    rules.push(`  color: ${d.bodyText} !important;`);
+    rules.push(`  fill: ${d.bodyText} !important;`);
+    rules.push(`}`);
+    // Hover — white bg + black chevron
+    rules.push(`.path-mod-book .btn-previous:hover,`);
+    rules.push(`.path-mod-book .btn-next:hover {`);
+    rules.push(`  background: #FFFFFF !important;`);
+    rules.push(`  border-color: #FFFFFF !important;`);
+    rules.push(`}`);
+    rules.push(`.path-mod-book .btn-previous:hover .icon, .path-mod-book .btn-previous:hover .fa,`);
+    rules.push(`.path-mod-book .btn-previous:hover svg,`);
+    rules.push(`.path-mod-book .btn-next:hover .icon, .path-mod-book .btn-next:hover .fa,`);
+    rules.push(`.path-mod-book .btn-next:hover svg {`);
+    rules.push(`  color: ${d.bodyText} !important;`);
+    rules.push(`  fill: ${d.bodyText} !important;`);
+    rules.push(`}`);
+    rules.push('');
   }
 
   // --- Content Max Width ---
