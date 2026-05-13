@@ -939,6 +939,60 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push(`.popover-body { color: ${tokens.bodyText} !important; }`);
     rules.push('');
 
+    // Notifications popover (bell-icon dropdown) — Moodle renders this as a
+    // `.popover-region-notifications` container portalled outside `.navbar`,
+    // so the navbar `.popover-region-container` override does not catch it.
+    // Boost ships it as a hardcoded white card with #f4f4f4 unread rows and
+    // `$primary` hover — unreadable on dark presets.
+    rules.push(`.popover-region-notifications .popover-region-container {`);
+    rules.push(`  background-color: ${tokens.drawerBg} !important;`);
+    rules.push(`  border-color: rgba(255,255,255,0.1) !important;`);
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push(`}`);
+    rules.push(`.popover-region-notifications .popover-region-header-container {`);
+    rules.push(`  border-bottom-color: rgba(255,255,255,0.1) !important;`);
+    rules.push(`}`);
+    rules.push(`.popover-region-notifications .popover-region-header-text {`);
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push(`}`);
+    rules.push(`.popover-region-notifications .content-item-container {`);
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push(`  border-bottom-color: rgba(255,255,255,0.08) !important;`);
+    rules.push(`}`);
+    rules.push(`.popover-region-notifications .content-item-container.unread {`);
+    rules.push(`  background-color: rgba(255,255,255,0.06) !important;`);
+    rules.push(`}`);
+    rules.push(`.popover-region-notifications .content-item-container:hover,`);
+    rules.push(`.popover-region-notifications .content-item-container.unread:hover {`);
+    rules.push(`  background-color: ${tokens.linkColour} !important;`);
+    rules.push(`  color: ${autoTextForHex(tokens.linkColour)} !important;`);
+    rules.push(`}`);
+    // Anchors and inline text inside the row (.context-link, .view-more,
+    // .notification-message, .timestamp) get colour from the global
+    // `a:hover { color: linkHover }` rule (specificity 0,1,1) or from their own
+    // selectors. Force contrast text on EVERY descendant of a hovered row.
+    rules.push(`.popover-region-notifications .content-item-container:hover *,`);
+    rules.push(`.popover-region-notifications .content-item-container:hover a:hover,`);
+    rules.push(`.popover-region-notifications .content-item-container:hover a:focus,`);
+    rules.push(`.popover-region-notifications .content-item-container.unread:hover *,`);
+    rules.push(`.popover-region-notifications .content-item-container.unread:hover a:hover,`);
+    rules.push(`.popover-region-notifications .content-item-container.unread:hover a:focus {`);
+    rules.push(`  color: ${autoTextForHex(tokens.linkColour)} !important;`);
+    rules.push(`  background-color: transparent !important;`);
+    rules.push(`}`);
+    rules.push(`.popover-region-notifications .content-item-footer .timestamp {`);
+    rules.push(`  color: ${tokens.mutedText} !important;`);
+    rules.push(`}`);
+    rules.push(`.popover-region-notifications .popover-region-footer-container {`);
+    rules.push(`  background-color: ${tokens.drawerBg} !important;`);
+    rules.push(`  border-top-color: rgba(255,255,255,0.1) !important;`);
+    rules.push(`}`);
+    rules.push(`.popover-region-notifications .see-all-link,`);
+    rules.push(`.popover-region-notifications .view-more {`);
+    rules.push(`  color: ${tokens.linkColour} !important;`);
+    rules.push(`}`);
+    rules.push('');
+
     // List-group items (used in drawers, course index)
     rules.push(`.list-group-item {`);
     rules.push(`  background-color: ${tokens.cardBg} !important;`);

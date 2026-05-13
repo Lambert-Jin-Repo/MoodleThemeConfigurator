@@ -1057,3 +1057,63 @@ All changes verified against classification system:
 ### Git Status
 - **Branch:** `fix/dark-theme-info-icon`
 - **Files modified:** `lib/tokens.ts`, `store/theme-store.ts`, `lib/scss-generator.ts`, `components/controls/ControlsPanel.tsx`, `docs/moodle-cloud-constraints.md`, `.claude/skills/moodle-issue/SKILL.md`, `docs/PROJECT-TRACKER.md`
+
+### Phase 10: Notifications Popover Dark Theme
+
+| # | Issue | Colour type | Token/Value | Status |
+|---|---|---|---|---|
+| 111 | Notifications popover (bell icon) renders as hardcoded white card with `#f4f4f4` unread rows + `$primary` hover — invisible on all dark presets | Fixed dark surface + dynamic hover + computed hover text | `${tokens.drawerBg}` / `${tokens.bodyText}` / `${tokens.linkColour}` / `autoTextForHex(linkColour)` / `${tokens.mutedText}` | Fixed |
+| 112 | Notification row hover text stays whitish on lime green — unreadable on `cfa-dark-lime` | Computed hover text (descendant `*` selector required) | `autoTextForHex(tokens.linkColour)` | Fixed |
+
+**Root cause:**
+- The popover-region container is portalled out of `.navbar` as `aria-modal="true"`. The existing `.navbar .popover-region-container` rule never matches.
+- It is NOT a Bootstrap `.popover` (different class), so the generic `.popover` dark rule does not apply either.
+- The bell-icon dropdown uses Moodle-custom `.popover-region-notifications` markup which Boost hardcodes to `$white` via `$popover-region-container-bg`, with `#f4f4f4` unread rows and `$primary` hover.
+
+**Fix:**
+1. New dark-theme block targets `.popover-region-notifications` directly (~`lib/scss-generator.ts:942`).
+2. Container + footer → `${tokens.drawerBg}` (matches messaging-drawer surface convention).
+3. Header/body/row text → `${tokens.bodyText}` (dynamic).
+4. Unread tint, borders → `rgba(255,255,255,0.06–0.1)` (fixed white at low alpha).
+5. Hover bg → `${tokens.linkColour}` (dynamic). Hover text → `autoTextForHex(tokens.linkColour)` (computed contrast).
+6. Timestamps → `${tokens.mutedText}` (static muted). "See all" / "View more" → `${tokens.linkColour}`.
+
+**Hover text specificity gotcha (issue #112):**
+
+The first attempt set `color: ${autoTextForHex(linkColour)}` on `.content-item-container:hover` only. The text inside the row lives inside `<a class="context-link">` — Boost's `.content-item-container:hover { color: inherit }` cascades to the anchor only via *inheritance*, but our own global rule:
+
+```scss
+a:hover { color: ${tokens.linkHover} !important; }   // specificity 0,1,1
+```
+
+applies *directly* to the anchor and wins over an inherited colour, regardless of how high the parent's specificity is. On `cfa-dark-lime` `linkHover` = `#A8E030` on a `#BAF73C` hover background — visually invisible.
+
+The fix uses a descendant `*` selector so the rule applies *directly* to every child (anchor included):
+
+```scss
+.popover-region-notifications .content-item-container:hover *,
+.popover-region-notifications .content-item-container:hover a:hover,
+.popover-region-notifications .content-item-container:hover a:focus { ... }
+```
+
+Specificity 0,3,0 — beats `a:hover` 0,1,1.
+
+**Token classification (per CLAUDE.md table):**
+
+| Element | Token | Category |
+|---|---|---|
+| Container & footer bg | `drawerBg` | Fixed dark |
+| Header, row, message text | `bodyText` | Dynamic |
+| Hover bg | `linkColour` | Dynamic |
+| Hover text (all descendants) | `autoTextForHex(linkColour)` | Computed |
+| Unread tint, borders | `rgba(255,255,255,*)` | Fixed white (low alpha) |
+| Timestamp | `mutedText` | Static muted |
+| "See all" / "View more" | `linkColour` | Dynamic |
+
+**Presets:** No preset changes needed — every token used here (`drawerBg`, `bodyText`, `mutedText`, `linkColour`) is already defined on all three dark presets (`cfa-dark-chrome`, `cfa-dark-lime`, `cfa-dark-ember`).
+
+**Controls panel:** No new picker rows — all colours reuse tokens already exposed in the controls panel.
+
+**Lesson:** When a hovered container wraps an `<a>` and you set `color` on the container, the global `a:hover` rule still wins on the anchor itself because *direct* style application beats *inherited* style regardless of selector specificity. Use a descendant `*` selector (or target the anchor explicitly) to force the colour onto the anchor directly.
+
+**Branch:** `fix/dark-theme-notifications-popover` (off main).
