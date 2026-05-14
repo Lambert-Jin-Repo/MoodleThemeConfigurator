@@ -349,6 +349,9 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push(`.icon, .fa { color: ${d.bodyText} !important; }`);
     rules.push(`.breadcrumb .icon, .breadcrumb .fa { color: ${d.bodyText} !important; }`);
     rules.push(`.secondary-navigation .icon, .secondary-navigation .fa { color: ${d.bodyText} !important; }`);
+    // Module prev/next nav — Moodle 5.0 uses .activity_navigation .btn-link
+    // (.btn-previous/.btn-next are book-only; kept for Moodle 4.x compat)
+    rules.push(`.activity_navigation .btn-link .icon, .activity_navigation .btn-link .fa,`);
     rules.push(`.btn-previous .icon, .btn-previous .fa,`);
     rules.push(`.btn-next .icon, .btn-next .fa { color: ${d.bodyText} !important; }`);
     rules.push('');
@@ -360,6 +363,7 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push(`.secondary-navigation .nav-link:hover .icon,`);
     rules.push(`.secondary-navigation .nav-link:hover .fa { color: ${tokens.linkColour} !important; }`);
     rules.push(`.breadcrumb a:hover .icon, .breadcrumb a:hover .fa { color: ${tokens.linkColour} !important; }`);
+    rules.push(`.activity_navigation .btn-link:hover .icon, .activity_navigation .btn-link:hover .fa,`);
     rules.push(`.btn-previous:hover .icon, .btn-previous:hover .fa,`);
     rules.push(`.btn-next:hover .icon, .btn-next:hover .fa { color: ${tokens.linkColour} !important; }`);
     rules.push('');
