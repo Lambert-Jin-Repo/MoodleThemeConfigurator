@@ -1201,6 +1201,188 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push(`  color: ${tokens.btnPrimaryText} !important;`);
     rules.push('}');
     rules.push('');
+    // ── Question bank page (#page-question-edit) — dark table surface ──
+    // The standalone Question bank (question/edit.php) renders the question list
+    // as a Bootstrap table (table.question-bank-table.generaltable.table). Bootstrap
+    // paints every cell background from --bs-table-bg — which resolves to the LIGHT
+    // --bs-body-bg — via `.table:not(caption)>*>* { background: var(--bs-table-bg) }`
+    // (specificity 0,2,1). Our dark block repaints the text/links/icons light + lime
+    // but never redefines the table background, and the only bg rule it emits
+    // (th { background: rgba(0,0,0,.15) }, specificity 0,0,1) LOSES to Bootstrap's
+    // rule → light/lime text on a light table = unreadable. The quiz-edit block does
+    // NOT cover this: it is anchored to #page-mod-quiz-edit (quiz/edit.php), a
+    // different page. Fix: give the table a dark CARD surface so the existing
+    // light/lime text reads, matching cards/dropdowns/modals. Double-anchored to
+    // #page-question-edit (the body id) AND .question-bank-table (the table class)
+    // so it cannot touch any other page, the filter UI, or any other table. Redefine
+    // the Bootstrap table variables on the table element (clean — cascades to header
+    // + body), plus an !important cell rule as insurance against Bootstrap's
+    // stripe/hover background-state trick. Colour + background only. Gated by
+    // darkMode (isDarkBg(pageBg)) → emits for dark presets only, light presets never.
+    rules.push('// Question bank table — dark surface so light/lime text is readable');
+    rules.push('#page-question-edit .question-bank-table {');
+    rules.push(`  --bs-table-bg: ${tokens.cardBg};`);
+    rules.push(`  --bs-table-color: ${tokens.bodyText};`);
+    rules.push(`  --bs-table-border-color: ${tokens.cardBorder};`);
+    rules.push('}');
+    rules.push('#page-question-edit .question-bank-table th,');
+    rules.push('#page-question-edit .question-bank-table td {');
+    rules.push(`  background-color: ${tokens.cardBg} !important;`);
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push(`  border-color: ${tokens.cardBorder} !important;`);
+    rules.push('}');
+    // White column headers for emphasis. .header (1,2,0) and thead th (1,1,1) both
+    // beat the th/td body-text rule (1,1,1) on class count / source order.
+    rules.push('#page-question-edit .question-bank-table .header,');
+    rules.push('#page-question-edit .question-bank-table thead th {');
+    rules.push(`  color: ${tokens.headingText} !important;`);
+    rules.push('}');
+    // Links (column sort links, the "Question 1" inplace-edit link) keep the
+    // dark-theme link colour. a:not(.btn) (1,2,1) beats the .header / th rules so
+    // header sort links read as links, not heading text.
+    rules.push('#page-question-edit .question-bank-table a:not(.btn) {');
+    rules.push(`  color: ${tokens.linkColour} !important;`);
+    rules.push('}');
+    rules.push('');
+    // ── Question bank — column action-handle + menu icons (dark surface) ──
+    // The generic `.icon, .fa { color: ${d.bodyText} }` rule (Icon Visibility Fix,
+    // ~line 349) keeps every FontAwesome glyph DARK (#1d2125) on the assumption icons
+    // sit on light card wrappers. The table above is now a dark CARD surface, so the
+    // column move/resize handles (<i class="icon fa fa-arrows-up-down-left-right">) and
+    // the three-dot column-menu glyphs render dark-on-dark → invisible. Re-light them
+    // to body text, scoped to .question-bank-table ONLY (icons on the light filter
+    // panel elsewhere on this page MUST stay dark). :not([class*="text-"]) preserves
+    // semantic status icons (.text-success/.text-danger). (1,3,0)+!important beats the
+    // generic (0,2,0) rule.
+    rules.push('#page-question-edit .question-bank-table .icon:not([class*="text-"]),');
+    rules.push('#page-question-edit .question-bank-table .fa:not([class*="text-"]) {');
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push('}');
+    rules.push('');
+    // ── Question bank — "Show question text in the question list?" label ──
+    // Bootstrap renders label.input-group-text as a light-grey chip (--bs-tertiary-bg).
+    // It sits OUTSIDE .question-bank-table (the toolbar above the list), so the
+    // dark-surface block can't reach it, and the broad light-text rule leaves it faint
+    // on the grey chip. Force fixed-dark text (matches the filter-label precedent);
+    // keep Bootstrap's chip background. (1,2,0)+!important wins.
+    rules.push('#page-question-edit .input-group .input-group-text {');
+    rules.push(`  color: ${d.bodyText} !important;`);
+    rules.push('}');
+    rules.push('');
+    // ── Question preview page — dark contrast ──
+    // Moodle hardcodes `.que .info` LIGHT ($gray-100, no .bg-white class), so none of
+    // the white-bg overrides match it and the page-content light-text rule (~line 817)
+    // lights its text → faint number/state/grade on a near-white box. Force fixed-dark
+    // text (colour only — Moodle owns the background). The preview page body id changed
+    // in Moodle 4.0+ (preview moved into the qbank_previewquestion plugin), so anchor
+    // BOTH the legacy and plugin ids — a non-matching id simply no-ops.
+    rules.push('#page-question-preview .que .info,');
+    rules.push('#page-question-preview .que .info > div,');
+    rules.push('#page-question-preview .que .info .state,');
+    rules.push('#page-question-preview .que .info .grade,');
+    rules.push('#page-question-preview .que .info h3.no,');
+    rules.push('#page-question-preview .que .info span.qno,');
+    rules.push('#page-question-bank-previewquestion-preview .que .info,');
+    rules.push('#page-question-bank-previewquestion-preview .que .info > div,');
+    rules.push('#page-question-bank-previewquestion-preview .que .info .state,');
+    rules.push('#page-question-bank-previewquestion-preview .que .info .grade,');
+    rules.push('#page-question-bank-previewquestion-preview .que .info h3.no,');
+    rules.push('#page-question-bank-previewquestion-preview .que .info span.qno {');
+    rules.push(`  color: ${d.bodyText} !important;`);
+    rules.push('}');
+    // Preview control buttons (Start again / Save / Fill in correct responses /
+    // Close preview) render as transparent ghost outlines via the global dark
+    // .btn-secondary rule. Give them a solid dark card surface so they read as real
+    // buttons; .btn-primary ("Submit and finish") is left untouched to stay on-brand.
+    // (2,1,0) beats the global .btn-secondary (0,1,0).
+    rules.push('#page-question-preview #previewcontrols .btn-secondary,');
+    rules.push('#page-question-preview #previewcontrols .btn-outline-secondary,');
+    rules.push('#page-question-bank-previewquestion-preview #previewcontrols .btn-secondary,');
+    rules.push('#page-question-bank-previewquestion-preview #previewcontrols .btn-outline-secondary {');
+    rules.push(`  background-color: ${tokens.cardBg} !important;`);
+    rules.push(`  border-color: ${tokens.cardBorder} !important;`);
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push('}');
+    rules.push('');
+    // ── Quiz view page (#page-mod-quiz-view) — "Your attempts" summary table ──
+    // mod/quiz's own stylesheet hardcodes `table.quizreviewsummary td.cell` LIGHT
+    // (`background:#fafafa`, no .bg-white class), so the dark theme's light text —
+    // the Status value ("In progress") and the Started date — is invisible on the
+    // light cell. Unlike the quiz-edit fix (dark text on light), the user wants a
+    // DARK surface here: give the cells the dark CARD surface + light text, links
+    // lime. ID-anchored to #page-mod-quiz-view. (1,2,2)+!important beats Moodle's
+    // `table.quizreviewsummary td.cell` (0,2,2).
+    rules.push('#page-mod-quiz-view .quizreviewsummary td.cell,');
+    rules.push('#page-mod-quiz-view .quizreviewsummary th.cell {');
+    rules.push(`  background-color: ${tokens.cardBg} !important;`);
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push(`  border-color: ${tokens.cardBorder} !important;`);
+    rules.push('}');
+    rules.push('#page-mod-quiz-view .quizreviewsummary a:not(.btn) {');
+    rules.push(`  color: ${tokens.linkColour} !important;`);
+    rules.push('}');
+    rules.push('');
+    // ── Quiz attempt/preview/review pages — `.que .info` status panel ──
+    // Moodle hardcodes the `.que .info` left column LIGHT ($gray-100, no .bg-white),
+    // so the dark theme's light text (question number, "Not yet answered", "Marked
+    // out of 1.00", Flag/Edit links) is invisible. User wants a DARK surface + light
+    // /lime text: give `.que .info` the dark CARD surface, force descendant text
+    // light (number/state/grade) and links (Flag question / Edit question) lime. The
+    // pale-blue `.formulation` question body is intentionally left untouched. Anchored
+    // to the quiz module body-id PREFIX so it covers attempt/preview/review/summary
+    // in one rule (quiz-edit has no `.que .info`, so it is unaffected). `.que .info`
+    // (0,3,0)+!important beats Moodle's (0,2,0); the a:not(.btn) rule (0,4,1) keeps
+    // links lime over the descendant-text rule.
+    rules.push('[id^="page-mod-quiz-"] .que .info {');
+    rules.push(`  background-color: ${tokens.cardBg} !important;`);
+    rules.push(`  border-color: ${tokens.cardBorder} !important;`);
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push('}');
+    rules.push('[id^="page-mod-quiz-"] .que .info * {');
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push('}');
+    rules.push('[id^="page-mod-quiz-"] .que .info a:not(.btn) {');
+    rules.push(`  color: ${tokens.linkColour} !important;`);
+    rules.push('}');
+    // The flag-state icon is a raw `<img class="questionflagimage" src=".../i/unflagged">`
+    // (a PIX image, NOT a FontAwesome glyph), so the light-text `color` rules above
+    // cannot recolour it. Two states, two filters (mutually exclusive via `src`):
+    //  • UNFLAGGED (`i/unflagged`): light it to white to match the "Edit question" pen.
+    //  • FLAGGED (`i/flagged`): Moodle's flagged image renders BLACK on this site, so
+    //    tint it red — the conventional "flagged" colour (≈ CFA Red #F64747). A filter
+    //    chain is required because an <img> can't take a `color`; it can't follow the
+    //    `error` token dynamically, so it approximates the brand red.
+    // `[src*="flagged"]:not([src*="unflagged"])` selects the flagged src only ("unflagged"
+    // also contains the substring "flagged"). Image-based semantic icon → filter.
+    rules.push('[id^="page-mod-quiz-"] .que .info .questionflagimage[src*="unflagged"] {');
+    rules.push('  filter: brightness(0) invert(1);');
+    rules.push('}');
+    rules.push('[id^="page-mod-quiz-"] .que .info .questionflagimage[src*="flagged"]:not([src*="unflagged"]) {');
+    rules.push('  filter: brightness(0) saturate(100%) invert(42%) sepia(93%) saturate(2400%) hue-rotate(320deg) brightness(98%) contrast(96%);');
+    rules.push('}');
+    rules.push('');
+    // ── Multichoice "Clear my choice" link ──
+    // After a radio option is selected, Moodle reveals a "Clear my choice" link
+    // (.qtype_multichoice_clearchoice) sitting on the pale-blue `.formulation` box that
+    // Moodle keeps LIGHT. The dark theme's link colour (lime/orange) is near-invisible
+    // on that light-blue bg. Use a high-contrast CFA brand accent — Purple #B500B5 — a
+    // FIXED brand colour (like the #FFFFFF/#1d2125 fixed values): it must stay readable
+    // on Moodle's fixed light-blue box, so it deliberately does NOT follow the dark link
+    // token. Bold it on hover for feedback. Element-scoped to the clear-choice control
+    // (covers <a>/<button>/[role=button] across Moodle versions).
+    rules.push('.que .qtype_multichoice_clearchoice,');
+    rules.push('.que .qtype_multichoice_clearchoice a,');
+    rules.push('.que .qtype_multichoice_clearchoice button,');
+    rules.push('.que .qtype_multichoice_clearchoice [role="button"] {');
+    rules.push('  color: #B500B5 !important;'); // CFA Purple — fixed brand accent, readable on the pale-blue formulation
+    rules.push('}');
+    rules.push('.que .qtype_multichoice_clearchoice a:hover,');
+    rules.push('.que .qtype_multichoice_clearchoice button:hover,');
+    rules.push('.que .qtype_multichoice_clearchoice [role="button"]:hover {');
+    rules.push('  color: #B500B5 !important;');
+    rules.push('  font-weight: 700 !important;');
+    rules.push('}');
+    rules.push('');
   }
 
   const block2 = rules.join('\n');
