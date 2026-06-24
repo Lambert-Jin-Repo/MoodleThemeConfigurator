@@ -256,11 +256,7 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
   // --- Login ---
   if (tokens.loginBg !== d.loginBg || tokens.loginBtnBg !== d.loginBtnBg || tokens.signupBtnBg !== d.signupBtnBg || tokens.loginHeading !== d.loginHeading) {
     rules.push('// ── Login Page ──');
-    // Skip the body background fill if a login background image is uploaded,
-    // otherwise the !important rule would hide it.
-    if (tokens.loginBgImage) {
-      rules.push('// Login background image is in use — body fill skipped so the image shows.');
-    } else if (tokens.loginGradientEnabled) {
+    if (tokens.loginGradientEnabled) {
       rules.push(`body#page-login-index {`);
       rules.push(`  background: linear-gradient(135deg, ${tokens.loginBg}, ${tokens.loginGradientEnd}) !important;`);
       rules.push(`}`);
@@ -418,23 +414,13 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push('// Moodle will apply: background-size: cover (desktop only, 768px+)');
     rules.push('');
   }
-  // ── Login Background Image (always emitted) ──
-  // Moodle paints the admin-uploaded login bg image on body.pagelayout-login #page.
-  // Our dark-theme rules (#region-main-box, #region-main, #page-content) paint those
-  // wrappers opaque site-wide, covering the image. Force them transparent ONLY on
-  // login pages so the image shows through, while leaving .card opaque so the login
-  // form itself stays legible.
-  rules.push('// ── Login Background Image ──');
-  rules.push('// Upload your image at: Site admin → Appearance → Themes → Boost → Login background image');
-  rules.push('// (rules below let Moodle\'s injected background-image on #page show through)');
-  rules.push('body.pagelayout-login #page-content,');
-  rules.push('body.pagelayout-login #region-main-box,');
-  rules.push('body.pagelayout-login #region-main,');
-  rules.push('body.pagelayout-login .main-inner,');
-  rules.push('body.pagelayout-login .login-wrapper {');
-  rules.push('  background-color: transparent !important;');
-  rules.push('}');
-  rules.push('');
+  if (tokens.loginBgImage) {
+    rules.push('// ── Login Background Image ──');
+    rules.push('// Upload your login background image at:');
+    rules.push('// Site admin → Appearance → Themes → Boost → Login background image');
+    rules.push('// Moodle will apply: background-size: cover on body.pagelayout-login #page');
+    rules.push('');
+  }
 
   // --- Cards ---
   if (tokens.cardBg !== d.cardBg || tokens.cardBorder !== d.cardBorder) {
@@ -492,19 +478,39 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push('// Auto-generated for dark page backgrounds');
     rules.push('');
 
-    // No page-wrapper background painting in dark mode.
-    // body has pageBg via $body-bg in Block 1; every transparent descendant
-    // (#page-wrapper, #page, #page-content, .main-inner, #region-main-box, etc.)
-    // shows it through. Cards/blocks/drawers paint themselves separately.
-    // Painting any wrapper opaquely would cover Moodle's uploaded background
-    // image (on body for site, on body.pagelayout-login #page for login).
-
-    // Secondary navigation background
-    rules.push(`.secondary-navigation { background-color: ${tokens.pageBg} !important; }`);
+    // Page wrapper containers.
+    // Moodle Boost paints the "Background image" setting on `body` (desktop-only,
+    // @media min-width:768px). In stock Boost these wrappers are transparent, so
+    // painting them a solid pageBg would cover the image. When a background image
+    // is set, keep the dark colour on `body` as a fallback (also covers mobile
+    // <768px where Boost omits the image) and make the wrappers transparent so the
+    // body image shows through. With NO image, keep the opaque wrappers — this is
+    // the original behaviour that prevents white gaps.
+    if (tokens.backgroundImage) {
+      rules.push(`body { background-color: ${tokens.pageBg} !important; }`);
+      rules.push('#page, #page-wrapper, #topofscroll, .main-inner,');
+      rules.push('#region-main-box, .pagelayout-standard #page.drawers {');
+      rules.push('  background-color: transparent !important;');
+      rules.push('}');
+    } else {
+      rules.push('#page, #page-wrapper, #topofscroll, .main-inner,');
+      rules.push('#region-main-box, .pagelayout-standard #page.drawers {');
+      rules.push(`  background-color: ${tokens.pageBg} !important;`);
+      rules.push('}');
+    }
     rules.push('');
 
-    // Breadcrumb area
-    rules.push(`.breadcrumb { background-color: ${tokens.breadcrumbBg === 'transparent' ? tokens.pageBg : tokens.breadcrumbBg} !important; }`);
+    // Secondary navigation background — transparent when a body image is set so
+    // it shows through; otherwise the dark page colour.
+    rules.push(`.secondary-navigation { background-color: ${tokens.backgroundImage ? 'transparent' : tokens.pageBg} !important; }`);
+    rules.push('');
+
+    // Breadcrumb area — keep a custom breadcrumbBg if set; otherwise transparent
+    // when a body image is present (so it shows through), else the dark page colour.
+    const breadcrumbDarkBg = tokens.breadcrumbBg !== 'transparent'
+      ? tokens.breadcrumbBg
+      : (tokens.backgroundImage ? 'transparent' : tokens.pageBg);
+    rules.push(`.breadcrumb { background-color: ${breadcrumbDarkBg} !important; }`);
     rules.push('');
 
     // Card background + text colour — critical for readability
@@ -803,11 +809,11 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push(`.breadcrumb-item + .breadcrumb-item::before { color: ${tokens.mutedText} !important; }`);
     rules.push('');
 
-    // Course content text colour only — never paint background here.
-    // Background-color on these would cover Moodle's body background image
-    // on regular pages and Moodle's login background image on the login page.
-    // Body shows pageBg via $body-bg in Block 1.
-    rules.push('.course-content, #region-main {');
+    // Course content area — backgrounds AND text. When a body image is set, drop
+    // the opaque page colour (transparent) so the image shows through the content
+    // column, but KEEP the text colour. Cards/blocks inside stay opaque.
+    rules.push('.course-content, #region-main, #page-content {');
+    rules.push(`  background-color: ${tokens.backgroundImage ? 'transparent' : tokens.pageBg} !important;`);
     rules.push(`  color: ${tokens.bodyText} !important;`);
     rules.push(`}`);
     rules.push('');
@@ -1098,6 +1104,101 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push('#page-footer a, #page-footer .footer-content-popover a,');
     rules.push('#page-footer .logininfo a {');
     rules.push(`  color: ${tokens.footerLink} !important;`);
+    rules.push('}');
+    rules.push('');
+    // ── Quiz edit page (#page-mod-quiz-edit) — Moodle's hardcoded LIGHT containers ──
+    // The quiz module's own stylesheet (mod/quiz/styles.css) paints the
+    // slot/section and question-bank containers light (#fafafa/#e6e6e6/#fff) but
+    // gives them NO .bg-white class, so the white-bg overrides above never match
+    // them. In dark presets our broad text rules repaint that text light → it
+    // becomes invisible (e.g. the "Shuffle" label sitting on the #fafafa .content).
+    // Fix: force the LIGHT-THEME default colours (d.*), which are accessible on a
+    // light background — the "Fixed dark" classification. ID-anchored to
+    // #page-mod-quiz-edit ONLY, scoped to the known light containers (never a bare
+    // #page-mod-quiz-edit *), and colour-only (never background) — so nothing
+    // outside this page or these containers can be affected.
+    rules.push('// Quiz edit page — readable text on hardcoded light slot/section containers');
+    rules.push('#page-mod-quiz-edit ul.slots li.section .content,');
+    rules.push('#page-mod-quiz-edit ul.slots li.section .content *,');
+    rules.push('#page-mod-quiz-edit .section-heading,');
+    rules.push('#page-mod-quiz-edit .section-heading *,');
+    rules.push('#page-mod-quiz-edit ul.slots li.activity,');
+    rules.push('#page-mod-quiz-edit ul.slots li.activity *,');
+    rules.push('#page-mod-quiz-edit .instancemaxmarkcontainer,');
+    rules.push('#page-mod-quiz-edit .instancemaxmarkcontainer *,');
+    rules.push('#page-mod-quiz-edit div.questionbank .categoryquestionscontainer,');
+    rules.push('#page-mod-quiz-edit div.questionbank .categoryquestionscontainer * {');
+    rules.push(`  color: ${d.bodyText} !important;`);
+    rules.push('}');
+    // Preserve link affordance with the accessible default blue (~5.5:1 on white),
+    // NOT the dark-preset lime/orange link colour which would fail contrast here.
+    rules.push('#page-mod-quiz-edit ul.slots li.section .content a:not(.btn),');
+    rules.push('#page-mod-quiz-edit .section-heading a:not(.btn),');
+    rules.push('#page-mod-quiz-edit ul.slots li.activity a:not(.btn),');
+    rules.push('#page-mod-quiz-edit div.questionbank .categoryquestionscontainer a:not(.btn) {');
+    rules.push(`  color: ${d.linkColour} !important;`);
+    rules.push('}');
+    // Exception: dark popovers INSIDE the light containers (e.g. the "Add" action
+    // menu) keep their dark background, so they still need LIGHT text. The
+    // fixed-dark rules above would otherwise force dark-on-dark inside the open
+    // .dropdown-menu. Re-assert the standard dark-dropdown text colour, anchored
+    // through each container root + .dropdown-menu so it beats the rules above
+    // (the deeper .dropdown-item selector also beats the blue-link rule for the
+    // <a> menu items). Only the open menu is affected — the toggle stays dark
+    // on its light container because it is not inside .dropdown-menu.
+    rules.push('#page-mod-quiz-edit ul.slots li.section .content .dropdown-menu,');
+    rules.push('#page-mod-quiz-edit ul.slots li.section .content .dropdown-menu *,');
+    rules.push('#page-mod-quiz-edit ul.slots li.section .content .dropdown-menu .dropdown-item,');
+    rules.push('#page-mod-quiz-edit .section-heading .dropdown-menu,');
+    rules.push('#page-mod-quiz-edit .section-heading .dropdown-menu *,');
+    rules.push('#page-mod-quiz-edit .section-heading .dropdown-menu .dropdown-item,');
+    rules.push('#page-mod-quiz-edit ul.slots li.activity .dropdown-menu,');
+    rules.push('#page-mod-quiz-edit ul.slots li.activity .dropdown-menu *,');
+    rules.push('#page-mod-quiz-edit ul.slots li.activity .dropdown-menu .dropdown-item {');
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push('}');
+    // #115 — inline editing input. Clicking a mark (.instancemaxmarkcontainer) or
+    // a question/section name swaps in an <input class="form-control"> that the
+    // global dark form rule paints with a DARK bg; the Tier-1 catch-all above then
+    // forces its text dark too -> dark-on-dark while typing. Restore a white field
+    // (Fixed-dark pattern) so the editing input is readable. Page-scoped to
+    // #page-mod-quiz-edit and limited to .inplaceeditable, so the page's other
+    // inputs (e.g. Maximum grade) and every other page are untouched.
+    rules.push('#page-mod-quiz-edit .inplaceeditable input,');
+    rules.push('#page-mod-quiz-edit .inplaceeditable .form-control,');
+    rules.push('#page-mod-quiz-edit .inplaceeditable .form-select {');
+    rules.push(`  background-color: #FFFFFF !important;`);
+    rules.push(`  color: ${d.bodyText} !important;`);
+    rules.push(`  border-color: #dee2e6 !important;`);
+    rules.push('}');
+    // #116 — modals launched from the quiz edit page (the "Add > a new question"
+    // type chooser and "from question bank") are portalled to <body> (still under
+    // #page-mod-quiz-edit) and keep Bootstrap's white .modal-content bg, but no
+    // dark-theme rule darkens their text -> light-on-white. Mirror the .bg-white
+    // treatment, page-scoped: force dark text, restore white inputs, keep links
+    // blue and primary buttons on-brand. ID-anchored so no other page's modals
+    // are affected.
+    rules.push('#page-mod-quiz-edit .modal-content,');
+    rules.push('#page-mod-quiz-edit .modal-content * {');
+    rules.push(`  color: ${d.bodyText} !important;`);
+    rules.push('}');
+    rules.push('#page-mod-quiz-edit .modal-content .form-control,');
+    rules.push('#page-mod-quiz-edit .modal-content .form-select,');
+    rules.push('#page-mod-quiz-edit .modal-content input[type="text"],');
+    rules.push('#page-mod-quiz-edit .modal-content input[type="search"] {');
+    rules.push(`  background-color: #FFFFFF !important;`);
+    rules.push(`  color: ${d.bodyText} !important;`);
+    rules.push(`  border-color: #dee2e6 !important;`);
+    rules.push('}');
+    rules.push('#page-mod-quiz-edit .modal-content a:not(.btn) {');
+    rules.push(`  color: ${d.linkColour} !important;`);
+    rules.push('}');
+    rules.push('#page-mod-quiz-edit .modal-content .btn-primary {');
+    rules.push(`  background-color: ${tokens.btnPrimaryBg} !important;`);
+    rules.push('}');
+    rules.push('#page-mod-quiz-edit .modal-content .btn-primary,');
+    rules.push('#page-mod-quiz-edit .modal-content .btn-primary * {');
+    rules.push(`  color: ${tokens.btnPrimaryText} !important;`);
     rules.push('}');
     rules.push('');
   }

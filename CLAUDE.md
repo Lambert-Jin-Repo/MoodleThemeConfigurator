@@ -188,13 +188,15 @@ The SCSS generator dark mode section has a strict cascade order. Later rules ove
 5. Verify: does it work on ALL dark presets, not just the one being tested?
 6. Document: update `docs/moodle-cloud-constraints.md` and `docs/PROJECT-TRACKER.md`
 
-### Current Status (2026-03-26)
+### Current Status (2026-06-24)
 
-- **Branch:** `fix/dark-theme-info-icon`
-- **Issues fixed this session:** #64–#108 (45 issues)
-- **Categories covered:** icons, text, buttons, badges, filters, toggles, progress text, messaging drawer, activity icons, white-bg containers
-- **Remaining known issue:** None currently open — messaging drawer sidebar (#72) resolved as #106–108
-- **Files modified:** `lib/tokens.ts`, `store/theme-store.ts`, `lib/scss-generator.ts`, `components/controls/ControlsPanel.tsx`, `docs/moodle-cloud-constraints.md`, `docs/PROJECT-TRACKER.md`, `.claude/skills/moodle-issue/SKILL.md`
+- **Branches:** `worktree-fix+dark-theme-quiz-edit-contrast` (quiz-edit #113–116) and `worktree-fix+dark-theme-bg-image-overlay` (background image #117). The latter has the former merged in for combined testing, so both fixes coexist there.
+- **Issue fixed this session:** Dark themes rendered text invisible on the quiz "Questions" edit page (`#page-mod-quiz-edit`, `mod/quiz/edit.php`). Moodle's quiz stylesheet hardcodes the slot/section/question-bank containers LIGHT (`#fafafa .content`, `#e6e6e6 li.activity`, `#fff` question bank, `#fdfdfe` inplaceeditable) with NO `.bg-white` class, so existing white-bg overrides never matched and the broad dark-text rules repainted the text light → invisible (Shuffle label, section heading, question rows). User-verified fixed (#113, #114).
+- **Categories covered:** **Fixed dark** on hardcoded-light containers that lack `.bg-white` (new sub-case — uses light-theme default tokens `d.bodyText`/`d.linkColour`, NOT dark-preset `tokens.*`); plus an **Exception** (cascade tail) re-lighting the nested `.dropdown-menu` "Add" popover to `tokens.bodyText` so the open menu (dark `cardBg`) is not dark-on-dark.
+- **Implementation:** ID-anchored to `#page-mod-quiz-edit`, colour-only (never background), appended at the very end of the `if (darkMode)` block. Tier 1 forces `d.bodyText` text + `d.linkColour` links on the light containers; Tier 2 dropdown rule uses specificity (1,5,2) to beat the Tier 1 blue-link rule (1,4,3). Gated by `darkMode = isDarkBg(tokens.pageBg)` so it emits for ALL dark presets (Dark Lime, Dark Ember, any custom dark bg) and stays OFF for the 8 light presets. NO new token, NO preset edits, NO control-panel/quick-palette change.
+- **#115 / #116 (fixed this session):** inline editing `<input>` now renders as a white field; the "Add a new question" / "from question bank" modal now uses `.bg-white`-style dark text on white (with white inputs, blue links and preserved primary buttons). Both page-scoped to `#page-mod-quiz-edit`.
+- **Background image on dark themes (#117, fixed this session, separate branch):** the pre-existing page-wrapper rule (`#page, #page-wrapper, … { background-color: ${tokens.pageBg} !important }`, in the `if (darkMode)` block) covered Moodle's `body`-level background image. Fixed by gating on `tokens.backgroundImage`: when an image is set, `body` keeps `pageBg` as a fallback and the structural wrappers (`#page` family, `.secondary-navigation`, `.breadcrumb`, `.course-content`/`#region-main`/`#page-content`) go `transparent`; cards/nav/drawer/footer stay opaque. No image → unchanged (no white gaps); mobile <768px → solid dark via body fallback; light themes untouched. User-verified. See `project_dark_theme_bg_image.md` (memory) and the new "Dark Theme: Background Images" section in the constraints doc.
+- **Files modified:** `lib/scss-generator.ts`, `CLAUDE.md`, `docs/moodle-cloud-constraints.md` (selector rows + Background Images section), `docs/PROJECT-TRACKER.md`, `.eslintrc.json` (`root: true`). Memory notes: `project_dark_theme_quiz_edit.md`, `project_dark_theme_bg_image.md` (outside repo).
 - **Not yet committed** — run `/safe-commit` when ready
 
 ## Code Conventions
