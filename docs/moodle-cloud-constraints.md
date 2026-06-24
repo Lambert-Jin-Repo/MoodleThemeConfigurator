@@ -247,6 +247,34 @@ Some Moodle icons are image-based (CSS `background-image`), not FontAwesome. CSS
 
 Known image-based icons: `.fp-path-folder` (file manager), `.groupmode-information img.icon` (group mode, Moodle 5.0+).
 
+## Dark Theme: Background Images
+
+Moodle Boost applies the **"Background image"** admin setting (Site admin → Appearance → Themes → Boost → Background image) to the bare **`body`** element, **desktop-only**, via `theme_boost_get_extra_scss()` (`public/theme/boost/lib.php`, Moodle 5.x):
+
+```css
+@media (min-width: 768px) {
+  body { background-image: url('...'); background-size: cover; }
+}
+```
+
+(The separate **login** background image targets `body.pagelayout-login #page .login-layout-left` — a different setting and code path.) In stock Boost, `#page` and the inner content wrappers are **transparent**, so the body image shows through the whole content column.
+
+**The conflict:** the generator's dark theme paints the structural page wrappers solid to avoid white gaps — `#page, #page-wrapper, #topofscroll, .main-inner, #region-main-box, .pagelayout-standard #page.drawers` (+ `.secondary-navigation`, `.breadcrumb`, `.course-content, #region-main, #page-content`) all get `background-color: pageBg !important`. These opaque layers sit **on top of** `body` and hide the image — only the right margin (outside the wrappers) shows it.
+
+**The fix** (gated on `tokens.backgroundImage`, inside `if (darkMode)`):
+
+| When | Behaviour |
+|---|---|
+| Background image **set** | `body { background-color: pageBg !important }` fallback + the structural wrappers → `background-color: transparent !important` so the body image shows through. Cards/blocks/navbar/drawer/footer/dropdowns/forms stay **opaque** for readability. |
+| **No** image | Wrappers stay opaque `pageBg` — byte-identical to before (no white gaps). |
+| **Light** theme | Rules are inside `if (darkMode)` — never emitted. |
+
+**Key facts:**
+- The body image and the dark fallback colour are **different CSS properties on the same `body`** — `background-color: pageBg !important` does **not** erase Boost's `background-image`; they coexist (image paints over the colour).
+- **Mobile <768px:** Boost omits the image, so the `body` dark colour is essential as the fallback (never white). Do **not** set `background-color: transparent` on `body`.
+- **Requirement:** the admin must set the image in the tool's **"Background Images"** control so `tokens.backgroundImage` is truthy and the gated SCSS engages. The actual image file is still uploaded via Boost's setting (the tool emits only a reminder comment, never the `url()`).
+- **Readability:** content not inside an opaque card (breadcrumb text, section headings, bare paragraphs) now sits over the image — fine over a dark/sparse image (e.g. the CFA charcoal-with-squares brand background), but a busy/bright image could drop contrast; keep `#region-main`/`#page-content` as a translucent scrim if a future image needs it.
+
 ## Bootstrap 4 → 5 Migration (Moodle 4.x → 5.0)
 
 Moodle 5.0 jumped from Bootstrap 4 to **Bootstrap 5.3**. Most "what changed" items below actually changed in Bootstrap 5.0, but are listed here because Moodle adopted the entire 5.x line in a single upgrade.

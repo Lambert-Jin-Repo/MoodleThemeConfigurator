@@ -1168,3 +1168,34 @@ Specificity 0,3,0 — beats `a:hover` 0,1,1.
 - `.eslintrc.json` (added `root: true` — prevents ESLint config-cascade when linting from a nested worktree)
 
 **Branch:** `worktree-fix+dark-theme-quiz-edit-contrast` (off main).
+
+---
+
+## Session: 2026-06-24 — Dark Theme Background Image Visibility
+
+| # | Issue | Colour type | Token/Value | Status |
+|---|---|---|---|---|
+| 117 | On dark themes a site-wide background image (Boost "Background image" setting, applied to `body`) was hidden — the generator painted the structural page wrappers (`#page` family, `.secondary-navigation`, `.breadcrumb`, `.course-content`/`#region-main`/`#page-content`) solid `pageBg !important`, covering the body image; only the right margin showed it | Page-layer transparency with body fallback | `body { ${tokens.pageBg} }` fallback + wrappers `transparent` (gated on `tokens.backgroundImage`) | ✅ Fixed |
+
+**Root cause:** Moodle Boost applies the "Background image" setting to the bare `body` (`@media (min-width:768px){ body{ background-image:url(...); background-size:cover; } }`, desktop-only, via `theme_boost_get_extra_scss()` in `public/theme/boost/lib.php`). In stock Boost the content wrappers are transparent, so the body image shows through. The generator's dark block painted those wrappers solid `pageBg !important` (added originally to prevent white gaps), which sit above `body` and blanket the image.
+
+**Fix (`lib/scss-generator.ts`, inside `if (darkMode)`, gated on `tokens.backgroundImage`):**
+- **With** an image: emit `body { background-color: ${tokens.pageBg} !important; }` (fallback) and set `#page, #page-wrapper, #topofscroll, .main-inner, #region-main-box, .pagelayout-standard #page.drawers`, `.secondary-navigation`, and `.course-content, #region-main, #page-content` to `transparent !important` (the breadcrumb keeps a custom `breadcrumbBg`, else transparent). Cards/blocks/navbar/drawer/footer/dropdowns/forms stay opaque.
+- **Without** an image: unchanged (opaque wrappers — no white gaps).
+- **Mobile <768px** (Boost omits the image): the `body` dark colour is the fallback — never white.
+
+**Verified:** generator output checked for Dark Lime + image (body fallback + transparent wrappers, cards opaque), Dark Lime + no image (byte-identical opaque), and a light preset + image (dark rules absent). User confirmed on the real site: background image now visible while cards/content stay readable.
+
+**Presets:** No preset changes — gated on the existing `tokens.backgroundImage` flag; no preset sets a background image by default.
+
+**Controls panel:** No change — the "Background Images" control already exists; the admin sets the image there to engage the gate. No new token.
+
+**Lesson:** Moodle Boost paints the "Background image" on `body` (desktop-only); page wrappers are transparent in stock Boost. A dark theme that paints those wrappers solid hides the image. Keep the dark colour on `body` as a fallback and make only the structural wrappers transparent; keep content surfaces opaque. Gate on a background-image flag so dark themes without an image keep their white-gap protection.
+
+### Files Modified
+- `lib/scss-generator.ts`
+- `docs/moodle-cloud-constraints.md` (new "Dark Theme: Background Images" section)
+- `CLAUDE.md`
+- `.eslintrc.json` (`root: true`)
+
+**Branch:** `worktree-fix+dark-theme-bg-image-overlay` (off main). The quiz-edit branch `worktree-fix+dark-theme-quiz-edit-contrast` (#113–116) was merged in for combined testing, so both fixes now coexist on this branch.
