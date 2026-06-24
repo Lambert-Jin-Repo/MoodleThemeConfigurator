@@ -1106,6 +1106,101 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push(`  color: ${tokens.footerLink} !important;`);
     rules.push('}');
     rules.push('');
+    // ── Quiz edit page (#page-mod-quiz-edit) — Moodle's hardcoded LIGHT containers ──
+    // The quiz module's own stylesheet (mod/quiz/styles.css) paints the
+    // slot/section and question-bank containers light (#fafafa/#e6e6e6/#fff) but
+    // gives them NO .bg-white class, so the white-bg overrides above never match
+    // them. In dark presets our broad text rules repaint that text light → it
+    // becomes invisible (e.g. the "Shuffle" label sitting on the #fafafa .content).
+    // Fix: force the LIGHT-THEME default colours (d.*), which are accessible on a
+    // light background — the "Fixed dark" classification. ID-anchored to
+    // #page-mod-quiz-edit ONLY, scoped to the known light containers (never a bare
+    // #page-mod-quiz-edit *), and colour-only (never background) — so nothing
+    // outside this page or these containers can be affected.
+    rules.push('// Quiz edit page — readable text on hardcoded light slot/section containers');
+    rules.push('#page-mod-quiz-edit ul.slots li.section .content,');
+    rules.push('#page-mod-quiz-edit ul.slots li.section .content *,');
+    rules.push('#page-mod-quiz-edit .section-heading,');
+    rules.push('#page-mod-quiz-edit .section-heading *,');
+    rules.push('#page-mod-quiz-edit ul.slots li.activity,');
+    rules.push('#page-mod-quiz-edit ul.slots li.activity *,');
+    rules.push('#page-mod-quiz-edit .instancemaxmarkcontainer,');
+    rules.push('#page-mod-quiz-edit .instancemaxmarkcontainer *,');
+    rules.push('#page-mod-quiz-edit div.questionbank .categoryquestionscontainer,');
+    rules.push('#page-mod-quiz-edit div.questionbank .categoryquestionscontainer * {');
+    rules.push(`  color: ${d.bodyText} !important;`);
+    rules.push('}');
+    // Preserve link affordance with the accessible default blue (~5.5:1 on white),
+    // NOT the dark-preset lime/orange link colour which would fail contrast here.
+    rules.push('#page-mod-quiz-edit ul.slots li.section .content a:not(.btn),');
+    rules.push('#page-mod-quiz-edit .section-heading a:not(.btn),');
+    rules.push('#page-mod-quiz-edit ul.slots li.activity a:not(.btn),');
+    rules.push('#page-mod-quiz-edit div.questionbank .categoryquestionscontainer a:not(.btn) {');
+    rules.push(`  color: ${d.linkColour} !important;`);
+    rules.push('}');
+    // Exception: dark popovers INSIDE the light containers (e.g. the "Add" action
+    // menu) keep their dark background, so they still need LIGHT text. The
+    // fixed-dark rules above would otherwise force dark-on-dark inside the open
+    // .dropdown-menu. Re-assert the standard dark-dropdown text colour, anchored
+    // through each container root + .dropdown-menu so it beats the rules above
+    // (the deeper .dropdown-item selector also beats the blue-link rule for the
+    // <a> menu items). Only the open menu is affected — the toggle stays dark
+    // on its light container because it is not inside .dropdown-menu.
+    rules.push('#page-mod-quiz-edit ul.slots li.section .content .dropdown-menu,');
+    rules.push('#page-mod-quiz-edit ul.slots li.section .content .dropdown-menu *,');
+    rules.push('#page-mod-quiz-edit ul.slots li.section .content .dropdown-menu .dropdown-item,');
+    rules.push('#page-mod-quiz-edit .section-heading .dropdown-menu,');
+    rules.push('#page-mod-quiz-edit .section-heading .dropdown-menu *,');
+    rules.push('#page-mod-quiz-edit .section-heading .dropdown-menu .dropdown-item,');
+    rules.push('#page-mod-quiz-edit ul.slots li.activity .dropdown-menu,');
+    rules.push('#page-mod-quiz-edit ul.slots li.activity .dropdown-menu *,');
+    rules.push('#page-mod-quiz-edit ul.slots li.activity .dropdown-menu .dropdown-item {');
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push('}');
+    // #115 — inline editing input. Clicking a mark (.instancemaxmarkcontainer) or
+    // a question/section name swaps in an <input class="form-control"> that the
+    // global dark form rule paints with a DARK bg; the Tier-1 catch-all above then
+    // forces its text dark too -> dark-on-dark while typing. Restore a white field
+    // (Fixed-dark pattern) so the editing input is readable. Page-scoped to
+    // #page-mod-quiz-edit and limited to .inplaceeditable, so the page's other
+    // inputs (e.g. Maximum grade) and every other page are untouched.
+    rules.push('#page-mod-quiz-edit .inplaceeditable input,');
+    rules.push('#page-mod-quiz-edit .inplaceeditable .form-control,');
+    rules.push('#page-mod-quiz-edit .inplaceeditable .form-select {');
+    rules.push(`  background-color: #FFFFFF !important;`);
+    rules.push(`  color: ${d.bodyText} !important;`);
+    rules.push(`  border-color: #dee2e6 !important;`);
+    rules.push('}');
+    // #116 — modals launched from the quiz edit page (the "Add > a new question"
+    // type chooser and "from question bank") are portalled to <body> (still under
+    // #page-mod-quiz-edit) and keep Bootstrap's white .modal-content bg, but no
+    // dark-theme rule darkens their text -> light-on-white. Mirror the .bg-white
+    // treatment, page-scoped: force dark text, restore white inputs, keep links
+    // blue and primary buttons on-brand. ID-anchored so no other page's modals
+    // are affected.
+    rules.push('#page-mod-quiz-edit .modal-content,');
+    rules.push('#page-mod-quiz-edit .modal-content * {');
+    rules.push(`  color: ${d.bodyText} !important;`);
+    rules.push('}');
+    rules.push('#page-mod-quiz-edit .modal-content .form-control,');
+    rules.push('#page-mod-quiz-edit .modal-content .form-select,');
+    rules.push('#page-mod-quiz-edit .modal-content input[type="text"],');
+    rules.push('#page-mod-quiz-edit .modal-content input[type="search"] {');
+    rules.push(`  background-color: #FFFFFF !important;`);
+    rules.push(`  color: ${d.bodyText} !important;`);
+    rules.push(`  border-color: #dee2e6 !important;`);
+    rules.push('}');
+    rules.push('#page-mod-quiz-edit .modal-content a:not(.btn) {');
+    rules.push(`  color: ${d.linkColour} !important;`);
+    rules.push('}');
+    rules.push('#page-mod-quiz-edit .modal-content .btn-primary {');
+    rules.push(`  background-color: ${tokens.btnPrimaryBg} !important;`);
+    rules.push('}');
+    rules.push('#page-mod-quiz-edit .modal-content .btn-primary,');
+    rules.push('#page-mod-quiz-edit .modal-content .btn-primary * {');
+    rules.push(`  color: ${tokens.btnPrimaryText} !important;`);
+    rules.push('}');
+    rules.push('');
   }
 
   const block2 = rules.join('\n');
