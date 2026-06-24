@@ -478,19 +478,39 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push('// Auto-generated for dark page backgrounds');
     rules.push('');
 
-    // Page wrapper containers — prevent white gaps
-    rules.push('#page, #page-wrapper, #topofscroll, .main-inner,');
-    rules.push('#region-main-box, .pagelayout-standard #page.drawers {');
-    rules.push(`  background-color: ${tokens.pageBg} !important;`);
-    rules.push(`}`);
+    // Page wrapper containers.
+    // Moodle Boost paints the "Background image" setting on `body` (desktop-only,
+    // @media min-width:768px). In stock Boost these wrappers are transparent, so
+    // painting them a solid pageBg would cover the image. When a background image
+    // is set, keep the dark colour on `body` as a fallback (also covers mobile
+    // <768px where Boost omits the image) and make the wrappers transparent so the
+    // body image shows through. With NO image, keep the opaque wrappers — this is
+    // the original behaviour that prevents white gaps.
+    if (tokens.backgroundImage) {
+      rules.push(`body { background-color: ${tokens.pageBg} !important; }`);
+      rules.push('#page, #page-wrapper, #topofscroll, .main-inner,');
+      rules.push('#region-main-box, .pagelayout-standard #page.drawers {');
+      rules.push('  background-color: transparent !important;');
+      rules.push('}');
+    } else {
+      rules.push('#page, #page-wrapper, #topofscroll, .main-inner,');
+      rules.push('#region-main-box, .pagelayout-standard #page.drawers {');
+      rules.push(`  background-color: ${tokens.pageBg} !important;`);
+      rules.push('}');
+    }
     rules.push('');
 
-    // Secondary navigation background
-    rules.push(`.secondary-navigation { background-color: ${tokens.pageBg} !important; }`);
+    // Secondary navigation background — transparent when a body image is set so
+    // it shows through; otherwise the dark page colour.
+    rules.push(`.secondary-navigation { background-color: ${tokens.backgroundImage ? 'transparent' : tokens.pageBg} !important; }`);
     rules.push('');
 
-    // Breadcrumb area
-    rules.push(`.breadcrumb { background-color: ${tokens.breadcrumbBg === 'transparent' ? tokens.pageBg : tokens.breadcrumbBg} !important; }`);
+    // Breadcrumb area — keep a custom breadcrumbBg if set; otherwise transparent
+    // when a body image is present (so it shows through), else the dark page colour.
+    const breadcrumbDarkBg = tokens.breadcrumbBg !== 'transparent'
+      ? tokens.breadcrumbBg
+      : (tokens.backgroundImage ? 'transparent' : tokens.pageBg);
+    rules.push(`.breadcrumb { background-color: ${breadcrumbDarkBg} !important; }`);
     rules.push('');
 
     // Card background + text colour — critical for readability
@@ -789,9 +809,11 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push(`.breadcrumb-item + .breadcrumb-item::before { color: ${tokens.mutedText} !important; }`);
     rules.push('');
 
-    // Course content area — backgrounds AND text
+    // Course content area — backgrounds AND text. When a body image is set, drop
+    // the opaque page colour (transparent) so the image shows through the content
+    // column, but KEEP the text colour. Cards/blocks inside stay opaque.
     rules.push('.course-content, #region-main, #page-content {');
-    rules.push(`  background-color: ${tokens.pageBg} !important;`);
+    rules.push(`  background-color: ${tokens.backgroundImage ? 'transparent' : tokens.pageBg} !important;`);
     rules.push(`  color: ${tokens.bodyText} !important;`);
     rules.push(`}`);
     rules.push('');
