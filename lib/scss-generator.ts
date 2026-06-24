@@ -256,11 +256,7 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
   // --- Login ---
   if (tokens.loginBg !== d.loginBg || tokens.loginBtnBg !== d.loginBtnBg || tokens.signupBtnBg !== d.signupBtnBg || tokens.loginHeading !== d.loginHeading) {
     rules.push('// ── Login Page ──');
-    // Skip the body background fill if a login background image is uploaded,
-    // otherwise the !important rule would hide it.
-    if (tokens.loginBgImage) {
-      rules.push('// Login background image is in use — body fill skipped so the image shows.');
-    } else if (tokens.loginGradientEnabled) {
+    if (tokens.loginGradientEnabled) {
       rules.push(`body#page-login-index {`);
       rules.push(`  background: linear-gradient(135deg, ${tokens.loginBg}, ${tokens.loginGradientEnd}) !important;`);
       rules.push(`}`);
@@ -492,12 +488,12 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push('// Auto-generated for dark page backgrounds');
     rules.push('');
 
-    // No page-wrapper background painting in dark mode.
-    // body has pageBg via $body-bg in Block 1; every transparent descendant
-    // (#page-wrapper, #page, #page-content, .main-inner, #region-main-box, etc.)
-    // shows it through. Cards/blocks/drawers paint themselves separately.
-    // Painting any wrapper opaquely would cover Moodle's uploaded background
-    // image (on body for site, on body.pagelayout-login #page for login).
+    // Page wrapper containers — prevent white gaps
+    rules.push('#page, #page-wrapper, #topofscroll, .main-inner,');
+    rules.push('#region-main-box, .pagelayout-standard #page.drawers {');
+    rules.push(`  background-color: ${tokens.pageBg} !important;`);
+    rules.push(`}`);
+    rules.push('');
 
     // Secondary navigation background
     rules.push(`.secondary-navigation { background-color: ${tokens.pageBg} !important; }`);
@@ -803,11 +799,9 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push(`.breadcrumb-item + .breadcrumb-item::before { color: ${tokens.mutedText} !important; }`);
     rules.push('');
 
-    // Course content text colour only — never paint background here.
-    // Background-color on these would cover Moodle's body background image
-    // on regular pages and Moodle's login background image on the login page.
-    // Body shows pageBg via $body-bg in Block 1.
-    rules.push('.course-content, #region-main {');
+    // Course content area — backgrounds AND text
+    rules.push('.course-content, #region-main, #page-content {');
+    rules.push(`  background-color: ${tokens.pageBg} !important;`);
     rules.push(`  color: ${tokens.bodyText} !important;`);
     rules.push(`}`);
     rules.push('');
