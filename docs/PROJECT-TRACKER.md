@@ -1117,3 +1117,85 @@ Specificity 0,3,0 — beats `a:hover` 0,1,1.
 **Lesson:** When a hovered container wraps an `<a>` and you set `color` on the container, the global `a:hover` rule still wins on the anchor itself because *direct* style application beats *inherited* style regardless of selector specificity. Use a descendant `*` selector (or target the anchor explicitly) to force the colour onto the anchor directly.
 
 **Branch:** `fix/dark-theme-notifications-popover` (off main).
+
+---
+
+## Session: 2026-06-24 — Quiz Edit Page Dark Theme Contrast
+
+| # | Issue | Colour type | Token/Value | Status |
+|---|---|---|---|---|
+| 113 | Quiz "Questions" edit page (`#page-mod-quiz-edit`) text invisible on dark themes — Moodle's `mod/quiz/styles.css` hardcodes the slot/section/question-bank containers LIGHT (`#fafafa` `.content`, `#e6e6e6` `li.activity`, `#fff` question bank, `#fdfdfe` inplaceeditable) with NO `.bg-white` class, so existing white-bg overrides never matched. Broad dark text rules (`.card`, `.section .fa`, page wrapper) then repainted the "Shuffle" label, section heading and question rows light → invisible | Fixed dark (light-theme **default** tokens, not dark-preset tokens) | `${d.bodyText}` (`#1d2125`) text / `${d.linkColour}` (`#0f6cbf`) links | ✅ Fixed |
+| 114 | "Add" action dropdown (`.dropdown-menu`) sits INSIDE those light containers in the DOM but keeps its own DARK background (`cardBg`); a naive fixed-dark catch-all produced dark-on-dark inside the open menu | Exception — re-light nested popover to the theme's own light text | `${tokens.bodyText}` (menu text) | ✅ Fixed |
+| 115 | Inline editing input — clicking a mark (`.instancemaxmarkcontainer`) or a question/section name to edit swaps in `<input class="form-control">`; the global dark form rule paints the input bg dark while the Tier-1 catch-all forces its text dark → dark-on-dark while typing | Fixed dark on always-light input (restore white bg) | `#fff` bg + `${d.bodyText}` text + `#dee2e6` border, scoped to `#page-mod-quiz-edit .inplaceeditable input` | ✅ Fixed |
+| 116 | "Add → a new question" / "from question bank" Bootstrap **modal** is portalled to `<body>` (white bg) and no generator rule darkens its text on dark themes → light-on-white | Fixed dark on white modal (page-scoped via `#page-mod-quiz-edit .modal-content`) | `${d.bodyText}` text + white inputs + `${d.linkColour}` links + `${tokens.btnPrimaryText}`/`${tokens.btnPrimaryBg}` buttons | ✅ Fixed |
+
+**Root cause (#113/#114):** `mod/quiz/edit.php` (5.x: `public/mod/quiz/styles.css`) styles its slot, section and question-bank containers with hardcoded light backgrounds and no `.bg-white` hook, so the generator's `.bg-white *` override family never reached them and the broad "light text for dark bg" rules won — light text on a near-white container. The "Add" `.dropdown-menu` is a descendant of those light containers but Boost keeps its surface dark (`cardBg`), so a blanket fixed-dark rule would have made the open menu dark-on-dark.
+
+**Fix (appended at the very end of the `if (darkMode)` block, after the footer-popover rule, in `lib/scss-generator.ts`):**
+1. **Tier 1 — Fixed dark on the light containers:** force `${d.bodyText}` text + `${d.linkColour}` links on `#page-mod-quiz-edit ul.slots li.section .content`, `.section-heading`, `ul.slots li.activity`, `.instancemaxmarkcontainer`, `div.questionbank .categoryquestionscontainer` (each + a descendant `*`). Uses the **light-theme DEFAULT** tokens `d.*`, NOT the dark-preset `tokens.*` (lime/orange/grey, which fail contrast on a white container).
+2. **Tier 2 — Exception, re-light the nested dropdown:** restore `${tokens.bodyText}` on `.dropdown-menu` popovers, anchored through each container root + `.dropdown-menu`. The `.dropdown-menu .dropdown-item` selector has specificity (1,5,2) to beat the Tier-1 blue-link rule (1,4,3) for the `<a>` menu items. Only the open menu flips light; the toggle stays dark on its light container.
+3. **ID-anchored** to `#page-mod-quiz-edit`, **colour-only** (never `background`). Gated by `darkMode = isDarkBg(tokens.pageBg)` (WCAG luminance < 0.179), so it emits for ALL dark themes (Dark Lime, Dark Ember, any custom dark bg) and stays OFF for the 8 light presets.
+
+**Verified:** Generator output checked for Dark Lime, Dark Ember and synthetic dark themes (navy/purple/teal/near-black) — fix emits with `#1d2125` / `#0f6cbf` / theme-light; all 8 light presets emit nothing. User confirmed the static-text fix on the real Moodle site (both the main section and the open "Add" dropdown).
+
+**#115 / #116:** surfaced by adversarial review and fixed in the same session — same ID-anchored, page-scoped pattern (a white field for the inline-edit input; a `.bg-white`-style treatment for the chooser modal, with white inputs, blue links and preserved primary buttons). The question-bank table `th` background overlay is cosmetic-only (still readable) and not tracked. Generator-verified across both dark presets (incl. the Ember white-on-orange button case); real-site spot-check deferred to the user.
+
+**Newly reported (now resolved as #117 — see the next session):** on dark themes the pre-existing page-wrapper rule `#page, #page-wrapper, … { background-color: ${tokens.pageBg} !important }` (in the `if (darkMode)` block) painted the content wrapper solid, covering Moodle's `body`-level background image (set via Boost's "Background image" setting) — so the image was hidden behind the dark page. NOT caused by the quiz-edit work (verified: every background it adds is `#page-mod-quiz-edit`-scoped). Fix: make the page wrapper transparent with `pageBg` kept as a `body`-level fallback; cards/nav/drawers stay opaque for readability. Implemented and verified — see the "Dark Theme Background Image Visibility" session below.
+
+#### Token classification (per CLAUDE.md table)
+
+| Element | Token | Category |
+|---|---|---|
+| Light container text (`.content`, `.section-heading`, `li.activity`, etc.) | `${d.bodyText}` | Fixed dark |
+| Light container links | `${d.linkColour}` | Fixed dark |
+| Nested `.dropdown-menu` text/items | `${tokens.bodyText}` | Exception (theme's own light text) |
+
+**Presets:** No preset changes — `d.bodyText` / `d.linkColour` are existing light-theme defaults and `tokens.bodyText` is already defined on all dark presets.
+
+**Controls panel:** No new picker rows, no new token, no quick-palette change — all colours reuse existing generator values.
+
+**Lesson:** Module stylesheets (`mod/quiz/styles.css`, 5.x `public/mod/quiz/...`) hardcode their own LIGHT containers WITHOUT a `.bg-white` hook, so the `.bg-white` override family never reaches them — they need explicit page-ID-anchored fixed-dark rules. When such a light container also wraps a surface that must stay dark (the `.dropdown-menu`), add a higher-specificity exception that re-lights only the nested popover, using the **light-theme default** `d.*` tokens (not dark-preset `tokens.*`) for text on the always-light container.
+
+### Documentation Updates
+- `docs/moodle-cloud-constraints.md` — 2 new High-Confidence verified selector rows (quiz-edit light containers + nested `.dropdown-menu` exception).
+- `CLAUDE.md` — Current Status block refreshed.
+- Memory file `project_dark_theme_quiz_edit.md` created (outside repo).
+
+### Files Modified
+- `lib/scss-generator.ts`
+- `docs/moodle-cloud-constraints.md`
+- `CLAUDE.md`
+- `.eslintrc.json` (added `root: true` — prevents ESLint config-cascade when linting from a nested worktree)
+
+**Branch:** `worktree-fix+dark-theme-quiz-edit-contrast` (off main).
+
+---
+
+## Session: 2026-06-24 — Dark Theme Background Image Visibility
+
+| # | Issue | Colour type | Token/Value | Status |
+|---|---|---|---|---|
+| 117 | On dark themes a site-wide background image (Boost "Background image" setting, applied to `body`) was hidden — the generator painted the structural page wrappers (`#page` family, `.secondary-navigation`, `.breadcrumb`, `.course-content`/`#region-main`/`#page-content`) solid `pageBg !important`, covering the body image; only the right margin showed it | Page-layer transparency with body fallback | `body { ${tokens.pageBg} }` fallback + wrappers `transparent` (gated on `tokens.backgroundImage`) | ✅ Fixed |
+
+**Root cause:** Moodle Boost applies the "Background image" setting to the bare `body` (`@media (min-width:768px){ body{ background-image:url(...); background-size:cover; } }`, desktop-only, via `theme_boost_get_extra_scss()` in `public/theme/boost/lib.php`). In stock Boost the content wrappers are transparent, so the body image shows through. The generator's dark block painted those wrappers solid `pageBg !important` (added originally to prevent white gaps), which sit above `body` and blanket the image.
+
+**Fix (`lib/scss-generator.ts`, inside `if (darkMode)`, gated on `tokens.backgroundImage`):**
+- **With** an image: emit `body { background-color: ${tokens.pageBg} !important; }` (fallback) and set `#page, #page-wrapper, #topofscroll, .main-inner, #region-main-box, .pagelayout-standard #page.drawers`, `.secondary-navigation`, and `.course-content, #region-main, #page-content` to `transparent !important` (the breadcrumb keeps a custom `breadcrumbBg`, else transparent). Cards/blocks/navbar/drawer/footer/dropdowns/forms stay opaque.
+- **Without** an image: unchanged (opaque wrappers — no white gaps).
+- **Mobile <768px** (Boost omits the image): the `body` dark colour is the fallback — never white.
+
+**Verified:** generator output checked for Dark Lime + image (body fallback + transparent wrappers, cards opaque), Dark Lime + no image (byte-identical opaque), and a light preset + image (dark rules absent). User confirmed on the real site: background image now visible while cards/content stay readable.
+
+**Presets:** No preset changes — gated on the existing `tokens.backgroundImage` flag; no preset sets a background image by default.
+
+**Controls panel:** No change — the "Background Images" control already exists; the admin sets the image there to engage the gate. No new token.
+
+**Lesson:** Moodle Boost paints the "Background image" on `body` (desktop-only); page wrappers are transparent in stock Boost. A dark theme that paints those wrappers solid hides the image. Keep the dark colour on `body` as a fallback and make only the structural wrappers transparent; keep content surfaces opaque. Gate on a background-image flag so dark themes without an image keep their white-gap protection.
+
+### Files Modified
+- `lib/scss-generator.ts`
+- `docs/moodle-cloud-constraints.md` (new "Dark Theme: Background Images" section)
+- `CLAUDE.md`
+- `.eslintrc.json` (`root: true`)
+
+**Branch:** `worktree-fix+dark-theme-bg-image-overlay` (off main). The quiz-edit branch `worktree-fix+dark-theme-quiz-edit-contrast` (#113–116) was merged in for combined testing, so both fixes now coexist on this branch.

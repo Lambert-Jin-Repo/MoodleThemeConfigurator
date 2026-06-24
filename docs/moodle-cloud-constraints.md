@@ -197,6 +197,10 @@ Tested against Moodle 5.0+ Boost theme. All confirmed to survive Bootstrap 5 mig
 | Notifications popover | `.popover-region-notifications .popover-region-container`, `.popover-region-notifications .content-item-container`, `.popover-region-notifications .content-item-container:hover *` | Bell-icon dropdown. Moodle renders it as `aria-modal="true"` portalled OUTSIDE `.navbar`, so `.navbar .popover-region-container` does NOT match. Boost ships it as hardcoded `#fff` card with `#f4f4f4` unread rows and `$primary` hover — invisible on dark presets. Use `drawerBg` for container/footer, `bodyText` for text, `linkColour` for hover bg with `autoTextForHex(linkColour)` text. Hover text must use descendant `*` selector — the global `a:hover { color: linkHover }` rule beats inherited colour on the anchor inside. NOT a Bootstrap `.popover` — do not target `.popover` |
 | White-bg containers | `.bg-white`, `.moodle-dialogue-bd`, `.fp-select`, `.yui3-datatable`, `.yui3-widget-bd` | Retain white bg on dark themes; force `d.bodyText` (`#1d2125`) for text, preserve `linkColour` for links |
 | Message conversation | `.message-app .body-container` | White bg inside messaging; force dark text |
+| Quiz edit page (light containers) | `#page-mod-quiz-edit ul.slots li.section .content`, `#page-mod-quiz-edit .section-heading`, `#page-mod-quiz-edit ul.slots li.activity`, `#page-mod-quiz-edit .instancemaxmarkcontainer`, `#page-mod-quiz-edit div.questionbank .categoryquestionscontainer` | The quiz module's OWN stylesheet (`mod/quiz/styles.css`, verified identical in MOODLE_405_STABLE and main/5.x — path moved to `public/mod/quiz/styles.css` in 5.x) hardcodes these containers LIGHT (`#fafafa`/`#e6e6e6`/`#fff`/`#fdfdfe`) with NO `.bg-white` class, so the white-bg rules above never match them. In dark presets the broad `.card`/`.section .fa`/page-wrapper text rules repaint the text light → invisible (e.g. the "Shuffle" label on `#fafafa .content`). Force `d.bodyText` (`#1d2125`) for text + `d.linkColour` (`#0f6cbf`) for links — light-theme defaults, accessible on light bg ("Fixed dark"). ID-anchored to `#page-mod-quiz-edit` and **colour-only** (never `background`), so nothing outside this page/these containers is touched. Backgrounds stay light by design (Moodle paints them). Needs `!important`. Not theme-specific — emits for ANY dark `pageBg` |
+| Quiz edit page (nested dark popover) | `#page-mod-quiz-edit … .content .dropdown-menu .dropdown-item`, `… .section-heading .dropdown-menu …`, `… li.activity .dropdown-menu …` | EXCEPTION to the row above. The "Add" action menu (and question/section action menus) are `.dropdown-menu` popovers that sit INSIDE the light containers in the DOM but keep their own DARK bg (`cardBg`, set by the site-wide `.dropdown-menu` dark rule + `$dropdown-bg`). The fixed-dark rule would force dark-on-dark inside the open menu. Re-assert `tokens.bodyText` (light) anchored through each container root + `.dropdown-menu` so it beats the fixed-dark rules; the deeper `.dropdown-menu .dropdown-item` selector (specificity `(1,5,2)`) also beats the blue-link rule `(1,4,3)` for the `<a>` menu items. Only the OPEN menu flips to light — the toggle stays dark on its light container (it is not inside `.dropdown-menu`) |
+| Quiz edit page (inline-edit input) | `#page-mod-quiz-edit .inplaceeditable input`, `… .inplaceeditable .form-control`, `… .inplaceeditable .form-select` | When editing a mark (`.instancemaxmarkcontainer`) or a question/section name, Moodle swaps in an `<input class="form-control">` that the global dark form rule paints dark-bg; the quiz-edit catch-all then forces its text dark → dark-on-dark while typing. Restore a white field: `background:#FFFFFF`, `color:` `d.bodyText` (`#1d2125`), `border-color:#dee2e6`. Page-scoped to `#page-mod-quiz-edit .inplaceeditable` only — the page's other inputs (e.g. Maximum grade) are untouched |
+| Quiz edit page (Add-question modal) | `#page-mod-quiz-edit .modal-content` (+ `*`, `.form-control`/`input`, `a:not(.btn)`, `.btn-primary`) | The "Add → a new question" / "from question bank" chooser is a Bootstrap modal portalled to `<body>` (still under `#page-mod-quiz-edit`) with a white `.modal-content` that no dark rule darkens → light-on-white. Mirror the `.bg-white` treatment, page-scoped: dark text (`d.bodyText`), white inputs, blue links (`d.linkColour`), and primary buttons kept on-brand (`tokens.btnPrimaryText`/`tokens.btnPrimaryBg`). ID-anchored, so other pages' modals are unaffected |
 
 ### Medium Confidence (Convention-based, verify per version)
 
@@ -244,6 +248,34 @@ Icons with Bootstrap semantic classes (`.text-info`, `.text-danger`, `.text-warn
 Some Moodle icons are image-based (CSS `background-image`), not FontAwesome. CSS `color` doesn't work on these — use `filter: invert(1)` instead. If the image container also contains text children, use the **double-invert trick**: invert the parent (fixes icon), counter-invert the child `a`/text element (restores readability), then apply `color` token to the child.
 
 Known image-based icons: `.fp-path-folder` (file manager), `.groupmode-information img.icon` (group mode, Moodle 5.0+).
+
+## Dark Theme: Background Images
+
+Moodle Boost applies the **"Background image"** admin setting (Site admin → Appearance → Themes → Boost → Background image) to the bare **`body`** element, **desktop-only**, via `theme_boost_get_extra_scss()` (`public/theme/boost/lib.php`, Moodle 5.x):
+
+```css
+@media (min-width: 768px) {
+  body { background-image: url('...'); background-size: cover; }
+}
+```
+
+(The separate **login** background image targets `body.pagelayout-login #page .login-layout-left` — a different setting and code path.) In stock Boost, `#page` and the inner content wrappers are **transparent**, so the body image shows through the whole content column.
+
+**The conflict:** the generator's dark theme paints the structural page wrappers solid to avoid white gaps — `#page, #page-wrapper, #topofscroll, .main-inner, #region-main-box, .pagelayout-standard #page.drawers` (+ `.secondary-navigation`, `.breadcrumb`, `.course-content, #region-main, #page-content`) all get `background-color: pageBg !important`. These opaque layers sit **on top of** `body` and hide the image — only the right margin (outside the wrappers) shows it.
+
+**The fix** (gated on `tokens.backgroundImage`, inside `if (darkMode)`):
+
+| When | Behaviour |
+|---|---|
+| Background image **set** | `body { background-color: pageBg !important }` fallback + the structural wrappers → `background-color: transparent !important` so the body image shows through. Cards/blocks/navbar/drawer/footer/dropdowns/forms stay **opaque** for readability. |
+| **No** image | Wrappers stay opaque `pageBg` — byte-identical to before (no white gaps). |
+| **Light** theme | Rules are inside `if (darkMode)` — never emitted. |
+
+**Key facts:**
+- The body image and the dark fallback colour are **different CSS properties on the same `body`** — `background-color: pageBg !important` does **not** erase Boost's `background-image`; they coexist (image paints over the colour).
+- **Mobile <768px:** Boost omits the image, so the `body` dark colour is essential as the fallback (never white). Do **not** set `background-color: transparent` on `body`.
+- **Requirement:** the admin must set the image in the tool's **"Background Images"** control so `tokens.backgroundImage` is truthy and the gated SCSS engages. The actual image file is still uploaded via Boost's setting (the tool emits only a reminder comment, never the `url()`).
+- **Readability:** content not inside an opaque card (breadcrumb text, section headings, bare paragraphs) now sits over the image — fine over a dark/sparse image (e.g. the CFA charcoal-with-squares brand background), but a busy/bright image could drop contrast; keep `#region-main`/`#page-content` as a translucent scrim if a future image needs it.
 
 ## Bootstrap 4 → 5 Migration (Moodle 4.x → 5.0)
 
