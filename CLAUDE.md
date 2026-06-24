@@ -188,13 +188,14 @@ The SCSS generator dark mode section has a strict cascade order. Later rules ove
 5. Verify: does it work on ALL dark presets, not just the one being tested?
 6. Document: update `docs/moodle-cloud-constraints.md` and `docs/PROJECT-TRACKER.md`
 
-### Current Status (2026-03-26)
+### Current Status (2026-06-24)
 
-- **Branch:** `fix/dark-theme-info-icon`
-- **Issues fixed this session:** #64–#108 (45 issues)
-- **Categories covered:** icons, text, buttons, badges, filters, toggles, progress text, messaging drawer, activity icons, white-bg containers
-- **Remaining known issue:** None currently open — messaging drawer sidebar (#72) resolved as #106–108
-- **Files modified:** `lib/tokens.ts`, `store/theme-store.ts`, `lib/scss-generator.ts`, `components/controls/ControlsPanel.tsx`, `docs/moodle-cloud-constraints.md`, `docs/PROJECT-TRACKER.md`, `.claude/skills/moodle-issue/SKILL.md`
+- **Branch:** `worktree-fix+dark-theme-quiz-edit-contrast`
+- **Issue fixed this session:** Dark themes rendered text invisible on the quiz "Questions" edit page (`#page-mod-quiz-edit`, `mod/quiz/edit.php`). Moodle's quiz stylesheet hardcodes the slot/section/question-bank containers LIGHT (`#fafafa .content`, `#e6e6e6 li.activity`, `#fff` question bank, `#fdfdfe` inplaceeditable) with NO `.bg-white` class, so existing white-bg overrides never matched and the broad dark-text rules repainted the text light → invisible (Shuffle label, section heading, question rows). User-verified fixed (#113, #114).
+- **Categories covered:** **Fixed dark** on hardcoded-light containers that lack `.bg-white` (new sub-case — uses light-theme default tokens `d.bodyText`/`d.linkColour`, NOT dark-preset `tokens.*`); plus an **Exception** (cascade tail) re-lighting the nested `.dropdown-menu` "Add" popover to `tokens.bodyText` so the open menu (dark `cardBg`) is not dark-on-dark.
+- **Implementation:** ID-anchored to `#page-mod-quiz-edit`, colour-only (never background), appended at the very end of the `if (darkMode)` block. Tier 1 forces `d.bodyText` text + `d.linkColour` links on the light containers; Tier 2 dropdown rule uses specificity (1,5,2) to beat the Tier 1 blue-link rule (1,4,3). Gated by `darkMode = isDarkBg(tokens.pageBg)` so it emits for ALL dark presets (Dark Lime, Dark Ember, any custom dark bg) and stays OFF for the 8 light presets. NO new token, NO preset edits, NO control-panel/quick-palette change.
+- **Remaining known issues (open follow-ups, surfaced by adversarial review):** #115 inline editing `<input>` (dark-on-dark while typing); #116 "Add → a new question" / "from question bank" Bootstrap modal (light-on-white). Both are page-scopeable via `#page-mod-quiz-edit` and need a real-Moodle verify pass.
+- **Files modified:** `lib/scss-generator.ts`, `docs/moodle-cloud-constraints.md` (2 new High-Confidence selector rows), `docs/PROJECT-TRACKER.md`, `.eslintrc.json` (`root: true`). Memory note: `project_dark_theme_quiz_edit.md` (outside repo).
 - **Not yet committed** — run `/safe-commit` when ready
 
 ## Code Conventions

@@ -1117,3 +1117,52 @@ Specificity 0,3,0 — beats `a:hover` 0,1,1.
 **Lesson:** When a hovered container wraps an `<a>` and you set `color` on the container, the global `a:hover` rule still wins on the anchor itself because *direct* style application beats *inherited* style regardless of selector specificity. Use a descendant `*` selector (or target the anchor explicitly) to force the colour onto the anchor directly.
 
 **Branch:** `fix/dark-theme-notifications-popover` (off main).
+
+---
+
+## Session: 2026-06-24 — Quiz Edit Page Dark Theme Contrast
+
+| # | Issue | Colour type | Token/Value | Status |
+|---|---|---|---|---|
+| 113 | Quiz "Questions" edit page (`#page-mod-quiz-edit`) text invisible on dark themes — Moodle's `mod/quiz/styles.css` hardcodes the slot/section/question-bank containers LIGHT (`#fafafa` `.content`, `#e6e6e6` `li.activity`, `#fff` question bank, `#fdfdfe` inplaceeditable) with NO `.bg-white` class, so existing white-bg overrides never matched. Broad dark text rules (`.card`, `.section .fa`, page wrapper) then repainted the "Shuffle" label, section heading and question rows light → invisible | Fixed dark (light-theme **default** tokens, not dark-preset tokens) | `${d.bodyText}` (`#1d2125`) text / `${d.linkColour}` (`#0f6cbf`) links | ✅ Fixed |
+| 114 | "Add" action dropdown (`.dropdown-menu`) sits INSIDE those light containers in the DOM but keeps its own DARK background (`cardBg`); a naive fixed-dark catch-all produced dark-on-dark inside the open menu | Exception — re-light nested popover to the theme's own light text | `${tokens.bodyText}` (menu text) | ✅ Fixed |
+| 115 | Inline editing input — clicking a mark (`.instancemaxmarkcontainer`) or a question/section name to edit swaps in `<input class="form-control">`; the global dark form rule paints the input bg dark while the Tier-1 catch-all forces its text dark → dark-on-dark while typing | Fixed dark on always-light input (restore white bg) | `#fff` bg + `${d.bodyText}` text (planned) | ⬜ Open (follow-up) |
+| 116 | "Add → a new question" / "from question bank" Bootstrap **modal** is portalled to `<body>` (white bg) and no generator rule darkens its text on dark themes → light-on-white | Fixed dark on white modal (page-scoped via `#page-mod-quiz-edit .modal-content`) | `${d.bodyText}` text (planned) | ⬜ Open (follow-up) |
+
+**Root cause (#113/#114):** `mod/quiz/edit.php` (5.x: `public/mod/quiz/styles.css`) styles its slot, section and question-bank containers with hardcoded light backgrounds and no `.bg-white` hook, so the generator's `.bg-white *` override family never reached them and the broad "light text for dark bg" rules won — light text on a near-white container. The "Add" `.dropdown-menu` is a descendant of those light containers but Boost keeps its surface dark (`cardBg`), so a blanket fixed-dark rule would have made the open menu dark-on-dark.
+
+**Fix (appended at the very end of the `if (darkMode)` block, after the footer-popover rule, in `lib/scss-generator.ts`):**
+1. **Tier 1 — Fixed dark on the light containers:** force `${d.bodyText}` text + `${d.linkColour}` links on `#page-mod-quiz-edit ul.slots li.section .content`, `.section-heading`, `ul.slots li.activity`, `.instancemaxmarkcontainer`, `div.questionbank .categoryquestionscontainer` (each + a descendant `*`). Uses the **light-theme DEFAULT** tokens `d.*`, NOT the dark-preset `tokens.*` (lime/orange/grey, which fail contrast on a white container).
+2. **Tier 2 — Exception, re-light the nested dropdown:** restore `${tokens.bodyText}` on `.dropdown-menu` popovers, anchored through each container root + `.dropdown-menu`. The `.dropdown-menu .dropdown-item` selector has specificity (1,5,2) to beat the Tier-1 blue-link rule (1,4,3) for the `<a>` menu items. Only the open menu flips light; the toggle stays dark on its light container.
+3. **ID-anchored** to `#page-mod-quiz-edit`, **colour-only** (never `background`). Gated by `darkMode = isDarkBg(tokens.pageBg)` (WCAG luminance < 0.179), so it emits for ALL dark themes (Dark Lime, Dark Ember, any custom dark bg) and stays OFF for the 8 light presets.
+
+**Verified:** Generator output checked for Dark Lime, Dark Ember and synthetic dark themes (navy/purple/teal/near-black) — fix emits with `#1d2125` / `#0f6cbf` / theme-light; all 8 light presets emit nothing. User confirmed the static-text fix on the real Moodle site (both the main section and the open "Add" dropdown).
+
+**Known follow-ups (#115, #116):** surfaced by adversarial review of the change. Same ID-anchored, page-scoped pattern; both need a real-Moodle verify pass before closing. The question-bank table `th` background overlay is cosmetic-only (still readable) and not tracked.
+
+#### Token classification (per CLAUDE.md table)
+
+| Element | Token | Category |
+|---|---|---|
+| Light container text (`.content`, `.section-heading`, `li.activity`, etc.) | `${d.bodyText}` | Fixed dark |
+| Light container links | `${d.linkColour}` | Fixed dark |
+| Nested `.dropdown-menu` text/items | `${tokens.bodyText}` | Exception (theme's own light text) |
+
+**Presets:** No preset changes — `d.bodyText` / `d.linkColour` are existing light-theme defaults and `tokens.bodyText` is already defined on all dark presets.
+
+**Controls panel:** No new picker rows, no new token, no quick-palette change — all colours reuse existing generator values.
+
+**Lesson:** Module stylesheets (`mod/quiz/styles.css`, 5.x `public/mod/quiz/...`) hardcode their own LIGHT containers WITHOUT a `.bg-white` hook, so the `.bg-white` override family never reaches them — they need explicit page-ID-anchored fixed-dark rules. When such a light container also wraps a surface that must stay dark (the `.dropdown-menu`), add a higher-specificity exception that re-lights only the nested popover, using the **light-theme default** `d.*` tokens (not dark-preset `tokens.*`) for text on the always-light container.
+
+### Documentation Updates
+- `docs/moodle-cloud-constraints.md` — 2 new High-Confidence verified selector rows (quiz-edit light containers + nested `.dropdown-menu` exception).
+- `CLAUDE.md` — Current Status block refreshed.
+- Memory file `project_dark_theme_quiz_edit.md` created (outside repo).
+
+### Files Modified
+- `lib/scss-generator.ts`
+- `docs/moodle-cloud-constraints.md`
+- `CLAUDE.md`
+- `.eslintrc.json` (added `root: true` — prevents ESLint config-cascade when linting from a nested worktree)
+
+**Branch:** `worktree-fix+dark-theme-quiz-edit-contrast` (off main).
