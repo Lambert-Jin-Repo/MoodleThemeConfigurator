@@ -1135,6 +1135,49 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push('#page-mod-quiz-edit ul.slots li.activity .dropdown-menu .dropdown-item {');
     rules.push(`  color: ${tokens.bodyText} !important;`);
     rules.push('}');
+    // #115 — inline editing input. Clicking a mark (.instancemaxmarkcontainer) or
+    // a question/section name swaps in an <input class="form-control"> that the
+    // global dark form rule paints with a DARK bg; the Tier-1 catch-all above then
+    // forces its text dark too -> dark-on-dark while typing. Restore a white field
+    // (Fixed-dark pattern) so the editing input is readable. Page-scoped to
+    // #page-mod-quiz-edit and limited to .inplaceeditable, so the page's other
+    // inputs (e.g. Maximum grade) and every other page are untouched.
+    rules.push('#page-mod-quiz-edit .inplaceeditable input,');
+    rules.push('#page-mod-quiz-edit .inplaceeditable .form-control,');
+    rules.push('#page-mod-quiz-edit .inplaceeditable .form-select {');
+    rules.push(`  background-color: #FFFFFF !important;`);
+    rules.push(`  color: ${d.bodyText} !important;`);
+    rules.push(`  border-color: #dee2e6 !important;`);
+    rules.push('}');
+    // #116 — modals launched from the quiz edit page (the "Add > a new question"
+    // type chooser and "from question bank") are portalled to <body> (still under
+    // #page-mod-quiz-edit) and keep Bootstrap's white .modal-content bg, but no
+    // dark-theme rule darkens their text -> light-on-white. Mirror the .bg-white
+    // treatment, page-scoped: force dark text, restore white inputs, keep links
+    // blue and primary buttons on-brand. ID-anchored so no other page's modals
+    // are affected.
+    rules.push('#page-mod-quiz-edit .modal-content,');
+    rules.push('#page-mod-quiz-edit .modal-content * {');
+    rules.push(`  color: ${d.bodyText} !important;`);
+    rules.push('}');
+    rules.push('#page-mod-quiz-edit .modal-content .form-control,');
+    rules.push('#page-mod-quiz-edit .modal-content .form-select,');
+    rules.push('#page-mod-quiz-edit .modal-content input[type="text"],');
+    rules.push('#page-mod-quiz-edit .modal-content input[type="search"] {');
+    rules.push(`  background-color: #FFFFFF !important;`);
+    rules.push(`  color: ${d.bodyText} !important;`);
+    rules.push(`  border-color: #dee2e6 !important;`);
+    rules.push('}');
+    rules.push('#page-mod-quiz-edit .modal-content a:not(.btn) {');
+    rules.push(`  color: ${d.linkColour} !important;`);
+    rules.push('}');
+    rules.push('#page-mod-quiz-edit .modal-content .btn-primary {');
+    rules.push(`  background-color: ${tokens.btnPrimaryBg} !important;`);
+    rules.push('}');
+    rules.push('#page-mod-quiz-edit .modal-content .btn-primary,');
+    rules.push('#page-mod-quiz-edit .modal-content .btn-primary * {');
+    rules.push(`  color: ${tokens.btnPrimaryText} !important;`);
+    rules.push('}');
     rules.push('');
   }
 
