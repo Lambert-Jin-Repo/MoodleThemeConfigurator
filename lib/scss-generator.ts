@@ -414,13 +414,23 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push('// Moodle will apply: background-size: cover (desktop only, 768px+)');
     rules.push('');
   }
-  if (tokens.loginBgImage) {
-    rules.push('// ── Login Background Image ──');
-    rules.push('// Upload your login background image at:');
-    rules.push('// Site admin → Appearance → Themes → Boost → Login background image');
-    rules.push('// Moodle will apply: background-size: cover on body.pagelayout-login #page');
-    rules.push('');
-  }
+  // ── Login Background Image (always emitted) ──
+  // Moodle paints the admin-uploaded login bg image on body.pagelayout-login #page.
+  // Our dark-theme rules (#region-main-box, #region-main, #page-content) paint those
+  // wrappers opaque site-wide, covering the image. Force them transparent ONLY on
+  // login pages so the image shows through, while leaving .card opaque so the login
+  // form itself stays legible.
+  rules.push('// ── Login Background Image ──');
+  rules.push('// Upload your image at: Site admin → Appearance → Themes → Boost → Login background image');
+  rules.push('// (rules below let Moodle\'s injected background-image on #page show through)');
+  rules.push('body.pagelayout-login #page-content,');
+  rules.push('body.pagelayout-login #region-main-box,');
+  rules.push('body.pagelayout-login #region-main,');
+  rules.push('body.pagelayout-login .main-inner,');
+  rules.push('body.pagelayout-login .login-wrapper {');
+  rules.push('  background-color: transparent !important;');
+  rules.push('}');
+  rules.push('');
 
   // --- Cards ---
   if (tokens.cardBg !== d.cardBg || tokens.cardBorder !== d.cardBorder) {
