@@ -1199,3 +1199,79 @@ Specificity 0,3,0 — beats `a:hover` 0,1,1.
 - `.eslintrc.json` (`root: true`)
 
 **Branch:** `worktree-fix+dark-theme-bg-image-overlay` (off main). The quiz-edit branch `worktree-fix+dark-theme-quiz-edit-contrast` (#113–116) was merged in for combined testing, so both fixes now coexist on this branch.
+
+---
+
+## Session: 2026-06-24 (continued) — Dark Theme: Question Bank + Question Preview Contrast
+
+### Issues Found During User Review (real Moodle Cloud, dark presets, with screenshots)
+
+| # | Issue | Reported By | Status |
+|---|---|---|---|
+| 118 | Question bank (`question/edit.php`) list rendered light/lime text on a LIGHT Bootstrap table surface → unreadable | User (screenshot) | ✅ Fixed |
+| 119 | Question bank column move/resize action-handle icons + three-dot menu glyphs invisible (dark `#1d2125` on the now-dark table header) | User (screenshot) | ✅ Fixed |
+| 120 | Question bank "Show question text in the question list?" `.input-group-text` label faint (light/overridden text on a light-grey chip) | User (screenshot) | ✅ Fixed |
+| 121 | Question preview (`question/preview.php`) `.que .info` panel (number / "Not yet answered" / "Marked out of 1.00") faint; preview control buttons (Start again/Save/…) rendered as transparent ghost outlines | User (screenshot) | ✅ Fixed |
+
+### Root Cause
+Same class as quiz-edit #113–116: a module or Bootstrap surface is hardcoded LIGHT with no `.bg-white` class, so the existing white-bg overrides never match and the broad dark-text rules repaint the text light → invisible. Two new sub-cases: (a) Bootstrap's `--bs-table-bg` (resolves to the light `--bs-body-bg`) painting `.question-bank-table` cells light; (b) the generic `.icon, .fa { color: ${d.bodyText} }` "Icon Visibility Fix" (keeps icons dark assuming a light wrapper) becoming dark-on-dark once #118 darkened the table header.
+
+### Fix (`lib/scss-generator.ts`, inside `if (darkMode)`, appended after the quiz-edit block)
+- **#118** `#page-question-edit .question-bank-table` → redefine `--bs-table-bg/color/border-color` = `cardBg`/`bodyText`/`cardBorder` (+ `!important` cell colour/border); headers `headingText`; links `linkColour`.
+- **#119** `#page-question-edit .question-bank-table .icon:not([class*="text-"]), … .fa:not(…)` → `tokens.bodyText` (re-light FontAwesome glyphs on the dark surface; `:not([class*="text-"])` preserves semantic status icons).
+- **#120** `#page-question-edit .input-group .input-group-text` → `d.bodyText` (fixed-dark on the light chip; colour only).
+- **#121** `#page-question-preview` + `#page-question-bank-previewquestion-preview` `.que .info` (+ `.state`/`.grade`/`h3.no`/`span.qno`) → `d.bodyText`; `#previewcontrols .btn-secondary`/`.btn-outline-secondary` → solid `cardBg` surface (+ `cardBorder`/`bodyText`), `.btn-primary` left on-brand. Both body ids hedged (Moodle 4.0+ moved preview into the `qbank_previewquestion` plugin).
+
+### Verification
+- `npm run build` passes (compile + types + lint). Generator output checked for **Dark Lime** + **Dark Ember** (rules emit with correct dynamic tokens — links follow each accent, surfaces follow each `cardBg`); 3 light presets emit **0** of these rules (gated by `isDarkBg(pageBg)`). **User-verified on the real site.**
+
+### Presets / Controls
+- No new tokens → no preset edits, no control-panel / quick-palette change.
+
+### Files Modified
+- `lib/scss-generator.ts`, `docs/moodle-cloud-constraints.md` (3 selector rows), `docs/PROJECT-TRACKER.md`, `CLAUDE.md`
+
+**Branch:** `worktree-fix+dark-theme-qbank-table` (off main).
+
+---
+
+## Session: 2026-06-24 (continued) — Dark Theme: Quiz View + Quiz Preview Contrast
+
+### Issues Found During User Review (real Moodle Cloud, dark presets, with screenshots)
+
+| # | Issue | Reported By | Status |
+|---|---|---|---|
+| 122 | Quiz view (`mod/quiz/view.php`) "Your attempts" summary table — `quizreviewsummary td.cell` hardcoded `#fafafa` → Status value "In progress" + Started date invisible | User (screenshot) | ✅ Fixed (user-verified) |
+| 123 | Quiz preview/attempt `.que .info` panel (number / "Not yet answered" / "Marked out of 1.00" / Flag / Edit links) invisible on hardcoded-light `$gray-100` box | User (screenshot) | ✅ Fixed (user-verified) |
+| 124 | The Flag-state icon (`<img class="questionflagimage" src=".../i/unflagged">`) barely visible — dark image on the now-dark `.que .info`; should match the Edit-question pen icon | User (screenshot) | ✅ Fixed (committed for verification) |
+
+### Approach divergence (deliberate, per user instruction)
+Unlike the quiz-edit (#113–116) and question-preview (#121) fixes — which keep Moodle's light container and force **dark text** on it — the user explicitly asked for these two sections to be a **true dark surface + light/lime text**. So #122/#123 set `background-color: ${tokens.cardBg}` + `color: ${tokens.bodyText}` (links `${tokens.linkColour}`), darkening the container rather than re-darkening the text.
+
+### Fix (`lib/scss-generator.ts`, inside `if (darkMode)`, appended after the question-preview block)
+- **#122** `#page-mod-quiz-view .quizreviewsummary td.cell, … th.cell` → `cardBg` bg + `bodyText` text + `cardBorder` border; `… a:not(.btn)` → `linkColour`. `(1,2,2)`+`!important` beats Moodle's `table.quizreviewsummary td.cell` `(0,2,2)`.
+- **#123** `[id^="page-mod-quiz-"] .que .info` → `cardBg`/`cardBorder`/`bodyText`; `… .info *` → `bodyText`; `… .info a:not(.btn)` → `linkColour`. Body-id **prefix** anchor covers attempt/preview/review/summary in one rule (quiz-edit has no `.que .info`). Pale-blue `.formulation` left untouched.
+- **#124** `[id^="page-mod-quiz-"] .que .info .questionflagimage[src*="unflagged"]` → `filter: brightness(0) invert(1)`. The flag is a raw PIX `<img>`, not a FontAwesome glyph, so `color` can't recolour it; the filter lights it to match the pen. Scoped to `[src*="unflagged"]` so the FLAGGED (`i/flagged`, red) state keeps its meaning. Image-based icon → filter (per the project's Image-based colour category), not a hardcoded hex.
+
+### Verification
+- `npm run build` passes. Generator output checked for **Dark Lime** (cardBg `#2D2D2E`, link `#BAF73C`) + **Dark Ember** (cardBg `#3A3A3B`, link `#F27927`); `moodle-default` (light) emits **0** of these rules (gated by `isDarkBg(pageBg)`). #122/#123 **user-verified on the real site**; #124 committed for user verification (white-to-match-pen; switch to lime trivially if the pen reads lime).
+
+### Presets / Controls
+- No new tokens → no preset edits, no control-panel / quick-palette change.
+
+### Files Modified
+- `lib/scss-generator.ts`, `docs/moodle-cloud-constraints.md` (2 selector rows), `docs/PROJECT-TRACKER.md`, `CLAUDE.md`
+
+### Follow-ups from user review (same session)
+
+| # | Issue | Reported By | Status |
+|---|---|---|---|
+| 124b | When a question is FLAGGED, Moodle's `i/flagged` image renders **black** (not red) on this Moodle Cloud site → black-on-dark; the original `[src*="unflagged"]` filter only covered the unflagged state | User (screenshot) | ✅ Fixed (user-verified) |
+| 125 | The multichoice "Clear my choice" link (shown after selecting an option) is near-invisible — the dark theme's lime/orange link colour on Moodle's pale-blue `.formulation` box | User | ✅ Fixed (user-verified) |
+
+- **#124b** Added a second filter `[id^="page-mod-quiz-"] .que .info .questionflagimage[src*="flagged"]:not([src*="unflagged"])` → `filter: brightness(0) saturate(100%) invert(42%) sepia(93%) saturate(2400%) hue-rotate(320deg) brightness(98%) contrast(96%)` to tint the flagged flag red (≈ CFA Red `#F64747`). A CSS `filter` can't follow the `error` token, so the red is an approximation (user-verified on the real site). `[src*="flagged"]:not([src*="unflagged"])` matches the flagged src only.
+- **#125** `.que .qtype_multichoice_clearchoice` (+ `a`/`button`/`[role="button"]`) → `color: #B500B5` (CFA Purple, a **fixed** brand accent — ~4.6:1 / WCAG AA on the light-blue `.formulation`; deliberately does NOT follow the dark link token, like the `#FFFFFF`/`#1d2125` fixed values), `font-weight:700` on `:hover`. Element-scoped to the clear-choice control; works on quiz attempt/preview/review + question preview.
+
+**Note on hardcoded hex:** #124b (filter chain) and #125 (`#B500B5`) are **fixed semantic/brand values** that must stay constant regardless of the dynamic theme (the flag must read red; the clear-choice must read on the fixed pale-blue box). This is the same documented exception as the `#FFFFFF`/`#1d2125`/`#dee2e6` fixed values already in the generator — not a dynamic theme colour, so no token.
+
+**Branch:** `worktree-fix+dark-theme-qbank-table` (off main).
