@@ -245,6 +245,37 @@ Some Moodle icons are image-based (CSS `background-image`), not FontAwesome. CSS
 
 Known image-based icons: `.fp-path-folder` (file manager), `.groupmode-information img.icon` (group mode, Moodle 5.0+).
 
+## Dark Theme: Body Background Image Cascade
+
+When a user uploads a body background image at *Site admin → Boost → Background image*, or a login background image at *Site admin → Boost → Login background image*, the dark-theme generator must NOT paint the full-viewport wrappers or `#page-content` — those elements would cover the uploaded image.
+
+The site image is painted by Boost on `body`. The login image is painted by Boost on `body.pagelayout-login #page`. Different elements, but both can be hidden by an opaque ancestor or descendant in the dark-theme SCSS.
+
+The generator emits these rules unconditionally in dark mode:
+
+| Selectors | Behaviour | Why |
+|---|---|---|
+| `#page, #page-wrapper, #topofscroll, .pagelayout-standard #page.drawers` | **never painted** | Would cover `body`'s background image. Body still shows `pageBg` via `$body-bg` in Block 1, so no white gaps when no image is set. |
+| `.main-inner, #region-main-box` | painted with `pageBg` | Inner panels that sit behind cards — safe to paint, never cover any background image. |
+| `.course-content, #region-main` | painted with `pageBg` + `bodyText` | Inner content panels — same logic. |
+| `#page-content` | **never painted** | Full-viewport child of `#page`; would cover the login background image painted on `#page`. |
+| `body#page-login-index` (login bg fill) | painted with `loginBg` when `loginBgImage` is empty; **omitted** when `loginBgImage` is set | Lets a custom login colour apply when no image is uploaded; gets out of the way when one is. |
+
+**Why no conditional on `tokens.backgroundImage`:** the Sandbox can't observe what's uploaded directly to Moodle. Earlier attempts to branch on the Sandbox-side image token forced users to upload to two places (Sandbox + Moodle). The unconditional approach above avoids that — `$body-bg` from Block 1 cascades through transparent wrappers in the no-image case, producing the same visual result as painting the wrappers explicitly.
+
+**Optional darkening overlay:** if the image is too busy and content readability suffers, add this to Raw SCSS:
+
+```scss
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: -1;
+  pointer-events: none;
+}
+```
+
 ## Bootstrap 4 → 5 Migration (Moodle 4.x → 5.0)
 
 Moodle 5.0 jumped from Bootstrap 4 to **Bootstrap 5.3**. Most "what changed" items below actually changed in Bootstrap 5.0, but are listed here because Moodle adopted the entire 5.x line in a single upgrade.
