@@ -1838,6 +1838,85 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push(`  color: ${tokens.infoIconColour} !important;`);
     rules.push('}');
     rules.push('');
+
+    // ── Messaging drawer: full dark conversation surface (#140) ──
+    // Moodle's message templates HARDCODE the conversation surfaces LIGHT (via
+    // `bg-white`/`bg-light` classes in the markup, NOT SCSS): the conversation
+    // header bar (avatar + name + "Online"), the footer bar holding the composer,
+    // the message `<textarea data-region="send-message-txt" class="form-control
+    // bg-light">`, and the emoji picker's `.input-group-text.bg-white` search chip.
+    // The generator's philosophy is "`.bg-white` = always-light surface, just darken
+    // its TEXT (#1d2125)" — correct for real white panels, but wrong inside the dark
+    // message drawer: it leaves the bars light (clashing with the dark drawer) and on
+    // the emoji picker (whose `.card` bg IS dark) it paints the `.category-name`
+    // headings ("Recent", "Smileys & emotion") dark-on-dark → invisible (the user's
+    // DevTools showed `.bg-white * { color:#1d2125 }` hitting them). Per the user,
+    // make the WHOLE conversation window one cohesive dark panel: repaint the
+    // hardcoded-light sub-surfaces to the dark drawer/card colours, force plain TEXT
+    // light (`bodyText`) and interactive ICONS + links to the theme ACCENT
+    // (`linkColour` — lime on Dark Lime, orange on Dark Ember; matches the contacts
+    // list, which already lights its icons via `.view-overview-body .icon`).
+    // Scoped to `.message-app` (+ standalone `.emoji-picker`, which JS can portal out
+    // of the drawer); the message LIST/bubbles are NOT `.bg-white` so they keep
+    // Moodle's auto-contrast, and the native colour-emoji glyphs (`String.fromCodePoint`)
+    // are never `.icon`/`.fa` so they stay untouched. Appended last so it beats the
+    // global `.bg-white *` (L~612) by specificity AND source order. Dark presets only.
+    // (a) the hardcoded-light bars + chips → dark drawer surface; replace the bar's
+    //     light/brand border (the stray bright line) with the dark drawer border.
+    rules.push('.message-app .bg-white,');
+    rules.push('.message-app .bg-light {');
+    rules.push(`  background-color: ${tokens.drawerBg} !important;`);
+    rules.push(`  border-color: ${tokens.drawerBorder} !important;`);
+    rules.push('}');
+    // (b) plain text on those bars (name, "Online", labels) → light. (0,2,0) beats the
+    //     global `.bg-white *` (0,1,0).
+    rules.push('.message-app .bg-white *,');
+    rules.push('.message-app .bg-light * {');
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push('}');
+    // (c) interactive icons (send / emoji toggle / actions) + links → theme accent.
+    //     (0,3,0)/(0,2,1) beats rule (b) above so icons read as "clickable" lime.
+    rules.push('.message-app .bg-white .icon,');
+    rules.push('.message-app .bg-white .fa,');
+    rules.push('.message-app .bg-light .icon,');
+    rules.push('.message-app .bg-light .fa,');
+    rules.push('.message-app .bg-white a {');
+    rules.push(`  color: ${tokens.linkColour} !important;`);
+    rules.push('}');
+    // (d) the message composer textarea → a raised dark field (cardBg) with light text
+    //     and a muted placeholder. (0,2,1) beats rule (a)'s drawerBg for this input.
+    rules.push('.message-app textarea[data-region="send-message-txt"],');
+    rules.push('.message-app .footer-container textarea.form-control {');
+    rules.push(`  background-color: ${tokens.cardBg} !important;`);
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push(`  border-color: ${tokens.cardBorder} !important;`);
+    rules.push('}');
+    rules.push('.message-app textarea[data-region="send-message-txt"]::placeholder {');
+    rules.push(`  color: ${tokens.mutedText} !important;`);
+    rules.push('}');
+    // (e) emoji picker (a Bootstrap `.card`; may portal out of `.message-app`) → dark
+    //     card surface, light category headings/labels, accent FA icons. The native
+    //     emoji glyphs are plain Unicode (not `.icon`/`.fa`) → left in full colour.
+    rules.push('.emoji-picker,');
+    rules.push('.emoji-picker .card,');
+    rules.push('.emoji-picker .card-header,');
+    rules.push('.emoji-picker .card-body,');
+    rules.push('.emoji-picker .card-footer,');
+    rules.push('.emoji-picker .input-group-text {');
+    rules.push(`  background-color: ${tokens.cardBg} !important;`);
+    rules.push(`  border-color: ${tokens.cardBorder} !important;`);
+    rules.push('}');
+    rules.push('.emoji-picker .category-name,');
+    rules.push('.emoji-picker .input-group-text,');
+    rules.push('.emoji-picker .emoji-short-name,');
+    rules.push('.emoji-picker .text-muted {');
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push('}');
+    rules.push('.emoji-picker .icon,');
+    rules.push('.emoji-picker .fa {');
+    rules.push(`  color: ${tokens.linkColour} !important;`);
+    rules.push('}');
+    rules.push('');
   }
 
   const block2 = rules.join('\n');

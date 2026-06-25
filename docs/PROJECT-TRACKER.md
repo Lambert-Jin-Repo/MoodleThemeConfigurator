@@ -1452,3 +1452,39 @@ The user asked to make the `?` "lime green", but lime `#BAF73C` on the light `#c
 - `lib/scss-generator.ts` (the 2 rules), `docs/moodle-cloud-constraints.md` (1 selector row), `docs/PROJECT-TRACKER.md` (this section), `CLAUDE.md` (status bullet). Memory: `project_dark_theme_footer_help_button.md`.
 
 **Branch:** `worktree-fix+dark-theme-enrolment-icons` (off main `f52e845`, after PR #21).
+
+---
+
+## Session: 2026-06-25 (continued) — Dark Theme: Messaging drawer full dark surface (#140)
+
+### Issue
+The user wanted the WHOLE Messaging drawer / conversation window to be a cohesive DARK surface with LIGHT text + LIME-accent icons on dark themes. Symptoms (2 screenshots + DevTools): emoji-picker category headings ("Recent", "Smileys & emotion") dark-on-dark → invisible; conversation header bar + message input rendered white, inconsistent with the dark drawer.
+
+### Root cause
+Moodle's message templates hardcode the conversation surfaces LIGHT **via markup classes** (`bg-white`/`bg-light`), NOT SCSS. The generator's `.bg-white` philosophy ("keep bg light, just darken the text to `#1d2125`") therefore left the bars light AND painted the emoji `.category-name` dark-on-dark (the picker's own `.card` bg is already dark). The pre-existing messaging rules (`.message-app .view-overview-body/.section/.card-header`) only covered the **contacts list**, never the conversation pane/header/footer/input or the emoji picker.
+
+### Fix (`lib/scss-generator.ts`, appended LAST in `if (darkMode)`, after the #139 footer rule)
+Scoped to `.message-app` (+ standalone `.emoji-picker`, which JS portals out of the drawer):
+- (a) `.message-app .bg-white, .bg-light` → `drawerBg` + `border-color drawerBorder` (kills the bright bar border / magenta line).
+- (b) `.message-app .bg-white *, .bg-light *` → `bodyText` (light). `(0,2,0)` beats the global `.bg-white *` `(0,1,0)` + source order.
+- (c) `.message-app .bg-white .icon/.fa, .bg-light .icon/.fa, .bg-white a` → `linkColour` (lime/orange accent — user asked for lime; matches the contacts-list icon treatment + each theme).
+- (d) `.message-app textarea[data-region="send-message-txt"]` → `cardBg` field + `bodyText` text + `cardBorder` + `mutedText` placeholder.
+- (e) `.emoji-picker .card/.card-*/.input-group-text` → `cardBg`/`cardBorder`; `.category-name`/`.text-muted` → `bodyText`; `.emoji-picker .icon/.fa` → `linkColour`.
+
+### Left untouched (deliberate)
+- Message **bubbles** (`.message.send`/`.received`) — NOT `.bg-white`, so they keep Moodle's `color-yiq()` auto-contrast. **This is why the fix scopes by `.bg-white`/`.bg-light`, NOT by `[data-region="view-conversation"] *`** — that wrapper also contains the bubbles, and blanket-lighting their text would break light sent bubbles.
+- **Native colour emoji** (plain Unicode `String.fromCodePoint`, never `.icon`/`.fa`).
+
+### Research (verified 4.4/4.5/5.0)
+- Header bar = `[data-region="view-conversation"]` header (`bg-white border-bottom`); footer bar = same data-region footer instance (`bg-white border-top`). Input = `textarea[data-region="send-message-txt"].bg-light`. Emoji picker = Bootstrap `.card` with `.input-group-text.bg-white` chip + `.category-name` headings. Messaging icons all FontAwesome (`color:`); emoji glyphs native Unicode.
+
+### Verification
+- `npm run build` + `npm run lint` clean. Generator output: **Dark Lime** + **Dark Ember** emit the full block (bars `#1D2125`, text `#F0EEEE`, input `#2D2D2E`, accent `#BAF73C`/`#F27927`); all **8 light presets + Moodle Default** emit **0**. **User-verified on Moodle Cloud** (header, input, emoji headings all fixed; magenta line gone).
+
+### Presets / Controls
+- **No new token.** Reuses `drawerBg`/`drawerBorder`/`cardBg`/`cardBorder`/`bodyText`/`mutedText`/`linkColour` → no preset edits, no control / quick-palette change.
+
+### Files Modified
+- `lib/scss-generator.ts` (the messaging block), `docs/moodle-cloud-constraints.md` (1 selector row), `docs/PROJECT-TRACKER.md` (this section), `CLAUDE.md` (status bullet). Memory: `project_dark_theme_messaging_drawer.md`.
+
+**Branch:** `worktree-fix+dark-theme-enrolment-icons` (off main `f52e845`, after PR #21).
