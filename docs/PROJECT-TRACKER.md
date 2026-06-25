@@ -1357,3 +1357,36 @@ Recolouring the glyph to lime ALONE does NOT fix it: CFA Lime `#BAF73C` on `#e9e
 - `lib/scss-generator.ts` (the rule), `docs/moodle-cloud-constraints.md` (selector row), `docs/PROJECT-TRACKER.md` (this section), `CLAUDE.md` (status bullet). Memory: `project_dark_theme_icon_button_hover.md`.
 
 **Branch:** `worktree-fix+dark-theme-quiz-radio-contrast` (off main).
+
+---
+
+## Session: 2026-06-25 — Student User report grade table + gradebook three-dot (#136–137)
+
+### Issue
+Acting as a **Student** → course → Grades → **User report** (`grade/report/user/index.php`), all grade-table text was invisible / very low contrast on dark themes. Separately, the grader-report "Cell actions" three-dot icon (`.cellmenubtn .icon.fa-ellipsis-h`) was black at rest. Reported by user with screenshots + DevTools.
+
+### Root cause
+Moodle's `grade.scss` styles `.user-grade` from Bootstrap `--bs-table-bg` (= `var(--bs-body-bg)`) and header `$gray-100`, with NO dark variant → the dark theme's forced-light text washes out. `.cellmenubtn` has no colour of its own, so the generic dark `.icon, .fa { color: #1d2125 }` rule painted the three-dot glyph dark.
+
+### Fix (`lib/scss-generator.ts`, inside `if (darkMode)`, appended after the #135 `.btn-icon` hover block)
+- **#136** `.path-grade-report-user .user-grade` → dark surface: redefine `--bs-table-bg`/`-color`/`-border-color`; cells (`thead`/`tbody`/`tr`/`th`/`td`/`tr th`) → `cardBg` + `bodyText` + `cardBorder`; `th *`/`td *` → `bodyText`; `a:not(.btn)` → `linkColour`; `.text-muted`/`.dimmed_text`/`small` → `mutedText`. Anchored on the body CLASS `.path-grade-report-user` + the unique `.user-grade` table class (NOT the body id — `/index.php` keeps the `-index` suffix, documented gotcha).
+  - **Follow-on (a):** the bright **white separators + frame** = the GLOBAL `var(--bs-border-color)` (Bootstrap `#dee2e6`), NOT `--bs-table-border-color` (`.generaltable th/td` draws `border-top: … var(--bs-border-color)`). Fix: `.path-grade-report-user { --bs-border-color: cardBorder }` (page-scoped; CSS-var inheritance cascades to cells + wrappers) + explicit `border-color` on the cell/row selectors.
+  - **Follow-on (b):** the thick **"board border" is NOT a border** — it's `.user-report-container`, painted `background-color: $gray-100` (`#f8f9fa`) with 10px padding by `grade.scss`; the light bg shows through the padding gap. Fix: `.path-grade-report-user .user-report-container { background-color: cardBg }`.
+  - **Follow-on (c):** the **activity item icon** is an IMG-based PIX `monologo` (`img.icon.itemicon`, `…/monologo?filtericon=1`), so `color` can't recolour it. Fix: `.path-grade-report-user .user-grade img.icon, img.itemicon { filter: brightness(0) invert(1) }` (white; image-based category).
+- **#137** `.cellmenubtn .icon, .cellmenubtn .fa { color: ${tokens.bodyText} }` → re-lights the RESTING three-dot glyph to CFA Light Grey (reads white). Hover already lime/orange via the broad `.btn-icon:not(.icons-collapse-expand):hover` rule (#135) → white at rest → lime on hover. Scoped to the unique grade-only `.cellmenubtn` so light-surface modal icons untouched; covers grader + user report; stable 4.4–5.x.
+
+### Lessons
+- When a dark table still shows **white lines**, check the GLOBAL `--bs-border-color`, not just `--bs-table-border-color` — Moodle's `.generaltable` uses the former.
+- A thick "frame" around a table is often a **wrapper's light background behind padding**, not a border — inspect the parent (`.user-report-container`) before chasing border rules.
+- Grade item icons are **IMG `monologo` images** → recolour with `filter`, never `color`.
+
+### Verification
+- `npm run build` + `npm run lint` clean. Generator output checked: Dark Lime + Dark Ember emit the rules (cardBg `#2D2D2E`/`#3A3A3B`, bodyText `#F0EEEE`, linkColour `#BAF73C`/`#F27927`, border `#555556`); all 8 light presets emit **0** (gated by `isDarkBg(pageBg)`). **User-verified on Moodle Cloud** (table, frame, separators, three-dot, and quiz item icon all confirmed).
+
+### Presets / Controls
+- **No new token.** Uses existing `cardBg`/`cardBorder`/`bodyText`/`mutedText`/`linkColour` (every dark preset defines them) → no preset edits, no control / quick-palette change. Border neutralisation uses Bootstrap CSS vars + a `filter` (control geometry, not theme colours).
+
+### Files Modified
+- `lib/scss-generator.ts` (the rules), `docs/moodle-cloud-constraints.md` (2 selector rows), `docs/PROJECT-TRACKER.md` (this section), `CLAUDE.md` (status bullets). Memory: `project_dark_theme_grade_report_user.md`.
+
+**Branch:** `fix/dark-theme-grade-report-contrast` (off main `fa8611b`, after PR #20).
