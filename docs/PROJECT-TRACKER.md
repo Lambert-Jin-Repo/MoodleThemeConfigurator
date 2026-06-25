@@ -1275,3 +1275,31 @@ Unlike the quiz-edit (#113–116) and question-preview (#121) fixes — which ke
 **Note on hardcoded hex:** #124b (filter chain) and #125 (`#B500B5`) are **fixed semantic/brand values** that must stay constant regardless of the dynamic theme (the flag must read red; the clear-choice must read on the fixed pale-blue box). This is the same documented exception as the `#FFFFFF`/`#1d2125`/`#dee2e6` fixed values already in the generator — not a dynamic theme colour, so no token.
 
 **Branch:** `worktree-fix+dark-theme-qbank-table` (off main).
+
+---
+
+## Session: 2026-06-25 — Dark Theme: Quiz Answer Radio Contrast
+
+### Issue Found During User Review (real Moodle Cloud, dark presets, with screenshots)
+On dark themes the **selected** multichoice / true-false answer radio was barely distinguishable from the unselected options. Reported on the quiz **review** page (radios `disabled`) and reproduced on the live **attempt/preview** window (radios enabled). User wanted the checked option to read white/light, easy to identify.
+
+### Root cause
+`qtype_multichoice` (single) and `qtype_truefalse` render answer options as RAW native `<input type="radio">` inside `.que .answer div.r0/.r1` — **without** Bootstrap's `.form-check-input` class, so the generic dark `.form-check-input:checked` rule (which recolours toggle/checkbox accents) never matched them. After `.que .formulation` became a dark surface (#132), the native radio sat on a dark card and the checked state washed out.
+
+### Approaches ruled out (with evidence)
+- `accent-color: #fff` — browsers **ignore it on `disabled` radios** (review-page radios are disabled). Empirically confirmed in Chromium.
+- `filter: brightness(0) invert(1)` on the native radio — DevTools confirmed the rule was *applied* on the real site, **but the radio stayed grey**: a native radio's fill is transparent, and macOS native radio rendering isn't reliably recoloured by a CSS filter (a headless-Chromium probe rendered differently from the user's macOS Chrome). Abandoned.
+
+### Fix (`lib/scss-generator.ts`, inside `if (darkMode)`, appended after the qnbutton block)
+- **#133** `[id^="page-mod-quiz-"] .que .answer input[type="radio"]` → `appearance:none` (+ `-webkit-`), 16px circle, `border-radius:50%`, `2px solid mutedText` hollow ring, transparent bg, `background-image:none`, `opacity:1` (defeats disabled dimming), `vertical-align:middle`. `…:checked` → `border-color` + `background-color` = `bodyText` → **solid light disc**. Both states redrawn (consistent size/baseline; a native/custom mix would misalign). `input[type="radio"]` only → multi-answer checkboxes + text/select qtypes untouched. `[id^="page-mod-quiz-"]` prefix covers attempt/review/summary/preview. Colours use existing tokens (`mutedText` ring, `bodyText` fill); the px sizes/radius are control geometry, not theme colours.
+
+### Verification
+- `npx tsc --noEmit` clean; `npm run build` passes. Generator output checked: **Dark Lime** + **Dark Ember** emit the base + `:checked` rules (`appearance:none`, `#A0A0A1` ring, `#F0EEEE` fill); all 8 **light** presets emit **0** of these rules (gated by `isDarkBg(pageBg)`). **User-verified on the real site** — the selected option now reads as a clear light disc on review + attempt/preview.
+
+### Presets / Controls
+- **No new token.** Uses existing `mutedText` (ring) + `bodyText` (fill), which every dark preset already defines → **no preset edits**. No new control/quick-palette entry (both tokens already have controls). Light presets unaffected.
+
+### Files Modified
+- `lib/scss-generator.ts` (the rule), `docs/moodle-cloud-constraints.md` (selector row), `docs/PROJECT-TRACKER.md` (this section), `CLAUDE.md` (status bullet). Memory: `project_dark_theme_quiz_radio.md`.
+
+**Branch:** `worktree-fix+dark-theme-quiz-radio-contrast` (off main).

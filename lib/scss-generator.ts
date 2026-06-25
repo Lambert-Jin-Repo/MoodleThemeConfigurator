@@ -1597,6 +1597,54 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push(`  background-color: ${tokens.mutedText} !important;`);
     rules.push('}');
     rules.push('');
+    // ── Multichoice / true-false answer radios — redraw so the SELECTED one is a
+    //    clear light disc on the dark surface (#133) ──
+    // Moodle's qtype_multichoice (single) and qtype_truefalse render their answer
+    // options as RAW native `<input type="radio">` inside `.que .answer div.r0/.r1`
+    // — WITHOUT Bootstrap's `.form-check-input` class, so the generic dark
+    // `.form-check-input` rule above never matches them. With `.formulation` now a
+    // dark surface (#132), the browser's native radio sits on a dark card and the
+    // SELECTED option is barely distinguishable from the unchecked ones — on BOTH the
+    // review page (radios `disabled`) AND the attempt/preview window (radios enabled).
+    //
+    // We can't fix this with colour alone: `accent-color` is ignored on the disabled
+    // review radios, and a `filter:` on the native control does NOT reliably render
+    // white on macOS (verified on the real site — DevTools showed the filter applied
+    // but the radio stayed grey, because a native radio's fill is transparent). The
+    // robust, cross-platform fix is to STRIP the native appearance (`appearance:none`)
+    // and paint our own circle. `opacity:1` defeats the UA's disabled-control dimming.
+    //
+    // Category: this is a redraw of a native form control (not a colour token swap),
+    // sized in px and shaped with border-radius — the values that are not theme
+    // colours (sizes, radius) are intrinsic to the control, like the filter idiom
+    // used for PIX images. The two COLOURS DO use tokens: muted ring + light fill.
+    //
+    // Both states are redrawn (not just `:checked`) so all options share one size and
+    // baseline — a native/custom mix would misalign. Scope stays tight:
+    //   • `input[type="radio"]` only → multi-answer checkboxes and text/select/
+    //     textarea qtypes are untouched.
+    //   • `[id^="page-mod-quiz-"]` → quiz attempt/review/summary/preview pages only
+    //     (same prefix-anchor precedent as #122/#123), never global radios; emitted
+    //     only inside `if (darkMode)`, so the 8 light presets get nothing.
+    rules.push('[id^="page-mod-quiz-"] .que .answer input[type="radio"] {');
+    rules.push('  -webkit-appearance: none !important;');
+    rules.push('  appearance: none !important;');
+    rules.push('  width: 16px !important;');
+    rules.push('  height: 16px !important;');
+    rules.push('  border-radius: 50% !important;');
+    rules.push(`  border: 2px solid ${tokens.mutedText} !important;`);
+    rules.push('  background-color: transparent !important;');
+    rules.push('  background-image: none !important;');
+    rules.push('  opacity: 1 !important;');
+    rules.push('  vertical-align: middle !important;');
+    rules.push('}');
+    // Checked → solid light disc (light border + light fill), unmistakable vs the
+    // hollow muted ring of the unchecked options.
+    rules.push('[id^="page-mod-quiz-"] .que .answer input[type="radio"]:checked {');
+    rules.push(`  border-color: ${tokens.bodyText} !important;`);
+    rules.push(`  background-color: ${tokens.bodyText} !important;`);
+    rules.push('}');
+    rules.push('');
   }
 
   const block2 = rules.join('\n');
