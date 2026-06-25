@@ -1597,6 +1597,91 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push(`  background-color: ${tokens.mutedText} !important;`);
     rules.push('}');
     rules.push('');
+    // ── Multichoice / true-false answer radios — redraw so the SELECTED one is a
+    //    clear light disc on the dark surface (#133) ──
+    // Moodle's qtype_multichoice (single) and qtype_truefalse render their answer
+    // options as RAW native `<input type="radio">` inside `.que .answer div.r0/.r1`
+    // — WITHOUT Bootstrap's `.form-check-input` class, so the generic dark
+    // `.form-check-input` rule above never matches them. With `.formulation` now a
+    // dark surface (#132), the browser's native radio sits on a dark card and the
+    // SELECTED option is barely distinguishable from the unchecked ones — on BOTH the
+    // review page (radios `disabled`) AND the attempt/preview window (radios enabled).
+    //
+    // We can't fix this with colour alone: `accent-color` is ignored on the disabled
+    // review radios, and a `filter:` on the native control does NOT reliably render
+    // white on macOS (verified on the real site — DevTools showed the filter applied
+    // but the radio stayed grey, because a native radio's fill is transparent). The
+    // robust, cross-platform fix is to STRIP the native appearance (`appearance:none`)
+    // and paint our own circle. `opacity:1` defeats the UA's disabled-control dimming.
+    //
+    // Category: this is a redraw of a native form control (not a colour token swap),
+    // sized in px and shaped with border-radius — the values that are not theme
+    // colours (sizes, radius) are intrinsic to the control, like the filter idiom
+    // used for PIX images. The two COLOURS DO use tokens: muted ring + light fill.
+    //
+    // Both states are redrawn (not just `:checked`) so all options share one size and
+    // baseline — a native/custom mix would misalign. Scope stays tight:
+    //   • `input[type="radio"]` only → multi-answer checkboxes and text/select/
+    //     textarea qtypes are untouched.
+    //   • `[id^="page-mod-quiz-"]` → quiz attempt/review/summary/preview pages only
+    //     (same prefix-anchor precedent as #122/#123), never global radios; emitted
+    //     only inside `if (darkMode)`, so the 8 light presets get nothing.
+    rules.push('[id^="page-mod-quiz-"] .que .answer input[type="radio"] {');
+    rules.push('  -webkit-appearance: none !important;');
+    rules.push('  appearance: none !important;');
+    rules.push('  width: 16px !important;');
+    rules.push('  height: 16px !important;');
+    rules.push('  border-radius: 50% !important;');
+    rules.push(`  border: 2px solid ${tokens.mutedText} !important;`);
+    rules.push('  background-color: transparent !important;');
+    rules.push('  background-image: none !important;');
+    rules.push('  opacity: 1 !important;');
+    rules.push('  vertical-align: middle !important;');
+    rules.push('}');
+    // Checked → solid light disc (light border + light fill), unmistakable vs the
+    // hollow muted ring of the unchecked options.
+    rules.push('[id^="page-mod-quiz-"] .que .answer input[type="radio"]:checked {');
+    rules.push(`  border-color: ${tokens.bodyText} !important;`);
+    rules.push(`  background-color: ${tokens.bodyText} !important;`);
+    rules.push('}');
+    rules.push('');
+    // ── Tooltips — accent text on dark (#134) ──
+    // Bootstrap's `.tooltip` is portalled to <body>, OUTSIDE every dark container the
+    // generator overrides (.bg-white / .card / .popover / .drawer), so none of those
+    // dark-text rules reach `.tooltip-inner`. Under Bootstrap 5.3 (Moodle 5.x) the
+    // tooltip text defaults to `var(--bs-body-bg)` → the dark theme makes it DARK on
+    // the near-black box → unreadable (e.g. the "Open block drawer" toggle tooltip).
+    // Recolour the text to the theme accent (`linkColour` = lime on Dark Lime / orange
+    // on Dark Ember). Tooltips are generic body-portalled `.tooltip` elements with no
+    // back-reference to their trigger, so there's no selector for just one — this
+    // (correctly) covers ALL tooltips, which all share the same dark-on-dark problem.
+    // Colour only: Moodle's existing near-black box is kept (best contrast — lime
+    // ≈10:1, orange ≈5.8:1). `.tooltip-inner` is specificity (0,1,1) tying Bootstrap's
+    // own rule, so `!important` is required.
+    rules.push('.tooltip .tooltip-inner {');
+    rules.push(`  color: ${tokens.linkColour} !important;`);
+    rules.push('}');
+    rules.push('');
+    // ── Icon buttons (.btn-icon) — accent glyph on hover (#135) ──
+    // Moodle's `.btn-icon:hover` hardcodes a LIGHT-grey background (`$gray-200`
+    // #e9ecef, no dark variant). On a dark theme the glyph keeps its light resting
+    // colour (`drawerText`/`bodyText` #F0EEEE), so on hover a light icon sits on a
+    // light box → invisible (e.g. the course-index "Course index options" three-dot
+    // button, the drawer open/close toggles, section action menus — all share
+    // `.btn-icon`). Recolouring the glyph ALONE does not fix it: lime on #e9ecef is
+    // ~1.3:1. So on HOVER ONLY we (1) neutralise Moodle's pale box (transparent → the
+    // glyph sits back on the dark surface) and (2) turn the glyph the accent
+    // `linkColour` (lime / orange) → lime-on-dark ≈ 11:1. `:hover` only, so the resting
+    // and active/open (`.show`) states are untouched (the user's constraint).
+    // `:not(.icons-collapse-expand)` leaves the section collapse/expand toggles to
+    // their existing handling. Broad `.btn-icon` so every icon button with this bug is
+    // fixed at once. `!important` beats Moodle's `!important` resting colour + hover bg.
+    rules.push('.btn-icon:not(.icons-collapse-expand):hover {');
+    rules.push('  background-color: transparent !important;');
+    rules.push('}');
+    rules.push('.btn-icon:not(.icons-collapse-expand):hover .icon,');
+    rules.push(`.btn-icon:not(.icons-collapse-expand):hover .fa { color: ${tokens.linkColour} !important; }`);
+    rules.push('');
   }
 
   const block2 = rules.join('\n');

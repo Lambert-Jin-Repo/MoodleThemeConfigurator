@@ -1275,3 +1275,85 @@ Unlike the quiz-edit (#113–116) and question-preview (#121) fixes — which ke
 **Note on hardcoded hex:** #124b (filter chain) and #125 (`#B500B5`) are **fixed semantic/brand values** that must stay constant regardless of the dynamic theme (the flag must read red; the clear-choice must read on the fixed pale-blue box). This is the same documented exception as the `#FFFFFF`/`#1d2125`/`#dee2e6` fixed values already in the generator — not a dynamic theme colour, so no token.
 
 **Branch:** `worktree-fix+dark-theme-qbank-table` (off main).
+
+---
+
+## Session: 2026-06-25 — Dark Theme: Quiz Answer Radio Contrast
+
+### Issue Found During User Review (real Moodle Cloud, dark presets, with screenshots)
+On dark themes the **selected** multichoice / true-false answer radio was barely distinguishable from the unselected options. Reported on the quiz **review** page (radios `disabled`) and reproduced on the live **attempt/preview** window (radios enabled). User wanted the checked option to read white/light, easy to identify.
+
+### Root cause
+`qtype_multichoice` (single) and `qtype_truefalse` render answer options as RAW native `<input type="radio">` inside `.que .answer div.r0/.r1` — **without** Bootstrap's `.form-check-input` class, so the generic dark `.form-check-input:checked` rule (which recolours toggle/checkbox accents) never matched them. After `.que .formulation` became a dark surface (#132), the native radio sat on a dark card and the checked state washed out.
+
+### Approaches ruled out (with evidence)
+- `accent-color: #fff` — browsers **ignore it on `disabled` radios** (review-page radios are disabled). Empirically confirmed in Chromium.
+- `filter: brightness(0) invert(1)` on the native radio — DevTools confirmed the rule was *applied* on the real site, **but the radio stayed grey**: a native radio's fill is transparent, and macOS native radio rendering isn't reliably recoloured by a CSS filter (a headless-Chromium probe rendered differently from the user's macOS Chrome). Abandoned.
+
+### Fix (`lib/scss-generator.ts`, inside `if (darkMode)`, appended after the qnbutton block)
+- **#133** `[id^="page-mod-quiz-"] .que .answer input[type="radio"]` → `appearance:none` (+ `-webkit-`), 16px circle, `border-radius:50%`, `2px solid mutedText` hollow ring, transparent bg, `background-image:none`, `opacity:1` (defeats disabled dimming), `vertical-align:middle`. `…:checked` → `border-color` + `background-color` = `bodyText` → **solid light disc**. Both states redrawn (consistent size/baseline; a native/custom mix would misalign). `input[type="radio"]` only → multi-answer checkboxes + text/select qtypes untouched. `[id^="page-mod-quiz-"]` prefix covers attempt/review/summary/preview. Colours use existing tokens (`mutedText` ring, `bodyText` fill); the px sizes/radius are control geometry, not theme colours.
+
+### Verification
+- `npx tsc --noEmit` clean; `npm run build` passes. Generator output checked: **Dark Lime** + **Dark Ember** emit the base + `:checked` rules (`appearance:none`, `#A0A0A1` ring, `#F0EEEE` fill); all 8 **light** presets emit **0** of these rules (gated by `isDarkBg(pageBg)`). **User-verified on the real site** — the selected option now reads as a clear light disc on review + attempt/preview.
+
+### Presets / Controls
+- **No new token.** Uses existing `mutedText` (ring) + `bodyText` (fill), which every dark preset already defines → **no preset edits**. No new control/quick-palette entry (both tokens already have controls). Light presets unaffected.
+
+### Files Modified
+- `lib/scss-generator.ts` (the rule), `docs/moodle-cloud-constraints.md` (selector row), `docs/PROJECT-TRACKER.md` (this section), `CLAUDE.md` (status bullet). Memory: `project_dark_theme_quiz_radio.md`.
+
+**Branch:** `worktree-fix+dark-theme-quiz-radio-contrast` (off main).
+
+---
+
+## Session: 2026-06-25 (continued) — Dark Theme: Tooltip Text Contrast
+
+### Issue Found During User Review (real Moodle Cloud, dark presets, with screenshots)
+The Bootstrap tooltip "Open block drawer" (the block-drawer toggle's hover label) rendered **dark text on a near-black box → unreadable** on dark themes. User wanted the tooltip text **lime green**.
+
+### Root cause (additive gap, not a wrong rule)
+`.tooltip` is portalled by Popper to `<body>`, **outside** every dark container the generator overrides (`.bg-white`/`.card`/`.popover`/`.drawer`), so none of those dark-text rules reach `.tooltip-inner`. Under **Bootstrap 5.3** (Moodle 5.x) the tooltip text defaults to `var(--bs-body-bg)` (and the box to `var(--bs-emphasis-color)`) — the dark theme overrides `--bs-body-bg` dark → dark text on the near-black box. The generator's existing "Popover / tooltip" block styled only `.popover`/`.popover-body`, never `.tooltip`. So the fix is purely additive.
+
+### Per-trigger scoping not possible
+Bootstrap tooltips are generic `.tooltip` elements portalled to `<body>` with a random id and **no attribute linking back to the trigger** (`aria-describedby` lives on the trigger, not the tooltip). There is no CSS selector for "just the block-drawer tooltip", so the rule (correctly) covers all tooltips — every dark-theme tooltip had the same dark-on-dark problem.
+
+### Fix (`lib/scss-generator.ts`, inside `if (darkMode)`, appended after the #133 radio block)
+- **#134** `.tooltip .tooltip-inner` → `color: ${tokens.linkColour} !important` = **lime `#BAF73C`** on Dark Lime / orange `#F27927` on Dark Ember. **Colour only** — Moodle's near-black box is kept, giving the best contrast (lime ≈10:1, orange ≈5.8:1, both WCAG AA). `!important` required because `.tooltip-inner` (specificity 0,1,1) ties Bootstrap's own rule.
+
+### Verification
+- `npx tsc --noEmit` clean; `npm run build` passes. Generator output checked: **Dark Lime** emits `color: #BAF73C`, **Dark Ember** emits `color: #F27927`; all 8 **light** presets emit **0** (gated by `isDarkBg(pageBg)`). **User-verified on the real site** — "Open block drawer" now reads in lime.
+
+### Presets / Controls
+- **No new token.** Uses existing `linkColour`, which every dark preset already defines → **no preset edits**. `linkColour` already has a control/quick-palette entry → no control change.
+
+### Files Modified
+- `lib/scss-generator.ts` (the rule), `docs/moodle-cloud-constraints.md` (selector row), `docs/PROJECT-TRACKER.md` (this section), `CLAUDE.md` (status bullet). Memory: `project_dark_theme_tooltip.md`.
+
+**Branch:** `worktree-fix+dark-theme-quiz-radio-contrast` (off main).
+
+---
+
+## Session: 2026-06-25 (continued) — Dark Theme: Icon-Button Hover Contrast
+
+### Issue Found During User Review (real Moodle Cloud, dark presets, with screenshots)
+Icon buttons (`.btn-icon`) — the course-index drawer "Course index options" three-dot control (and the other similar icon buttons) — went **invisible on hover** on dark themes. User wanted the glyph **lime green on hover**, resting + clicked states unchanged, and asked whether one fix covers the similar icons.
+
+### Root cause (light-on-light)
+Boost's `.btn-icon:hover`/`:focus` hardcodes `background-color: $gray-200` (`#e9ecef`, a LIGHT grey) with no dark variant (Moodle 4.4/4.5 direct; 5.x via `--bs-btn-hover-bg: var(--bs-secondary-bg)`). The icon never changes colour on hover; it keeps the dark-theme resting `drawerText`/`bodyText` `#F0EEEE` (light), so the light glyph on the light-grey hover box vanishes.
+
+### Critical caveat (verified, not assumed)
+Recolouring the glyph to lime ALONE does NOT fix it: CFA Lime `#BAF73C` on `#e9ecef` ≈ 1.3:1 (worse). The pale hover box must be neutralised too. (Same lesson as the radio #133 filter.)
+
+### Fix (`lib/scss-generator.ts`, inside `if (darkMode)`, appended after the #134 tooltip rule)
+- **#135** On HOVER ONLY: `.btn-icon:not(.icons-collapse-expand):hover { background-color: transparent !important }` removes Boost's pale box (the glyph sits back on the dark surface); `.btn-icon:not(.icons-collapse-expand):hover .icon, … .fa { color: ${tokens.linkColour} !important }` turns the glyph lime `#BAF73C` / orange `#F27927` → lime-on-dark ≈ 11:1. `:hover` only → resting + active/open (`.show`) untouched. Broad `.btn-icon` (user chose) fixes all similar icon buttons (course-index controls, drawer toggles, section action menus) at once. `:not(.icons-collapse-expand)` spares the collapse/expand toggles' existing handling. Extends the existing "Icon Hover" hover→`linkColour` precedent. NOTE: the generic activity action-menu trigger uses `.dropdown-toggle.icon-no-margin` (NOT `.btn-icon`) → not covered.
+
+### Verification
+- `npx tsc --noEmit` clean; `npm run build` passes. Generator output checked: Dark Lime emits `color: #BAF73C` + `background-color: transparent`, Dark Ember `#F27927`; all 8 light presets emit **0** (gated by `isDarkBg(pageBg)`). Resting drawer-icon rule confirmed intact. **User-verified on the real site.**
+
+### Presets / Controls
+- **No new token.** Uses existing `linkColour` (every dark preset defines it) → no preset edits. `linkColour` already has a control/quick-palette entry → no control change.
+
+### Files Modified
+- `lib/scss-generator.ts` (the rule), `docs/moodle-cloud-constraints.md` (selector row), `docs/PROJECT-TRACKER.md` (this section), `CLAUDE.md` (status bullet). Memory: `project_dark_theme_icon_button_hover.md`.
+
+**Branch:** `worktree-fix+dark-theme-quiz-radio-contrast` (off main).
