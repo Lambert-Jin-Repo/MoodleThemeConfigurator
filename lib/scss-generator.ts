@@ -1682,6 +1682,112 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push('.btn-icon:not(.icons-collapse-expand):hover .icon,');
     rules.push(`.btn-icon:not(.icons-collapse-expand):hover .fa { color: ${tokens.linkColour} !important; }`);
     rules.push('');
+
+    // ── Student grade "User report" table (#136) ──
+    // grade/report/user/index.php — body class `.path-grade-report-user`.
+    // Moodle's `grade.scss` styles the `.user-grade` table from Bootstrap's
+    // `--bs-table-bg` / `$table-bg (var(--bs-body-bg))` and header `$gray-100`
+    // (#f8f9fa) with NO dark variant, so on a dark theme the cells stay light while
+    // the forced-light body text washes out → invisible (the user's report). Same
+    // dark-surface + light/lime treatment as the gradebook-setup (#126) and quiz-
+    // view (#122) fixes: dark `cardBg` surface, light `bodyText` text (CFA Light
+    // Grey #F0EEEE), lime/orange `linkColour` links (CFA Lime/Orange). Anchored on
+    // the body CLASS `.path-grade-report-user` (robust) + the unique `.user-grade`
+    // table class — NOT the body id, which keeps the `-index` suffix on /index.php
+    // pages (documented gotcha). Redefine the Bootstrap table vars AND force the
+    // cell colours so both the header (`$gray-100`) and body rows are covered.
+    // The bright WHITE frame + row/section separators come from the GLOBAL
+    // `var(--bs-border-color)` (Bootstrap default light #dee2e6), NOT the table
+    // var: Moodle's `.generaltable th/td` draws `border-top: ... var(--bs-border-
+    // color)` and the table-responsive wrapper frame uses the same global var, so
+    // redefining only `--bs-table-border-color` left them light. Redefine the GLOBAL
+    // border-color variable scoped to the whole `.path-grade-report-user` page — it
+    // cascades (CSS var inheritance) to the table, every cell, and any wrapper, so
+    // all those borders become the subtle dark `cardBorder`. Purely corrective
+    // (cardBorder is the intended dark border everywhere); page-scoped, light
+    // presets unaffected.
+    rules.push('.path-grade-report-user {');
+    rules.push(`  --bs-border-color: ${tokens.cardBorder};`);
+    rules.push('}');
+    // The thick light "frame" around the table is NOT a border — it is the
+    // `.user-report-container` wrapper, which Moodle's grade.scss paints
+    // `background-color: $gray-100` (#f8f9fa, light) with 10px padding, so the light
+    // bg shows through the padding gap around the dark table. Repaint it to match the
+    // table surface (`cardBg`) so the padding blends in (no visible frame, table reads
+    // as one dark card). Same (0,2,0) specificity as Moodle's rule, so `!important`
+    // wins. Page-scoped via `.path-grade-report-user`; light presets emit nothing.
+    rules.push('.path-grade-report-user .user-report-container {');
+    rules.push(`  background-color: ${tokens.cardBg} !important;`);
+    rules.push('}');
+    rules.push('.path-grade-report-user .user-grade {');
+    rules.push(`  --bs-table-bg: ${tokens.cardBg};`);
+    rules.push(`  --bs-table-color: ${tokens.bodyText};`);
+    rules.push(`  --bs-table-border-color: ${tokens.cardBorder};`);
+    rules.push(`  --bs-border-color: ${tokens.cardBorder};`);
+    rules.push('}');
+    rules.push('.path-grade-report-user .user-grade,');
+    rules.push('.path-grade-report-user .user-grade thead,');
+    rules.push('.path-grade-report-user .user-grade tbody,');
+    rules.push('.path-grade-report-user .user-grade tr,');
+    rules.push('.path-grade-report-user .user-grade th,');
+    rules.push('.path-grade-report-user .user-grade td,');
+    rules.push('.path-grade-report-user .user-grade tr th {');
+    rules.push(`  border-color: ${tokens.cardBorder} !important;`);
+    rules.push('}');
+    rules.push('.path-grade-report-user .user-grade th,');
+    rules.push('.path-grade-report-user .user-grade td,');
+    rules.push('.path-grade-report-user .user-grade tr th {');
+    rules.push(`  background-color: ${tokens.cardBg} !important;`);
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push('}');
+    rules.push('.path-grade-report-user .user-grade th *,');
+    rules.push('.path-grade-report-user .user-grade td * {');
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push('}');
+    rules.push('.path-grade-report-user .user-grade a:not(.btn) {');
+    rules.push(`  color: ${tokens.linkColour} !important;`);
+    rules.push('}');
+    rules.push('.path-grade-report-user .user-grade .icon:not([class*="text-"]),');
+    rules.push('.path-grade-report-user .user-grade .fa:not([class*="text-"]) {');
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push('}');
+    // The activity item icon (Quiz, etc.) is an IMG-based PIX "monologo" image
+    // (`img.icon.itemicon`, src .../monologo?filtericon=1), NOT a FontAwesome glyph,
+    // so the `color` rule above can't touch it — it renders in its dark native colour
+    // → near-invisible on the dark surface. Recolour to light via `filter` (the
+    // image-based category): `brightness(0) invert(1)` collapses the glyph to white.
+    // Scoped to <img> inside the table so FontAwesome icons (handled by colour) and
+    // light-preset tables are untouched.
+    rules.push('.path-grade-report-user .user-grade img.icon,');
+    rules.push('.path-grade-report-user .user-grade img.itemicon {');
+    rules.push('  filter: brightness(0) invert(1) !important;');
+    rules.push('}');
+    rules.push('.path-grade-report-user .user-grade .text-muted,');
+    rules.push('.path-grade-report-user .user-grade .dimmed_text,');
+    rules.push('.path-grade-report-user .user-grade small {');
+    rules.push(`  color: ${tokens.mutedText} !important;`);
+    rules.push('}');
+    rules.push('');
+
+    // ── Gradebook cell-actions three-dot icon (#137) ──
+    // `.cellmenubtn` (core_grades `grade/templates/cellmenu.mustache`) is the grade
+    // "..." cell action menu shown across the grader report + user report + single
+    // view. Markup: `<button class="btn btn-icon cellmenubtn"><i class="icon fa
+    // fa-ellipsis-h">`. Moodle gives `.cellmenubtn` no colour of its own, so the
+    // generic dark `.icon, .fa { color: ${d.bodyText} }` rule paints the glyph dark
+    // → BLACK on the dark navbar/table at rest (the user's complaint). Re-light the
+    // RESTING glyph to the theme's light text (`bodyText` = CFA Light Grey #F0EEEE,
+    // reads as white). Hover is already the accent lime/orange via the broad
+    // `.btn-icon:not(.icons-collapse-expand):hover` rule (#135), so the designed
+    // behaviour is white at rest → lime on hover ("clickable → lime"). Scoped to the
+    // unique, grade-only `.cellmenubtn` (NOT all `.btn-icon`) so it covers the three-
+    // dots in BOTH reports without touching icons on light-surface modals. Specificity
+    // (0,2,0) + `!important` beats the generic `.icon,.fa` (0,1,0) rule.
+    rules.push('.cellmenubtn .icon,');
+    rules.push('.cellmenubtn .fa {');
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push('}');
+    rules.push('');
   }
 
   const block2 = rules.join('\n');
