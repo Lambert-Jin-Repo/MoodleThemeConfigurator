@@ -1615,3 +1615,36 @@ Mirror Moodle's dual-anchor: wrapped the entire #136 rule set in `['.path-grade-
 - `lib/scss-generator.ts` (the #136 block → 2-prefix loop), `docs/moodle-cloud-constraints.md` (extended the #136 row), `docs/PROJECT-TRACKER.md` (this section), `CLAUDE.md` (status bullet). Memory: `project_dark_theme_grade_report_user.md` (updated).
 
 **Branch:** `worktree-fix+dark-theme-enrolment-icons` (off main `f52e845`, after PR #21).
+
+---
+
+## Session: 2026-06-26 — Dark Theme: Grader report light cells (#145)
+
+### Issue
+On dark themes the Grader report (course → Grades → Grader report) was mostly dark, but the bottom **"Overall average" row** values + header/category cells rendered LIGHT/washed. User wanted it to match the dark matrix.
+
+### Root cause
+Moodle's `grade.scss` paints grader cells LIGHT (no dark variant, **no `!important`**, 4.4–5.x): `.path-grade-report-grader .gradeparent tr .cell, .floater .cell { background-color: #fff }` (EVERY cell) + `.heading .cell, .cell.category, .avg .cell { background-color: #f8f9fa }`. The generator had no grader-report rule; its general `th { background: rgba(0,0,0,.15) }` tinted the header/category `th.cell` dark, but the `td.cell` value cells kept Moodle's light fill — most visibly the "Overall average" row values (`td.grade_type_value.cell` in `tr.avg`): the label is a `th` (dark) but the values are `td` (light) → the asymmetric wash the user saw.
+
+### Fix (`lib/scss-generator.ts`, tail of `if (darkMode)`)
+Repaint EVERY grader cell to the dark card surface (like #136):
+```
+.path-grade-report-grader .gradeparent { --bs-border-color: ${tokens.cardBorder}; }
+.path-grade-report-grader .gradeparent tr .cell, … .floater .cell, … .heading .cell, … .cell.category, … .avg .cell {
+  background-color: ${tokens.cardBg} !important; color: ${tokens.bodyText} !important; border-color: ${tokens.cardBorder} !important; }
+… .heading .cell *, … .cell.category *, … .avg .cell * { color: ${tokens.bodyText} !important; }
+.path-grade-report-grader .gradeparent .cell a:not(.btn) { color: ${tokens.linkColour} !important; }
+.path-grade-report-grader .gradeparent tr.lastrow td, … th { border-top-color: ${tokens.cardBorder} !important; }
+```
+Key points: override BOTH `tr .cell` (#fff base) AND `.heading/.category/.avg .cell` (#f8f9fa); keep user-name links lime via `.cell a:not(.btn)` and NO blanket `tr .cell *` sweep (would kill the links — the `*` light-text is limited to the link-free heading/category/avg cells); borders via `--bs-border-color` redefine + explicit border-color. Anchored on the body CLASS `.path-grade-report-grader`.
+
+### Verification
+- `npm run build` + `npm run lint` clean. Generator output: Dark Lime + Dark Ember emit (cells → cardBg `#2D2D2E`/`#3A3A3B` + bodyText, border cardBorder); all 8 light presets + Moodle Default emit **0**. **User-verified on Moodle Cloud.**
+
+### Presets / Controls
+- **No new token.** Reuses `cardBg`/`cardBorder`/`bodyText`/`linkColour` → no preset edits, no control / quick-palette change.
+
+### Files Modified
+- `lib/scss-generator.ts` (the grader-report block), `docs/moodle-cloud-constraints.md` (1 selector row), `docs/PROJECT-TRACKER.md` (this section), `CLAUDE.md` (status bullet). Memory: `project_dark_theme_grader_report.md`.
+
+**Branch:** `worktree-fix+dark-theme-enrolment-icons` (off main `f52e845`, after PR #21).

@@ -2027,6 +2027,56 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push(`  color: ${d.bodyText} !important;`);
     rules.push('}');
     rules.push('');
+
+    // ── Grader report — dark surface for Moodle's light-painted cells (#145) ──
+    // Course → Grades → Grader report (`grade/report/grader`, body class
+    // `.path-grade-report-grader`, wrapper `.gradeparent`, table `#user-grades`).
+    // Moodle's `grade.scss` paints grader cells LIGHT (no dark variant, NO `!important`,
+    // identical 4.4–5.x): `tr .cell, .floater .cell { background-color: $pagination-bg
+    // (#fff) }` (EVERY cell) and `.heading .cell, .cell.category, .avg .cell {
+    // background-color: $gray-100 (#f8f9fa) }` (header / category / Overall-average).
+    // On dark themes the generator's general `th { background: rgba(0,0,0,.15) }` tints
+    // the header/category `th.cell`, but the `td.cell` VALUE cells keep Moodle's light
+    // fill — most visibly the "Overall average" row's values (`td.grade_type_value.cell`
+    // in `tr.avg`, #f8f9fa) and, in non-edit view, every student value cell (#fff) →
+    // washed-out (the user's report; they want it to match the dark matrix). Repaint
+    // every grader cell to the dark card surface (`cardBg` + light `bodyText`,
+    // `cardBorder` borders) so the whole table reads as one dark card, like the #136
+    // user report. The user-name links keep their lime `linkColour` — re-assert it on
+    // `.cell a:not(.btn)` (and we do NOT add a blanket `tr .cell *` colour sweep that
+    // would override them; the `*` light-text sweep is limited to the link-free
+    // heading/category/avg cells). Borders: Moodle uses `$table-border-color` =
+    // `var(--bs-border-color)` (#dee2e6), so redefine that var on the wrapper + set
+    // explicit `border-color`/`border-top-color` (the `tr.lastrow` top border too).
+    // Anchored on the body CLASS `.path-grade-report-grader` (the `path-` loop drops
+    // only the last URL segment, so the class is present — NOT a `#page-…-index` id) +
+    // `.gradeparent`. `!important` beats Moodle's un-important rules outright. Dark
+    // presets only.
+    rules.push('.path-grade-report-grader .gradeparent {');
+    rules.push(`  --bs-border-color: ${tokens.cardBorder};`);
+    rules.push('}');
+    rules.push('.path-grade-report-grader .gradeparent tr .cell,');
+    rules.push('.path-grade-report-grader .gradeparent .floater .cell,');
+    rules.push('.path-grade-report-grader .gradeparent .heading .cell,');
+    rules.push('.path-grade-report-grader .gradeparent .cell.category,');
+    rules.push('.path-grade-report-grader .gradeparent .avg .cell {');
+    rules.push(`  background-color: ${tokens.cardBg} !important;`);
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push(`  border-color: ${tokens.cardBorder} !important;`);
+    rules.push('}');
+    rules.push('.path-grade-report-grader .gradeparent .heading .cell *,');
+    rules.push('.path-grade-report-grader .gradeparent .cell.category *,');
+    rules.push('.path-grade-report-grader .gradeparent .avg .cell * {');
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push('}');
+    rules.push('.path-grade-report-grader .gradeparent .cell a:not(.btn) {');
+    rules.push(`  color: ${tokens.linkColour} !important;`);
+    rules.push('}');
+    rules.push('.path-grade-report-grader .gradeparent tr.lastrow td,');
+    rules.push('.path-grade-report-grader .gradeparent tr.lastrow th {');
+    rules.push(`  border-top-color: ${tokens.cardBorder} !important;`);
+    rules.push('}');
+    rules.push('');
   }
 
   const block2 = rules.join('\n');
