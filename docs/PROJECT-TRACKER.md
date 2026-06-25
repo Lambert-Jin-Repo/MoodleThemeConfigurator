@@ -1390,3 +1390,261 @@ Moodle's `grade.scss` styles `.user-grade` from Bootstrap `--bs-table-bg` (= `va
 - `lib/scss-generator.ts` (the rules), `docs/moodle-cloud-constraints.md` (2 selector rows), `docs/PROJECT-TRACKER.md` (this section), `CLAUDE.md` (status bullets). Memory: `project_dark_theme_grade_report_user.md`.
 
 **Branch:** `fix/dark-theme-grade-report-contrast` (off main `fa8611b`, after PR #20).
+
+---
+
+## Session: 2026-06-25 (continued) — Dark Theme: Course-listing enrolment icons (#138)
+
+### Issue
+On the *Available courses* / course-category listing, the per-course **enrolment-method icons** (the "Self enrolment" door glyph `<i class="icon fa-solid fa-right-to-bracket">` in `<div class="enrolmenticons">`, plus guest `fa-key`/`fa-lock`/`fa-lock-open`) were dark-on-dark → unreadable on dark themes. Reported by user with screenshot + DevTools (icon painted `#1d2125` by `.icon, .fa`).
+
+### Root cause
+The generic dark rule `.icon, .fa { color: ${d.bodyText} !important }` (`#1d2125`) paints ALL icons dark so they stay readable on the light wrappers that survive on dark themes. But the enrolment icons sit on the **dark** course-card background (`.coursebox .info .enrolmenticons`) → dark-on-dark. No scoped re-light existed for them.
+
+### Fix (`lib/scss-generator.ts`, inside `if (darkMode)`, appended after the #137 `.cellmenubtn` block)
+- **#138** `.enrolmenticons .icon, .enrolmenticons .fa { color: ${tokens.bodyText} !important }` → re-lights the glyphs to CFA Light Grey `#F0EEEE` ("light white"). Specificity (0,2,0)+`!important` beats the generic (0,1,0). Same resting-state re-light pattern as #137. No `:not([class*="text-"])` guard needed — enrolment icons carry **no** `.text-*` semantic class (verified vs `enrol/*/lib.php` icon maps; the meaning is in the `title`/`aria-label`).
+
+### Research (Moodle 4.4 / 4.5 / 5.0)
+- `.enrolmenticons` is emitted by core `course_enrolment_icons()` inside `.coursebox .info` — stable across versions (only the repo path moved `course/` → `public/course/` in 5.x, not the markup).
+- The FA glyphs come from each enrol plugin's `get_fontawesome_icon_map()` (`enrol_self` withoutkey → `fa-right-to-bracket`, withkey → `fa-key`; `enrol_guest` → `fa-lock-open`/`fa-lock`). They are plain FontAwesome `<i>` → `color:` is the lever, not `filter:`.
+
+### Verification
+- `npm run build` + `npm run lint` clean. Generator output checked across all presets: **Dark Lime + Dark Ember** emit `.enrolmenticons .icon, .enrolmenticons .fa { color: #F0EEEE !important; }`; all **8 light presets + Moodle Default** emit **0** (gated by `isDarkBg(pageBg)`). **User-verified on Moodle Cloud.**
+
+### Presets / Controls
+- **No new token.** Uses existing `bodyText` (every dark preset defines it) → no preset edits, no control / quick-palette change.
+
+### Files Modified
+- `lib/scss-generator.ts` (the rule), `docs/moodle-cloud-constraints.md` (1 selector row), `docs/PROJECT-TRACKER.md` (this section), `CLAUDE.md` (status bullet). Memory: `project_dark_theme_enrolment_icons.md`.
+
+**Branch:** `worktree-fix+dark-theme-enrolment-icons` (off main `f52e845`, after PR #21).
+
+---
+
+## Session: 2026-06-25 (continued) — Dark Theme: Footer "Show footer" help button (#139)
+
+### Issue
+The floating circular **"?" help button** at the bottom-right of every page had an invisible `?` on dark themes. Reported by user with screenshot + DevTools.
+
+### Root cause (two-part)
+(1) The dark footer rule `#page-footer * { color: ${tokens.footerText} #F0EEEE !important }` paints the glyph near-white; AND (2) the button keeps Moodle's **default light `.bg-secondary`** — the dark presets do NOT override `secondaryColour`, so `$secondary` stays the default `#ced4da` (light grey). Near-white `?` on light grey ≈ 1.2:1 → invisible.
+
+### Key lesson — the "lime on light grey" trap (repeat of #135)
+The user asked to make the `?` "lime green", but lime `#BAF73C` on the light `#ced4da` button is **~1.2:1 — even worse** than the near-white. **Always check the element's actual background before recolouring an icon** — recolouring alone doesn't fix contrast if the surface is the wrong brightness. Confirmed the button bg by checking `secondaryColour` is not overridden in either dark preset.
+
+### Fix (user chose "lime ? on a dark circle"; `lib/scss-generator.ts`, inside `if (darkMode)`, after the #138 `.enrolmenticons` rule)
+```
+#page-footer .btn-footer-popover { background-color: ${tokens.cardBg} !important; }
+#page-footer .btn-footer-popover .icon,
+#page-footer .btn-footer-popover .fa { color: ${tokens.infoIconColour} !important; }
+```
+- Darken JUST this button to `cardBg` AND set the `?` to lime `infoIconColour` (= `#BAF73C` on **both** dark presets, unlike `linkColour` = orange on Dark Ember) → lime-on-dark ≈ 9–11:1.
+- Anchor on the stable `.btn-footer-popover` hook (NOT `rounded-circle`/`icon-no-margin`, which churn 4.x↔5.x). Plain FontAwesome `e/question → fa-question`, no `.text-*` → `color:` is the lever.
+- Specificity: bg `(1,1,0)` beats Boost's `.bg-secondary` `(0,1,0)`!important; icon `(1,2,0)` beats the footer `#page-footer *` `(1,0,0)`!important; both beat the #135 `.btn-icon:hover` rules (ID > classes) → dark circle + lime `?` in every state (also sidesteps the hover question).
+
+### Verification
+- `npm run build` + `npm run lint` clean. Generator output checked across all presets: **Dark Lime** emits `cardBg #2D2D2E` + `#BAF73C`; **Dark Ember** `#3A3A3B` + `#BAF73C`; all **8 light presets + Moodle Default** emit **0**. **User-verified on Moodle Cloud.**
+
+### Presets / Controls
+- **No new token.** Uses existing `cardBg` + `infoIconColour` → no preset edits, no control / quick-palette change.
+
+### Files Modified
+- `lib/scss-generator.ts` (the 2 rules), `docs/moodle-cloud-constraints.md` (1 selector row), `docs/PROJECT-TRACKER.md` (this section), `CLAUDE.md` (status bullet). Memory: `project_dark_theme_footer_help_button.md`.
+
+**Branch:** `worktree-fix+dark-theme-enrolment-icons` (off main `f52e845`, after PR #21).
+
+---
+
+## Session: 2026-06-25 (continued) — Dark Theme: Messaging drawer full dark surface (#140)
+
+### Issue
+The user wanted the WHOLE Messaging drawer / conversation window to be a cohesive DARK surface with LIGHT text + LIME-accent icons on dark themes. Symptoms (2 screenshots + DevTools): emoji-picker category headings ("Recent", "Smileys & emotion") dark-on-dark → invisible; conversation header bar + message input rendered white, inconsistent with the dark drawer.
+
+### Root cause
+Moodle's message templates hardcode the conversation surfaces LIGHT **via markup classes** (`bg-white`/`bg-light`), NOT SCSS. The generator's `.bg-white` philosophy ("keep bg light, just darken the text to `#1d2125`") therefore left the bars light AND painted the emoji `.category-name` dark-on-dark (the picker's own `.card` bg is already dark). The pre-existing messaging rules (`.message-app .view-overview-body/.section/.card-header`) only covered the **contacts list**, never the conversation pane/header/footer/input or the emoji picker.
+
+### Fix (`lib/scss-generator.ts`, appended LAST in `if (darkMode)`, after the #139 footer rule)
+Scoped to `.message-app` (+ standalone `.emoji-picker`, which JS portals out of the drawer):
+- (a) `.message-app .bg-white, .bg-light` → `drawerBg` + `border-color drawerBorder` (kills the bright bar border / magenta line).
+- (b) `.message-app .bg-white *, .bg-light *` → `bodyText` (light). `(0,2,0)` beats the global `.bg-white *` `(0,1,0)` + source order.
+- (c) `.message-app .bg-white .icon/.fa, .bg-light .icon/.fa, .bg-white a` → `linkColour` (lime/orange accent — user asked for lime; matches the contacts-list icon treatment + each theme).
+- (d) `.message-app textarea[data-region="send-message-txt"]` → `cardBg` field + `bodyText` text + `cardBorder` + `mutedText` placeholder.
+- (e) `.emoji-picker .card/.card-*/.input-group-text` → `cardBg`/`cardBorder`; `.category-name`/`.text-muted` → `bodyText`; `.emoji-picker .icon/.fa` → `linkColour`.
+
+### Left untouched (deliberate)
+- Message **bubbles** (`.message.send`/`.received`) — NOT `.bg-white`, so they keep Moodle's `color-yiq()` auto-contrast. **This is why the fix scopes by `.bg-white`/`.bg-light`, NOT by `[data-region="view-conversation"] *`** — that wrapper also contains the bubbles, and blanket-lighting their text would break light sent bubbles.
+- **Native colour emoji** (plain Unicode `String.fromCodePoint`, never `.icon`/`.fa`).
+
+### Research (verified 4.4/4.5/5.0)
+- Header bar = `[data-region="view-conversation"]` header (`bg-white border-bottom`); footer bar = same data-region footer instance (`bg-white border-top`). Input = `textarea[data-region="send-message-txt"].bg-light`. Emoji picker = Bootstrap `.card` with `.input-group-text.bg-white` chip + `.category-name` headings. Messaging icons all FontAwesome (`color:`); emoji glyphs native Unicode.
+
+### Verification
+- `npm run build` + `npm run lint` clean. Generator output: **Dark Lime** + **Dark Ember** emit the full block (bars `#1D2125`, text `#F0EEEE`, input `#2D2D2E`, accent `#BAF73C`/`#F27927`); all **8 light presets + Moodle Default** emit **0**. **User-verified on Moodle Cloud** (header, input, emoji headings all fixed; magenta line gone).
+
+### Presets / Controls
+- **No new token.** Reuses `drawerBg`/`drawerBorder`/`cardBg`/`cardBorder`/`bodyText`/`mutedText`/`linkColour` → no preset edits, no control / quick-palette change.
+
+### Files Modified
+- `lib/scss-generator.ts` (the messaging block), `docs/moodle-cloud-constraints.md` (1 selector row), `docs/PROJECT-TRACKER.md` (this section), `CLAUDE.md` (status bullet). Memory: `project_dark_theme_messaging_drawer.md`.
+
+**Branch:** `worktree-fix+dark-theme-enrolment-icons` (off main `f52e845`, after PR #21).
+
+---
+
+## Session: 2026-06-25 (continued) — Dark Theme: Calendar month-view day hover (#141)
+
+### Issue
+On dark themes, hovering a calendar month-view day cell turned it WHITE → the light date number + lime/orange event links vanished. Reported by user with screenshot.
+
+### Root cause
+Moodle's `calendar.scss`: `.maincalendar .calendarmonth .clickable:hover { background-color: #ededed }` (`$calendar-month-clickable-bg`, no `!important`, (0,3,0), stable 4.4–5.x). The day cells are transparent → show the dark `pageBg`, so on hover they flip light-grey. No prior calendar hover rule existed.
+
+### Fix (`lib/scss-generator.ts`, inside `if (darkMode)`, after the #140 messaging block)
+```
+#region-main .maincalendar .calendarmonth .clickable:hover {
+  background-color: ${tokens.drawerBg} !important;            /* #1D2125 */
+  box-shadow: inset 0 0 0 2px ${tokens.linkColour} !important;   /* lime / orange ring */
+}
+```
+
+### Iteration lesson
+First attempt used `cardBg` (#2D2D2E) → user reported **"no hover effect"** because `cardBg` is too close to the resting `pageBg` (#404041) (dark-on-dark swap of two similar greys is imperceptible). Switched to **`drawerBg` (#1D2125 — darkest surface, clearly darker than BOTH `pageBg` and `cardBg`)** + a **2px inset `linkColour` ring** (unmistakable, on-brand, no layout shift). **Lesson:** a dark-on-dark hover/active shade must be far enough from the resting colour to be perceptible — or use an accent ring instead of relying on a subtle bg shift.
+
+### Verification
+- `npm run build` + `npm run lint` clean. Generator output: **Dark Lime** `#1D2125` + `#BAF73C` ring; **Dark Ember** `#1D2125` + `#F27927` ring; all **8 light presets + Moodle Default** emit **0**. Contrast on drawerBg: date ≈14:1, lime ≈13:1, orange ≈6:1 (all AA; the lighter `cardBorder` was rejected — orange 2.67:1 on Ember). **User-verified on Moodle Cloud.**
+
+### Presets / Controls
+- **No new token.** Reuses `drawerBg` + `linkColour` → no preset edits, no control / quick-palette change.
+
+### Files Modified
+- `lib/scss-generator.ts` (the hover rule), `docs/moodle-cloud-constraints.md` (1 selector row), `docs/PROJECT-TRACKER.md` (this section), `CLAUDE.md` (status bullet). Memory: `project_dark_theme_calendar_hover.md`.
+
+**Branch:** `worktree-fix+dark-theme-enrolment-icons` (off main `f52e845`, after PR #21).
+
+---
+
+## Session: 2026-06-25 (continued) — Dark Theme: Move-block YUI dialog (#142)
+
+### Issue
+Clicking a block's move icon (Dashboard edit mode) opens a YUI dialog ("Move Timeline"/"Move Calendar") that rendered WHITE on dark themes, with lime `.aalink` drop-target links ≈ unreadable on white. The user wanted the whole dialog dark. Follow-up: on CLICK/FOCUS the lime link washed out on Moodle's light focus highlight → wanted dark text in that state.
+
+### Root cause
+Generic `M.core.dialogue` (no distinguishing class/id, portalled to `<body>`, shared base with the file picker/activity chooser). Moodle paints it white from ONE place — `.moodle-dialogue-base .moodle-dialogue-wrap { background-color: $white; border: 1px solid #ccc }` (`core.scss`); hd/bd/ft are transparent (the header "grey bar" is its `border-bottom: #dee2e6`). The generator deliberately keeps ALL `.moodle-dialogue-bd` white-with-dark-text + lime links (L~608-623), so the lime links sat on white.
+
+### Fix (`lib/scss-generator.ts`, inside `if (darkMode)`, after the #141 calendar rule)
+Scoped via **`:has(.dragdrop-keyboard-drag)`** — the dialog's body `<ul>` is its only unique marker, so this targets JUST the move dialog and leaves other YUI dialogs (file picker, datatables) white. **First `:has()` in the generator** (Baseline-2023, fine for Moodle 5.x).
+- `.moodle-dialogue-base:has(.dragdrop-keyboard-drag) .moodle-dialogue-wrap` → `cardBg` + `cardBorder`.
+- `… .moodle-dialogue-hd` → `border-bottom-color cardBorder`; hd/bd/`*`/`.closebutton` → `bodyText` (light).
+- `… .dragdrop-keyboard-drag a, :hover` → `linkColour` (lime/orange, readable on cardBg).
+- `… .dragdrop-keyboard-drag a:focus, :focus-visible, :active` → `d.bodyText` (#1d2125) — Moodle's accessibility focus style paints the clicked item a LIGHT highlight, so flip the focused link text fixed-dark.
+
+### Specificity
+The `:has()` qualifier adds a class over the global rules — text `(0,3,0)` beats `.moodle-dialogue-bd *` `(0,2,0)`!important; link `(0,3,1)` beats `.moodle-dialogue-bd a` `(0,2,1)`; focus `(0,4,1)` beats both.
+
+### Verification
+- `npm run build` + `npm run lint` clean. Generator output: **Dark Lime** + **Dark Ember** emit the block (wrap `#2D2D2E`/`#3A3A3B` + `#555556`, text `#F0EEEE`, links `#BAF73C`/`#F27927`, focus `#1d2125`); all **8 light presets + Moodle Default** emit **0**. **User-verified on Moodle Cloud** (dialog dark; click/focus text dark + readable).
+
+### Presets / Controls
+- **No new token.** Reuses `cardBg`/`cardBorder`/`bodyText`/`linkColour` + `d.bodyText` → no preset edits, no control / quick-palette change.
+
+### Files Modified
+- `lib/scss-generator.ts` (the dialog block), `docs/moodle-cloud-constraints.md` (1 selector row), `docs/PROJECT-TRACKER.md` (this section), `CLAUDE.md` (status bullet). Memory: `project_dark_theme_move_dialog.md`.
+
+**Branch:** `worktree-fix+dark-theme-enrolment-icons` (off main `f52e845`, after PR #21).
+
+---
+
+## Session: 2026-06-25 (continued) — Dark Theme: Focused content links → dark text (#143)
+
+### Issue
+On dark themes, clicking/focusing content links (course-name `.aalink`, "Teacher:"/category class-less `<a>`) showed lime/orange text on a pale highlight box → unreadable. User wanted dark text on click, applied broadly (generalises the #142 move-dialog focus fix).
+
+### Root cause (the key finding)
+Moodle Boost `core.scss` has ONE focus-highlight rule ("**Rule A**") that paints a LIGHT box behind a focused link AND already sets dark text (Moodle's intent): `.aalink, a:not([class]), .arrow_link, .activityinstance > a, #page-footer a:not([class]) { &:focus, &.focus { color: $gray-900; background-color: lighten($primary, 50%) } }` (no `!important`, `:focus`/`.focus`, stable 4.4–5.x). On dark themes the generator's GLOBAL `a:hover, a:focus { color: ${tokens.linkHover} !important }` (~L451, (0,1,1)) OVERRODE Moodle's dark `$gray-900` (our `!important` won) while Moodle's un-important LIGHT bg still applied → lime-on-pale.
+
+### Rule A vs Rule B (why the fix is safe)
+The light box comes ONLY from Rule A (link selectors). Buttons / `[role="button"]` / `.nav-link` / `.btn-link` / `.list-group-item-action` / checkboxes are in Moodle's separate "Rule B" → translucent ring only, NO light fill, no colour change. So the navbar primary-nav links (`.nav-link`, Rule B) never get the light box, and the existing navbar `:focus-visible` override (dark bg + lime text) is independent and safe.
+
+### Fix (`lib/scss-generator.ts`, inside `if (darkMode)`, after #142)
+RESTORE the dark text Moodle intended, on EXACTLY Rule A's selectors:
+```
+.aalink:focus, .aalink.focus, .aalink:active,
+a:not([class]):focus, a:not([class]).focus, a:not([class]):active,
+.arrow_link:focus, .arrow_link.focus,
+.activityinstance > a:focus, .activityinstance > a.focus,
+#page-footer a:not([class]):focus { color: ${d.bodyText} !important; }   /* #1d2125 */
+```
+
+### Lesson
+Match Moodle's OWN focus rule, don't broad-scope. The earlier instinct was `#region-main` + `:not()` exclusions to dodge dark-on-dark. But the light box is EXACTLY Rule A's selectors (always paired with a light box), so matching Rule A is inherently safe everywhere with no region scoping and no `:not()` chains. The "Teacher:"/category links are **class-less `<a>`** (caught by `a:not([class])`), NOT `.aalink`.
+
+### Verification
+- `npm run build` + `npm run lint` clean. Generator output: **Dark Lime** + **Dark Ember** emit `color: #1d2125`; all **8 light presets + Moodle Default** emit **0**. **User-verified on Moodle Cloud** (course-name/teacher/category links dark on click; navbar/drawer/dropdown links keep lime focus).
+
+### Presets / Controls
+- **No new token.** Reuses `d.bodyText` → no preset edits, no control / quick-palette change.
+
+### Files Modified
+- `lib/scss-generator.ts` (the focus rule), `docs/moodle-cloud-constraints.md` (1 selector row), `docs/PROJECT-TRACKER.md` (this section), `CLAUDE.md` (status bullet). Memory: `project_dark_theme_focus_link_text.md`.
+
+**Branch:** `worktree-fix+dark-theme-enrolment-icons` (off main `f52e845`, after PR #21).
+
+---
+
+## Session: 2026-06-26 — Dark Theme: User report teacher route (#144)
+
+### Issue
+When a TEACHER views a specific student's grade (Participants → student → Grades), the `.user-grade` table rendered washed-out/light on dark themes — the #136 dark-surface fix wasn't applying. User wanted it to match the (dark) grader report.
+
+### Root cause
+The `.user-grade` table renders in TWO routes that NEVER share a body class:
+- `grade/report/user/index.php` → body `.path-grade-report-user` (student's own report + teacher "User report" via the Grades dropdown) — #136 anchored here.
+- `course/user.php?mode=grade` → body `.path-course-user`, wrapping the same table in a literal `<div class="grade-report-user">` (teacher → Participants → student → Grades). #136's body-class anchor missed it.
+Moodle's PLUGIN CSS `grade/report/user/styles.css` (hardcoded light hex, un-important, identical 4.4–5.x — NOT `grade.scss`) dual-anchors every rule `.path-grade-report-user …, .grade-report-user …`.
+
+### Fix (`lib/scss-generator.ts`, the #136 block refactored)
+Mirror Moodle's dual-anchor: wrapped the entire #136 rule set in `['.path-grade-report-user', '.grade-report-user'].forEach((p) => …)` so the identical dark treatment (cardBg cells, bodyText text, linkColour links, `--bs-border-color → cardBorder`, `.user-report-container` repaint, `img.itemicon` filter, mutedText) emits under BOTH prefixes. The `.path-grade-report-user` output is byte-identical to verified #136 (23 selector occurrences each, symmetric).
+
+### Verification
+- `npm run build` + `npm run lint` clean. Generator output: Dark Lime + Dark Ember emit both prefixes (23 `.path-grade-report-user` + 23 `.grade-report-user`); all 8 light presets + Moodle Default emit **0**. **User-verified on Moodle Cloud** (teacher Participants route now dark; student's-own report unchanged).
+
+### Presets / Controls
+- **No new token.** Reuses `cardBg`/`cardBorder`/`bodyText`/`mutedText`/`linkColour` → no preset edits, no control / quick-palette change.
+
+### Files Modified
+- `lib/scss-generator.ts` (the #136 block → 2-prefix loop), `docs/moodle-cloud-constraints.md` (extended the #136 row), `docs/PROJECT-TRACKER.md` (this section), `CLAUDE.md` (status bullet). Memory: `project_dark_theme_grade_report_user.md` (updated).
+
+**Branch:** `worktree-fix+dark-theme-enrolment-icons` (off main `f52e845`, after PR #21).
+
+---
+
+## Session: 2026-06-26 — Dark Theme: Grader report light cells (#145)
+
+### Issue
+On dark themes the Grader report (course → Grades → Grader report) was mostly dark, but the bottom **"Overall average" row** values + header/category cells rendered LIGHT/washed. User wanted it to match the dark matrix.
+
+### Root cause
+Moodle's `grade.scss` paints grader cells LIGHT (no dark variant, **no `!important`**, 4.4–5.x): `.path-grade-report-grader .gradeparent tr .cell, .floater .cell { background-color: #fff }` (EVERY cell) + `.heading .cell, .cell.category, .avg .cell { background-color: #f8f9fa }`. The generator had no grader-report rule; its general `th { background: rgba(0,0,0,.15) }` tinted the header/category `th.cell` dark, but the `td.cell` value cells kept Moodle's light fill — most visibly the "Overall average" row values (`td.grade_type_value.cell` in `tr.avg`): the label is a `th` (dark) but the values are `td` (light) → the asymmetric wash the user saw.
+
+### Fix (`lib/scss-generator.ts`, tail of `if (darkMode)`)
+Repaint EVERY grader cell to the dark card surface (like #136):
+```
+.path-grade-report-grader .gradeparent { --bs-border-color: ${tokens.cardBorder}; }
+.path-grade-report-grader .gradeparent tr .cell, … .floater .cell, … .heading .cell, … .cell.category, … .avg .cell {
+  background-color: ${tokens.cardBg} !important; color: ${tokens.bodyText} !important; border-color: ${tokens.cardBorder} !important; }
+… .heading .cell *, … .cell.category *, … .avg .cell * { color: ${tokens.bodyText} !important; }
+.path-grade-report-grader .gradeparent .cell a:not(.btn) { color: ${tokens.linkColour} !important; }
+.path-grade-report-grader .gradeparent tr.lastrow td, … th { border-top-color: ${tokens.cardBorder} !important; }
+```
+Key points: override BOTH `tr .cell` (#fff base) AND `.heading/.category/.avg .cell` (#f8f9fa); keep user-name links lime via `.cell a:not(.btn)` and NO blanket `tr .cell *` sweep (would kill the links — the `*` light-text is limited to the link-free heading/category/avg cells); borders via `--bs-border-color` redefine + explicit border-color. Anchored on the body CLASS `.path-grade-report-grader`.
+
+### Verification
+- `npm run build` + `npm run lint` clean. Generator output: Dark Lime + Dark Ember emit (cells → cardBg `#2D2D2E`/`#3A3A3B` + bodyText, border cardBorder); all 8 light presets + Moodle Default emit **0**. **User-verified on Moodle Cloud.**
+
+### Presets / Controls
+- **No new token.** Reuses `cardBg`/`cardBorder`/`bodyText`/`linkColour` → no preset edits, no control / quick-palette change.
+
+### Files Modified
+- `lib/scss-generator.ts` (the grader-report block), `docs/moodle-cloud-constraints.md` (1 selector row), `docs/PROJECT-TRACKER.md` (this section), `CLAUDE.md` (status bullet). Memory: `project_dark_theme_grader_report.md`.
+
+**Branch:** `worktree-fix+dark-theme-enrolment-icons` (off main `f52e845`, after PR #21).

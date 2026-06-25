@@ -1683,90 +1683,87 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push(`.btn-icon:not(.icons-collapse-expand):hover .fa { color: ${tokens.linkColour} !important; }`);
     rules.push('');
 
-    // ── Student grade "User report" table (#136) ──
-    // grade/report/user/index.php — body class `.path-grade-report-user`.
-    // Moodle's `grade.scss` styles the `.user-grade` table from Bootstrap's
-    // `--bs-table-bg` / `$table-bg (var(--bs-body-bg))` and header `$gray-100`
-    // (#f8f9fa) with NO dark variant, so on a dark theme the cells stay light while
-    // the forced-light body text washes out → invisible (the user's report). Same
-    // dark-surface + light/lime treatment as the gradebook-setup (#126) and quiz-
-    // view (#122) fixes: dark `cardBg` surface, light `bodyText` text (CFA Light
-    // Grey #F0EEEE), lime/orange `linkColour` links (CFA Lime/Orange). Anchored on
-    // the body CLASS `.path-grade-report-user` (robust) + the unique `.user-grade`
-    // table class — NOT the body id, which keeps the `-index` suffix on /index.php
-    // pages (documented gotcha). Redefine the Bootstrap table vars AND force the
-    // cell colours so both the header (`$gray-100`) and body rows are covered.
-    // The bright WHITE frame + row/section separators come from the GLOBAL
-    // `var(--bs-border-color)` (Bootstrap default light #dee2e6), NOT the table
-    // var: Moodle's `.generaltable th/td` draws `border-top: ... var(--bs-border-
-    // color)` and the table-responsive wrapper frame uses the same global var, so
-    // redefining only `--bs-table-border-color` left them light. Redefine the GLOBAL
-    // border-color variable scoped to the whole `.path-grade-report-user` page — it
-    // cascades (CSS var inheritance) to the table, every cell, and any wrapper, so
-    // all those borders become the subtle dark `cardBorder`. Purely corrective
-    // (cardBorder is the intended dark border everywhere); page-scoped, light
-    // presets unaffected.
-    rules.push('.path-grade-report-user {');
-    rules.push(`  --bs-border-color: ${tokens.cardBorder};`);
-    rules.push('}');
-    // The thick light "frame" around the table is NOT a border — it is the
-    // `.user-report-container` wrapper, which Moodle's grade.scss paints
-    // `background-color: $gray-100` (#f8f9fa, light) with 10px padding, so the light
-    // bg shows through the padding gap around the dark table. Repaint it to match the
-    // table surface (`cardBg`) so the padding blends in (no visible frame, table reads
-    // as one dark card). Same (0,2,0) specificity as Moodle's rule, so `!important`
-    // wins. Page-scoped via `.path-grade-report-user`; light presets emit nothing.
-    rules.push('.path-grade-report-user .user-report-container {');
-    rules.push(`  background-color: ${tokens.cardBg} !important;`);
-    rules.push('}');
-    rules.push('.path-grade-report-user .user-grade {');
-    rules.push(`  --bs-table-bg: ${tokens.cardBg};`);
-    rules.push(`  --bs-table-color: ${tokens.bodyText};`);
-    rules.push(`  --bs-table-border-color: ${tokens.cardBorder};`);
-    rules.push(`  --bs-border-color: ${tokens.cardBorder};`);
-    rules.push('}');
-    rules.push('.path-grade-report-user .user-grade,');
-    rules.push('.path-grade-report-user .user-grade thead,');
-    rules.push('.path-grade-report-user .user-grade tbody,');
-    rules.push('.path-grade-report-user .user-grade tr,');
-    rules.push('.path-grade-report-user .user-grade th,');
-    rules.push('.path-grade-report-user .user-grade td,');
-    rules.push('.path-grade-report-user .user-grade tr th {');
-    rules.push(`  border-color: ${tokens.cardBorder} !important;`);
-    rules.push('}');
-    rules.push('.path-grade-report-user .user-grade th,');
-    rules.push('.path-grade-report-user .user-grade td,');
-    rules.push('.path-grade-report-user .user-grade tr th {');
-    rules.push(`  background-color: ${tokens.cardBg} !important;`);
-    rules.push(`  color: ${tokens.bodyText} !important;`);
-    rules.push('}');
-    rules.push('.path-grade-report-user .user-grade th *,');
-    rules.push('.path-grade-report-user .user-grade td * {');
-    rules.push(`  color: ${tokens.bodyText} !important;`);
-    rules.push('}');
-    rules.push('.path-grade-report-user .user-grade a:not(.btn) {');
-    rules.push(`  color: ${tokens.linkColour} !important;`);
-    rules.push('}');
-    rules.push('.path-grade-report-user .user-grade .icon:not([class*="text-"]),');
-    rules.push('.path-grade-report-user .user-grade .fa:not([class*="text-"]) {');
-    rules.push(`  color: ${tokens.bodyText} !important;`);
-    rules.push('}');
-    // The activity item icon (Quiz, etc.) is an IMG-based PIX "monologo" image
-    // (`img.icon.itemicon`, src .../monologo?filtericon=1), NOT a FontAwesome glyph,
-    // so the `color` rule above can't touch it — it renders in its dark native colour
-    // → near-invisible on the dark surface. Recolour to light via `filter` (the
-    // image-based category): `brightness(0) invert(1)` collapses the glyph to white.
-    // Scoped to <img> inside the table so FontAwesome icons (handled by colour) and
-    // light-preset tables are untouched.
-    rules.push('.path-grade-report-user .user-grade img.icon,');
-    rules.push('.path-grade-report-user .user-grade img.itemicon {');
-    rules.push('  filter: brightness(0) invert(1) !important;');
-    rules.push('}');
-    rules.push('.path-grade-report-user .user-grade .text-muted,');
-    rules.push('.path-grade-report-user .user-grade .dimmed_text,');
-    rules.push('.path-grade-report-user .user-grade small {');
-    rules.push(`  color: ${tokens.mutedText} !important;`);
-    rules.push('}');
+    // ── Student grade "User report" table (#136, + teacher route #144) ──
+    // The `.user-grade` table renders in TWO routes that NEVER share a body class:
+    //   • grade/report/user/index.php → body `.path-grade-report-user` (the student's
+    //     OWN report + teacher "User report" via the Grades dropdown).
+    //   • course/user.php?mode=grade  → body `.path-course-user`, wrapping the SAME
+    //     table in a literal `<div class="grade-report-user">` (teacher → Participants
+    //     → student → Grades). Moodle adds that div "to share styles with the real
+    //     report page" — it is the only stable hook in this route (the body id/class
+    //     is NOT `grade-report-*`). #144 was exactly this route rendering light.
+    // Moodle's PLUGIN CSS `grade/report/user/styles.css` DUAL-anchors every rule
+    // (`.path-grade-report-user …, .grade-report-user …`) with HARDCODED light hex
+    // (#f8f9fa cells, white item/category rows, #dee2e6 borders — no SCSS vars, so
+    // identical 4.4/4.5/5.0) and NO dark variant → on a dark theme the cells stay
+    // light while the forced-light body text washes out. #136 only emitted the
+    // `.path-grade-report-user` half, so the teacher Participants route (body
+    // `.path-course-user`) stayed light. Mirror Moodle's own dual-anchor: emit the
+    // IDENTICAL dark-surface treatment under BOTH prefixes (loop below) so one rule
+    // set covers every context. Same dark-surface + light/lime approach as the
+    // gradebook-setup (#126) and quiz-view (#122) fixes: dark `cardBg` surface, light
+    // `bodyText` text (CFA Light Grey #F0EEEE), lime/orange `linkColour` links.
+    // Notes carried from #136: (a) the bright WHITE frame + row/section separators
+    // come from the GLOBAL `var(--bs-border-color)` (Bootstrap #dee2e6), NOT the table
+    // var — Moodle's `.generaltable th/td` draws `border-top: … var(--bs-border-color)`
+    // — so redefine the global var on the route prefix (it cascades to the table,
+    // cells, and wrappers). (b) The thick light "frame" is NOT a border — it is the
+    // `.user-report-container` wrapper, painted `background-color: #f8f9fa` with 10px
+    // padding, so repaint it `cardBg` to blend the padding in. (c) The activity item
+    // icon is an IMG-based PIX "monologo" (`img.icon.itemicon`), not FontAwesome, so
+    // `color` can't touch it → recolour via `filter: brightness(0) invert(1)`. Anchored
+    // on the route prefix + the unique `.user-grade` table class (NOT the body id,
+    // which keeps the `-index` suffix on /index.php — documented gotcha). All
+    // `!important` (Moodle's plugin rules are un-important, so we win regardless).
+    ['.path-grade-report-user', '.grade-report-user'].forEach((p) => {
+      rules.push(`${p} {`);
+      rules.push(`  --bs-border-color: ${tokens.cardBorder};`);
+      rules.push('}');
+      rules.push(`${p} .user-report-container {`);
+      rules.push(`  background-color: ${tokens.cardBg} !important;`);
+      rules.push('}');
+      rules.push(`${p} .user-grade {`);
+      rules.push(`  --bs-table-bg: ${tokens.cardBg};`);
+      rules.push(`  --bs-table-color: ${tokens.bodyText};`);
+      rules.push(`  --bs-table-border-color: ${tokens.cardBorder};`);
+      rules.push(`  --bs-border-color: ${tokens.cardBorder};`);
+      rules.push('}');
+      rules.push(`${p} .user-grade,`);
+      rules.push(`${p} .user-grade thead,`);
+      rules.push(`${p} .user-grade tbody,`);
+      rules.push(`${p} .user-grade tr,`);
+      rules.push(`${p} .user-grade th,`);
+      rules.push(`${p} .user-grade td,`);
+      rules.push(`${p} .user-grade tr th {`);
+      rules.push(`  border-color: ${tokens.cardBorder} !important;`);
+      rules.push('}');
+      rules.push(`${p} .user-grade th,`);
+      rules.push(`${p} .user-grade td,`);
+      rules.push(`${p} .user-grade tr th {`);
+      rules.push(`  background-color: ${tokens.cardBg} !important;`);
+      rules.push(`  color: ${tokens.bodyText} !important;`);
+      rules.push('}');
+      rules.push(`${p} .user-grade th *,`);
+      rules.push(`${p} .user-grade td * {`);
+      rules.push(`  color: ${tokens.bodyText} !important;`);
+      rules.push('}');
+      rules.push(`${p} .user-grade a:not(.btn) {`);
+      rules.push(`  color: ${tokens.linkColour} !important;`);
+      rules.push('}');
+      rules.push(`${p} .user-grade .icon:not([class*="text-"]),`);
+      rules.push(`${p} .user-grade .fa:not([class*="text-"]) {`);
+      rules.push(`  color: ${tokens.bodyText} !important;`);
+      rules.push('}');
+      rules.push(`${p} .user-grade img.icon,`);
+      rules.push(`${p} .user-grade img.itemicon {`);
+      rules.push('  filter: brightness(0) invert(1) !important;');
+      rules.push('}');
+      rules.push(`${p} .user-grade .text-muted,`);
+      rules.push(`${p} .user-grade .dimmed_text,`);
+      rules.push(`${p} .user-grade small {`);
+      rules.push(`  color: ${tokens.mutedText} !important;`);
+      rules.push('}');
+    });
     rules.push('');
 
     // ── Gradebook cell-actions three-dot icon (#137) ──
@@ -1786,6 +1783,298 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push('.cellmenubtn .icon,');
     rules.push('.cellmenubtn .fa {');
     rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push('}');
+    rules.push('');
+
+    // ── Course-listing enrolment-method icons (#138) ──
+    // `.enrolmenticons` (core `course_enrolment_icons()`, inside `.coursebox .info`)
+    // holds the per-course enrolment glyphs on the course/category listing —
+    // self enrolment `<i class="icon fa-solid fa-right-to-bracket">`, plus `fa-key`,
+    // `fa-lock`, `fa-lock-open` (guest). They are plain FontAwesome `<i class="icon
+    // fa-...">` (so `color:` is the lever, NOT `filter:`) sitting on the DARK page
+    // background of each course card. The generic dark `.icon, .fa { color:
+    // ${d.bodyText} }` rule paints them dark → dark-on-dark, unreadable (the user's
+    // complaint). Re-light to the theme's light text (`bodyText` = CFA Light Grey
+    // #F0EEEE, reads as white). No enrolment icon carries a `.text-*` semantic class
+    // (verified vs core `enrol/*/lib.php` icon maps — the meaning lives in the
+    // title/aria-label, not the colour), so a blanket re-colour is safe and no
+    // `:not([class*="text-"])` guard is needed. Container `.enrolmenticons` is stable
+    // across Moodle 4.4 / 4.5 / 5.0. Specificity (0,2,0) + `!important` beats the
+    // generic `.icon,.fa` (0,1,0) rule. Same resting-state re-light pattern as #137.
+    rules.push('.enrolmenticons .icon,');
+    rules.push('.enrolmenticons .fa {');
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push('}');
+    rules.push('');
+
+    // ── Footer "Show footer" help-button icon (#139) ──
+    // The floating circular help button at the bottom-right of every page —
+    // Boost `footer.mustache`: `<button class="btn btn-icon rounded-circle
+    // bg-secondary btn-footer-popover" data-action="footer-popover"><i class="icon
+    // fa fa-question fa-fw">` (the `?`). The icon is a plain FontAwesome glyph (so
+    // `color:` is the lever, no `.text-*` class). Two facts make the `?` invisible
+    // on dark themes: (1) the dark footer rule `#page-footer * { color: footerText
+    // #F0EEEE }` paints the glyph near-white, and (2) the button keeps Moodle's
+    // default LIGHT `.bg-secondary` (the dark presets do NOT override
+    // `secondaryColour`, so `$secondary` stays `#ced4da`) → near-white on light grey
+    // ≈ 1.2:1. Simply recolouring the glyph lime would be WORSE (lime on #ced4da ≈
+    // 1.2:1, the documented "lime on light grey fails" trap, #135). So — per the
+    // user's choice — darken JUST this one button to the dark card surface and make
+    // the `?` lime green: lime `infoIconColour` (#BAF73C on BOTH dark presets, unlike
+    // `linkColour` which is orange on Dark Ember) on `cardBg` ≈ 9–11:1. Scoped to the
+    // stable `.btn-footer-popover` hook (NOT `rounded-circle`/`icon-no-margin`, which
+    // churn between Moodle 4.x and 5.x) under the `#page-footer` ID. The bg rule
+    // (1,1,0) beats Boost's `.bg-secondary` (0,1,0)!important; the icon rule (1,2,0)
+    // beats the footer `#page-footer *` (1,0,0)!important. Both win over the #135
+    // `.btn-icon:hover` rules (ID > classes) → dark circle + lime `?` in every state.
+    rules.push('#page-footer .btn-footer-popover {');
+    rules.push(`  background-color: ${tokens.cardBg} !important;`);
+    rules.push('}');
+    rules.push('#page-footer .btn-footer-popover .icon,');
+    rules.push('#page-footer .btn-footer-popover .fa {');
+    rules.push(`  color: ${tokens.infoIconColour} !important;`);
+    rules.push('}');
+    rules.push('');
+
+    // ── Messaging drawer: full dark conversation surface (#140) ──
+    // Moodle's message templates HARDCODE the conversation surfaces LIGHT (via
+    // `bg-white`/`bg-light` classes in the markup, NOT SCSS): the conversation
+    // header bar (avatar + name + "Online"), the footer bar holding the composer,
+    // the message `<textarea data-region="send-message-txt" class="form-control
+    // bg-light">`, and the emoji picker's `.input-group-text.bg-white` search chip.
+    // The generator's philosophy is "`.bg-white` = always-light surface, just darken
+    // its TEXT (#1d2125)" — correct for real white panels, but wrong inside the dark
+    // message drawer: it leaves the bars light (clashing with the dark drawer) and on
+    // the emoji picker (whose `.card` bg IS dark) it paints the `.category-name`
+    // headings ("Recent", "Smileys & emotion") dark-on-dark → invisible (the user's
+    // DevTools showed `.bg-white * { color:#1d2125 }` hitting them). Per the user,
+    // make the WHOLE conversation window one cohesive dark panel: repaint the
+    // hardcoded-light sub-surfaces to the dark drawer/card colours, force plain TEXT
+    // light (`bodyText`) and interactive ICONS + links to the theme ACCENT
+    // (`linkColour` — lime on Dark Lime, orange on Dark Ember; matches the contacts
+    // list, which already lights its icons via `.view-overview-body .icon`).
+    // Scoped to `.message-app` (+ standalone `.emoji-picker`, which JS can portal out
+    // of the drawer); the message LIST/bubbles are NOT `.bg-white` so they keep
+    // Moodle's auto-contrast, and the native colour-emoji glyphs (`String.fromCodePoint`)
+    // are never `.icon`/`.fa` so they stay untouched. Appended last so it beats the
+    // global `.bg-white *` (L~612) by specificity AND source order. Dark presets only.
+    // (a) the hardcoded-light bars + chips → dark drawer surface; replace the bar's
+    //     light/brand border (the stray bright line) with the dark drawer border.
+    rules.push('.message-app .bg-white,');
+    rules.push('.message-app .bg-light {');
+    rules.push(`  background-color: ${tokens.drawerBg} !important;`);
+    rules.push(`  border-color: ${tokens.drawerBorder} !important;`);
+    rules.push('}');
+    // (b) plain text on those bars (name, "Online", labels) → light. (0,2,0) beats the
+    //     global `.bg-white *` (0,1,0).
+    rules.push('.message-app .bg-white *,');
+    rules.push('.message-app .bg-light * {');
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push('}');
+    // (c) interactive icons (send / emoji toggle / actions) + links → theme accent.
+    //     (0,3,0)/(0,2,1) beats rule (b) above so icons read as "clickable" lime.
+    rules.push('.message-app .bg-white .icon,');
+    rules.push('.message-app .bg-white .fa,');
+    rules.push('.message-app .bg-light .icon,');
+    rules.push('.message-app .bg-light .fa,');
+    rules.push('.message-app .bg-white a {');
+    rules.push(`  color: ${tokens.linkColour} !important;`);
+    rules.push('}');
+    // (d) the message composer textarea → a raised dark field (cardBg) with light text
+    //     and a muted placeholder. (0,2,1) beats rule (a)'s drawerBg for this input.
+    rules.push('.message-app textarea[data-region="send-message-txt"],');
+    rules.push('.message-app .footer-container textarea.form-control {');
+    rules.push(`  background-color: ${tokens.cardBg} !important;`);
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push(`  border-color: ${tokens.cardBorder} !important;`);
+    rules.push('}');
+    rules.push('.message-app textarea[data-region="send-message-txt"]::placeholder {');
+    rules.push(`  color: ${tokens.mutedText} !important;`);
+    rules.push('}');
+    // (e) emoji picker (a Bootstrap `.card`; may portal out of `.message-app`) → dark
+    //     card surface, light category headings/labels, accent FA icons. The native
+    //     emoji glyphs are plain Unicode (not `.icon`/`.fa`) → left in full colour.
+    rules.push('.emoji-picker,');
+    rules.push('.emoji-picker .card,');
+    rules.push('.emoji-picker .card-header,');
+    rules.push('.emoji-picker .card-body,');
+    rules.push('.emoji-picker .card-footer,');
+    rules.push('.emoji-picker .input-group-text {');
+    rules.push(`  background-color: ${tokens.cardBg} !important;`);
+    rules.push(`  border-color: ${tokens.cardBorder} !important;`);
+    rules.push('}');
+    rules.push('.emoji-picker .category-name,');
+    rules.push('.emoji-picker .input-group-text,');
+    rules.push('.emoji-picker .emoji-short-name,');
+    rules.push('.emoji-picker .text-muted {');
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push('}');
+    rules.push('.emoji-picker .icon,');
+    rules.push('.emoji-picker .fa {');
+    rules.push(`  color: ${tokens.linkColour} !important;`);
+    rules.push('}');
+    rules.push('');
+
+    // ── Calendar month-view day-cell hover (#141) ──
+    // Moodle's `calendar.scss` hovers a clickable month day cell to a LIGHT grey:
+    // `.maincalendar .calendarmonth .clickable:hover { background-color: #ededed }`
+    // (`$calendar-month-clickable-bg`, no `!important`, stable 4.4–5.x). The day
+    // cells are otherwise transparent and show the dark `pageBg`, so on hover they
+    // flip to light grey and the light date number (`.day-number`) + lime/orange
+    // event links (`.eventname`) become invisible (the user's complaint). Override
+    // the hover with a DARK surface so the existing light text/links read again.
+    // NOTE: a first pass used `cardBg`, but on dark themes `cardBg` (#2D2D2E) is too
+    // close to the resting `pageBg` (#404041) → the hover looked like "no effect".
+    // So use `drawerBg` (#1D2125 — the theme's DARKEST surface, clearly darker than
+    // BOTH `pageBg` and `cardBg` on either dark preset, so the cell visibly drops on
+    // hover regardless of the resting shade) PLUS a 2px inset `linkColour` ring (lime
+    // on Dark Lime / orange on Dark Ember) as an unmistakable, on-brand hover cue.
+    // `box-shadow: inset` adds no layout shift (the cell doesn't reflow). Contrast on
+    // `drawerBg`: date ≈14:1, lime link ≈13:1, orange link ≈6:1 — all comfortably AA
+    // on BOTH dark presets (the lighter `cardBorder` was rejected: orange link 2.67:1
+    // on Ember). Anchored `#region-main .maincalendar .calendarmonth .clickable:hover`
+    // = (1,3,0) → beats Moodle's (0,3,0) non-important rule; `#region-main` scopes it
+    // to the main month grid, not the mini-calendar block (own `inherit` + circle-tint
+    // hover). The today-circle (`$primary`) + `.dayblank` padding cells are untouched.
+    // Dark presets only.
+    rules.push('#region-main .maincalendar .calendarmonth .clickable:hover {');
+    rules.push(`  background-color: ${tokens.drawerBg} !important;`);
+    rules.push(`  box-shadow: inset 0 0 0 2px ${tokens.linkColour} !important;`);
+    rules.push('}');
+    rules.push('');
+
+    // ── Move-block YUI dialog — dark surface (#142) ──
+    // Clicking a block's move/drag icon (Dashboard edit mode) opens a YUI
+    // `M.core.dialogue` titled "Move <block>". It is a GENERIC dialogue (same base
+    // class as the file picker / activity chooser) with NO distinguishing class or
+    // id, portalled to `<body>`. Moodle paints it white from ONE place —
+    // `.moodle-dialogue-base .moodle-dialogue-wrap { background-color: $white;
+    // border: 1px solid #ccc }` (core.scss); the `-hd`/`-bd`/`-ft` are transparent
+    // over the wrap (the header "grey bar" is just its `border-bottom: #dee2e6`).
+    // The generator deliberately keeps ALL `.moodle-dialogue-bd` white-with-dark-text
+    // (L~608-623) + lime links — so on this dialog the lime `.aalink` drop-targets
+    // sit on white ≈ unreadable (the user's complaint). The dialog's ONLY unique
+    // marker is its body content `<ul class="dragdrop-keyboard-drag">` (unique to the
+    // block-move dialog — the file picker/datatables don't have it), so `:has()`
+    // scopes JUST this dialog dark and leaves the other YUI dialogs white as intended.
+    // (:has() is Baseline-2023, fine for Moodle 5.x's browsers; first use in the gen.)
+    // Repaint the wrap to the dark popup surface (`cardBg`, like dropdowns/cards),
+    // override the hd border, flip header/body/close-× text light (`bodyText`), and
+    // keep the drop-target links at the accent `linkColour` (now readable on dark:
+    // lime ≈10:1, orange ≈4.6:1). Specificity: the `.moodle-dialogue-base:has(…)`
+    // qualifier adds a class over the global rules — text `(0,3,0)` beats the global
+    // `.moodle-dialogue-bd *` `(0,2,0)`!important; links `(0,3,1)` beat `.moodle-
+    // dialogue-bd a` `(0,2,1)`!important. Dark presets only.
+    rules.push('.moodle-dialogue-base:has(.dragdrop-keyboard-drag) .moodle-dialogue-wrap {');
+    rules.push(`  background-color: ${tokens.cardBg} !important;`);
+    rules.push(`  border-color: ${tokens.cardBorder} !important;`);
+    rules.push('}');
+    rules.push('.moodle-dialogue-base:has(.dragdrop-keyboard-drag) .moodle-dialogue-hd {');
+    rules.push(`  border-bottom-color: ${tokens.cardBorder} !important;`);
+    rules.push('}');
+    rules.push('.moodle-dialogue-base:has(.dragdrop-keyboard-drag) .moodle-dialogue-hd,');
+    rules.push('.moodle-dialogue-base:has(.dragdrop-keyboard-drag) .moodle-dialogue-hd *,');
+    rules.push('.moodle-dialogue-base:has(.dragdrop-keyboard-drag) .moodle-dialogue-bd,');
+    rules.push('.moodle-dialogue-base:has(.dragdrop-keyboard-drag) .moodle-dialogue-bd *,');
+    rules.push('.moodle-dialogue-base:has(.dragdrop-keyboard-drag) .closebutton {');
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push('}');
+    rules.push('.moodle-dialogue-base:has(.dragdrop-keyboard-drag) .dragdrop-keyboard-drag a,');
+    rules.push('.moodle-dialogue-base:has(.dragdrop-keyboard-drag) .dragdrop-keyboard-drag a:hover {');
+    rules.push(`  color: ${tokens.linkColour} !important;`);
+    rules.push('}');
+    // On CLICK/FOCUS, Moodle's accessibility focus style (`.aalink:focus`,
+    // `[role="button"]:focus`) paints the focused drop-target item a LIGHT highlight
+    // → the lime link text washes out on it (the user's "invisible when clicked").
+    // The focus highlight is always light, so flip the focused/active link text to
+    // the fixed-dark default (`d.bodyText` #1d2125, ≈ black) — a fixed-dark-on-light
+    // case, like the other always-light surfaces. (0,4,1) [extra `:focus` class] beats
+    // the dialog's own lime link rule (0,3,1) and Moodle's `.aalink:focus` (≈0,2,0).
+    rules.push('.moodle-dialogue-base:has(.dragdrop-keyboard-drag) .dragdrop-keyboard-drag a:focus,');
+    rules.push('.moodle-dialogue-base:has(.dragdrop-keyboard-drag) .dragdrop-keyboard-drag a:focus-visible,');
+    rules.push('.moodle-dialogue-base:has(.dragdrop-keyboard-drag) .dragdrop-keyboard-drag a:active {');
+    rules.push(`  color: ${d.bodyText} !important;`);
+    rules.push('}');
+    rules.push('');
+
+    // ── Focused content links — dark text on Moodle's light focus highlight (#143) ──
+    // Generalises the #142 move-dialog focus fix. Moodle Boost `core.scss` has ONE
+    // rule ("Rule A") that paints a LIGHT box behind a focused link AND sets dark
+    // text on it — its own intent:
+    //   .aalink, a:not([class]), .arrow_link, .activityinstance > a,
+    //   #page-footer a:not([class]) { &:focus, &.focus {
+    //     color: $gray-900; background-color: lighten($primary, 50%); } }
+    // (no `!important`, stable 4.4–5.x). On dark themes our global
+    // `a:hover, a:focus { color: ${tokens.linkHover} !important }` OVERRODE Moodle's
+    // dark `$gray-900` (our `!important` wins) while Moodle's un-important LIGHT
+    // `background-color` still applied → lime/orange link text on a pale box →
+    // unreadable (the user's "invisible when clicked": course-name `.aalink`,
+    // "Teacher:"/category class-less `<a>`, etc.). Fix = RESTORE the dark text Moodle
+    // intended, on EXACTLY Rule A's selectors (the only ones that get the light box),
+    // via the fixed-dark token `d.bodyText` (#1d2125 ≈ $gray-900). This is inherently
+    // safe everywhere: Rule A always pairs these selectors with a light box, so dark
+    // text is always correct — and it can't hit buttons/`[role=button]`/`.nav-link`
+    // (Moodle "Rule B" gives THOSE only a translucent focus ring, NO light fill), so
+    // the navbar/drawer/dropdown/button dark-bg focus states are untouched. No region
+    // scoping or `:not()` chains needed. Cover `:focus`, `.focus` (JS-set), `:active`.
+    // Specificity: `.aalink:focus` (0,2,0) / `a:not([class]):focus` (0,2,1) beat the
+    // global `a:hover, a:focus` (0,1,1)!important and Moodle's un-important Rule A.
+    rules.push('.aalink:focus, .aalink.focus, .aalink:active,');
+    rules.push('a:not([class]):focus, a:not([class]).focus, a:not([class]):active,');
+    rules.push('.arrow_link:focus, .arrow_link.focus,');
+    rules.push('.activityinstance > a:focus, .activityinstance > a.focus,');
+    rules.push('#page-footer a:not([class]):focus {');
+    rules.push(`  color: ${d.bodyText} !important;`);
+    rules.push('}');
+    rules.push('');
+
+    // ── Grader report — dark surface for Moodle's light-painted cells (#145) ──
+    // Course → Grades → Grader report (`grade/report/grader`, body class
+    // `.path-grade-report-grader`, wrapper `.gradeparent`, table `#user-grades`).
+    // Moodle's `grade.scss` paints grader cells LIGHT (no dark variant, NO `!important`,
+    // identical 4.4–5.x): `tr .cell, .floater .cell { background-color: $pagination-bg
+    // (#fff) }` (EVERY cell) and `.heading .cell, .cell.category, .avg .cell {
+    // background-color: $gray-100 (#f8f9fa) }` (header / category / Overall-average).
+    // On dark themes the generator's general `th { background: rgba(0,0,0,.15) }` tints
+    // the header/category `th.cell`, but the `td.cell` VALUE cells keep Moodle's light
+    // fill — most visibly the "Overall average" row's values (`td.grade_type_value.cell`
+    // in `tr.avg`, #f8f9fa) and, in non-edit view, every student value cell (#fff) →
+    // washed-out (the user's report; they want it to match the dark matrix). Repaint
+    // every grader cell to the dark card surface (`cardBg` + light `bodyText`,
+    // `cardBorder` borders) so the whole table reads as one dark card, like the #136
+    // user report. The user-name links keep their lime `linkColour` — re-assert it on
+    // `.cell a:not(.btn)` (and we do NOT add a blanket `tr .cell *` colour sweep that
+    // would override them; the `*` light-text sweep is limited to the link-free
+    // heading/category/avg cells). Borders: Moodle uses `$table-border-color` =
+    // `var(--bs-border-color)` (#dee2e6), so redefine that var on the wrapper + set
+    // explicit `border-color`/`border-top-color` (the `tr.lastrow` top border too).
+    // Anchored on the body CLASS `.path-grade-report-grader` (the `path-` loop drops
+    // only the last URL segment, so the class is present — NOT a `#page-…-index` id) +
+    // `.gradeparent`. `!important` beats Moodle's un-important rules outright. Dark
+    // presets only.
+    rules.push('.path-grade-report-grader .gradeparent {');
+    rules.push(`  --bs-border-color: ${tokens.cardBorder};`);
+    rules.push('}');
+    rules.push('.path-grade-report-grader .gradeparent tr .cell,');
+    rules.push('.path-grade-report-grader .gradeparent .floater .cell,');
+    rules.push('.path-grade-report-grader .gradeparent .heading .cell,');
+    rules.push('.path-grade-report-grader .gradeparent .cell.category,');
+    rules.push('.path-grade-report-grader .gradeparent .avg .cell {');
+    rules.push(`  background-color: ${tokens.cardBg} !important;`);
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push(`  border-color: ${tokens.cardBorder} !important;`);
+    rules.push('}');
+    rules.push('.path-grade-report-grader .gradeparent .heading .cell *,');
+    rules.push('.path-grade-report-grader .gradeparent .cell.category *,');
+    rules.push('.path-grade-report-grader .gradeparent .avg .cell * {');
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push('}');
+    rules.push('.path-grade-report-grader .gradeparent .cell a:not(.btn) {');
+    rules.push(`  color: ${tokens.linkColour} !important;`);
+    rules.push('}');
+    rules.push('.path-grade-report-grader .gradeparent tr.lastrow td,');
+    rules.push('.path-grade-report-grader .gradeparent tr.lastrow th {');
+    rules.push(`  border-top-color: ${tokens.cardBorder} !important;`);
     rules.push('}');
     rules.push('');
   }
