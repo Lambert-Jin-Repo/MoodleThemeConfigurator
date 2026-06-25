@@ -1330,3 +1330,30 @@ Bootstrap tooltips are generic `.tooltip` elements portalled to `<body>` with a 
 - `lib/scss-generator.ts` (the rule), `docs/moodle-cloud-constraints.md` (selector row), `docs/PROJECT-TRACKER.md` (this section), `CLAUDE.md` (status bullet). Memory: `project_dark_theme_tooltip.md`.
 
 **Branch:** `worktree-fix+dark-theme-quiz-radio-contrast` (off main).
+
+---
+
+## Session: 2026-06-25 (continued) — Dark Theme: Icon-Button Hover Contrast
+
+### Issue Found During User Review (real Moodle Cloud, dark presets, with screenshots)
+Icon buttons (`.btn-icon`) — the course-index drawer "Course index options" three-dot control (and the other similar icon buttons) — went **invisible on hover** on dark themes. User wanted the glyph **lime green on hover**, resting + clicked states unchanged, and asked whether one fix covers the similar icons.
+
+### Root cause (light-on-light)
+Boost's `.btn-icon:hover`/`:focus` hardcodes `background-color: $gray-200` (`#e9ecef`, a LIGHT grey) with no dark variant (Moodle 4.4/4.5 direct; 5.x via `--bs-btn-hover-bg: var(--bs-secondary-bg)`). The icon never changes colour on hover; it keeps the dark-theme resting `drawerText`/`bodyText` `#F0EEEE` (light), so the light glyph on the light-grey hover box vanishes.
+
+### Critical caveat (verified, not assumed)
+Recolouring the glyph to lime ALONE does NOT fix it: CFA Lime `#BAF73C` on `#e9ecef` ≈ 1.3:1 (worse). The pale hover box must be neutralised too. (Same lesson as the radio #133 filter.)
+
+### Fix (`lib/scss-generator.ts`, inside `if (darkMode)`, appended after the #134 tooltip rule)
+- **#135** On HOVER ONLY: `.btn-icon:not(.icons-collapse-expand):hover { background-color: transparent !important }` removes Boost's pale box (the glyph sits back on the dark surface); `.btn-icon:not(.icons-collapse-expand):hover .icon, … .fa { color: ${tokens.linkColour} !important }` turns the glyph lime `#BAF73C` / orange `#F27927` → lime-on-dark ≈ 11:1. `:hover` only → resting + active/open (`.show`) untouched. Broad `.btn-icon` (user chose) fixes all similar icon buttons (course-index controls, drawer toggles, section action menus) at once. `:not(.icons-collapse-expand)` spares the collapse/expand toggles' existing handling. Extends the existing "Icon Hover" hover→`linkColour` precedent. NOTE: the generic activity action-menu trigger uses `.dropdown-toggle.icon-no-margin` (NOT `.btn-icon`) → not covered.
+
+### Verification
+- `npx tsc --noEmit` clean; `npm run build` passes. Generator output checked: Dark Lime emits `color: #BAF73C` + `background-color: transparent`, Dark Ember `#F27927`; all 8 light presets emit **0** (gated by `isDarkBg(pageBg)`). Resting drawer-icon rule confirmed intact. **User-verified on the real site.**
+
+### Presets / Controls
+- **No new token.** Uses existing `linkColour` (every dark preset defines it) → no preset edits. `linkColour` already has a control/quick-palette entry → no control change.
+
+### Files Modified
+- `lib/scss-generator.ts` (the rule), `docs/moodle-cloud-constraints.md` (selector row), `docs/PROJECT-TRACKER.md` (this section), `CLAUDE.md` (status bullet). Memory: `project_dark_theme_icon_button_hover.md`.
+
+**Branch:** `worktree-fix+dark-theme-quiz-radio-contrast` (off main).

@@ -1662,6 +1662,26 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push(`  color: ${tokens.linkColour} !important;`);
     rules.push('}');
     rules.push('');
+    // ── Icon buttons (.btn-icon) — accent glyph on hover (#135) ──
+    // Moodle's `.btn-icon:hover` hardcodes a LIGHT-grey background (`$gray-200`
+    // #e9ecef, no dark variant). On a dark theme the glyph keeps its light resting
+    // colour (`drawerText`/`bodyText` #F0EEEE), so on hover a light icon sits on a
+    // light box → invisible (e.g. the course-index "Course index options" three-dot
+    // button, the drawer open/close toggles, section action menus — all share
+    // `.btn-icon`). Recolouring the glyph ALONE does not fix it: lime on #e9ecef is
+    // ~1.3:1. So on HOVER ONLY we (1) neutralise Moodle's pale box (transparent → the
+    // glyph sits back on the dark surface) and (2) turn the glyph the accent
+    // `linkColour` (lime / orange) → lime-on-dark ≈ 11:1. `:hover` only, so the resting
+    // and active/open (`.show`) states are untouched (the user's constraint).
+    // `:not(.icons-collapse-expand)` leaves the section collapse/expand toggles to
+    // their existing handling. Broad `.btn-icon` so every icon button with this bug is
+    // fixed at once. `!important` beats Moodle's `!important` resting colour + hover bg.
+    rules.push('.btn-icon:not(.icons-collapse-expand):hover {');
+    rules.push('  background-color: transparent !important;');
+    rules.push('}');
+    rules.push('.btn-icon:not(.icons-collapse-expand):hover .icon,');
+    rules.push(`.btn-icon:not(.icons-collapse-expand):hover .fa { color: ${tokens.linkColour} !important; }`);
+    rules.push('');
   }
 
   const block2 = rules.join('\n');
