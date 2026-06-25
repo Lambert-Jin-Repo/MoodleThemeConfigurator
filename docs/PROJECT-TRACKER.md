@@ -1488,3 +1488,35 @@ Scoped to `.message-app` (+ standalone `.emoji-picker`, which JS portals out of 
 - `lib/scss-generator.ts` (the messaging block), `docs/moodle-cloud-constraints.md` (1 selector row), `docs/PROJECT-TRACKER.md` (this section), `CLAUDE.md` (status bullet). Memory: `project_dark_theme_messaging_drawer.md`.
 
 **Branch:** `worktree-fix+dark-theme-enrolment-icons` (off main `f52e845`, after PR #21).
+
+---
+
+## Session: 2026-06-25 (continued) — Dark Theme: Calendar month-view day hover (#141)
+
+### Issue
+On dark themes, hovering a calendar month-view day cell turned it WHITE → the light date number + lime/orange event links vanished. Reported by user with screenshot.
+
+### Root cause
+Moodle's `calendar.scss`: `.maincalendar .calendarmonth .clickable:hover { background-color: #ededed }` (`$calendar-month-clickable-bg`, no `!important`, (0,3,0), stable 4.4–5.x). The day cells are transparent → show the dark `pageBg`, so on hover they flip light-grey. No prior calendar hover rule existed.
+
+### Fix (`lib/scss-generator.ts`, inside `if (darkMode)`, after the #140 messaging block)
+```
+#region-main .maincalendar .calendarmonth .clickable:hover {
+  background-color: ${tokens.drawerBg} !important;            /* #1D2125 */
+  box-shadow: inset 0 0 0 2px ${tokens.linkColour} !important;   /* lime / orange ring */
+}
+```
+
+### Iteration lesson
+First attempt used `cardBg` (#2D2D2E) → user reported **"no hover effect"** because `cardBg` is too close to the resting `pageBg` (#404041) (dark-on-dark swap of two similar greys is imperceptible). Switched to **`drawerBg` (#1D2125 — darkest surface, clearly darker than BOTH `pageBg` and `cardBg`)** + a **2px inset `linkColour` ring** (unmistakable, on-brand, no layout shift). **Lesson:** a dark-on-dark hover/active shade must be far enough from the resting colour to be perceptible — or use an accent ring instead of relying on a subtle bg shift.
+
+### Verification
+- `npm run build` + `npm run lint` clean. Generator output: **Dark Lime** `#1D2125` + `#BAF73C` ring; **Dark Ember** `#1D2125` + `#F27927` ring; all **8 light presets + Moodle Default** emit **0**. Contrast on drawerBg: date ≈14:1, lime ≈13:1, orange ≈6:1 (all AA; the lighter `cardBorder` was rejected — orange 2.67:1 on Ember). **User-verified on Moodle Cloud.**
+
+### Presets / Controls
+- **No new token.** Reuses `drawerBg` + `linkColour` → no preset edits, no control / quick-palette change.
+
+### Files Modified
+- `lib/scss-generator.ts` (the hover rule), `docs/moodle-cloud-constraints.md` (1 selector row), `docs/PROJECT-TRACKER.md` (this section), `CLAUDE.md` (status bullet). Memory: `project_dark_theme_calendar_hover.md`.
+
+**Branch:** `worktree-fix+dark-theme-enrolment-icons` (off main `f52e845`, after PR #21).

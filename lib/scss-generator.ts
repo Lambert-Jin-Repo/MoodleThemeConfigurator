@@ -1917,6 +1917,34 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push(`  color: ${tokens.linkColour} !important;`);
     rules.push('}');
     rules.push('');
+
+    // ── Calendar month-view day-cell hover (#141) ──
+    // Moodle's `calendar.scss` hovers a clickable month day cell to a LIGHT grey:
+    // `.maincalendar .calendarmonth .clickable:hover { background-color: #ededed }`
+    // (`$calendar-month-clickable-bg`, no `!important`, stable 4.4–5.x). The day
+    // cells are otherwise transparent and show the dark `pageBg`, so on hover they
+    // flip to light grey and the light date number (`.day-number`) + lime/orange
+    // event links (`.eventname`) become invisible (the user's complaint). Override
+    // the hover with a DARK surface so the existing light text/links read again.
+    // NOTE: a first pass used `cardBg`, but on dark themes `cardBg` (#2D2D2E) is too
+    // close to the resting `pageBg` (#404041) → the hover looked like "no effect".
+    // So use `drawerBg` (#1D2125 — the theme's DARKEST surface, clearly darker than
+    // BOTH `pageBg` and `cardBg` on either dark preset, so the cell visibly drops on
+    // hover regardless of the resting shade) PLUS a 2px inset `linkColour` ring (lime
+    // on Dark Lime / orange on Dark Ember) as an unmistakable, on-brand hover cue.
+    // `box-shadow: inset` adds no layout shift (the cell doesn't reflow). Contrast on
+    // `drawerBg`: date ≈14:1, lime link ≈13:1, orange link ≈6:1 — all comfortably AA
+    // on BOTH dark presets (the lighter `cardBorder` was rejected: orange link 2.67:1
+    // on Ember). Anchored `#region-main .maincalendar .calendarmonth .clickable:hover`
+    // = (1,3,0) → beats Moodle's (0,3,0) non-important rule; `#region-main` scopes it
+    // to the main month grid, not the mini-calendar block (own `inherit` + circle-tint
+    // hover). The today-circle (`$primary`) + `.dayblank` padding cells are untouched.
+    // Dark presets only.
+    rules.push('#region-main .maincalendar .calendarmonth .clickable:hover {');
+    rules.push(`  background-color: ${tokens.drawerBg} !important;`);
+    rules.push(`  box-shadow: inset 0 0 0 2px ${tokens.linkColour} !important;`);
+    rules.push('}');
+    rules.push('');
   }
 
   const block2 = rules.join('\n');
