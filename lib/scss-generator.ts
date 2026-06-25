@@ -1383,6 +1383,104 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push('  font-weight: 700 !important;');
     rules.push('}');
     rules.push('');
+    // ── Gradebook setup page — dark table surface ──
+    // Gradebook setup (grade/edit/tree/index.php) renders the categories/items as a
+    // Bootstrap table (table#grade_edit_tree_table.generaltable.simple.setup-grades).
+    // Moodle's grade.scss UNCONDITIONALLY hardcodes this table LIGHT — the wrapper +
+    // header/total cells at $gray-100 (#f8f9fa) and the category/item rows at
+    // $grade-table-td-bg (== #ffffff) — with no dark-mode variant. The dark block
+    // lights text/links/icons but never the table bg, so light text on a near-white
+    // table = washed out (the reported issue). Like qbank (#118) and quiz-view (#122),
+    // the user wants a DARK surface + light/lime text (NOT dark-text-on-light).
+    //
+    // ANCHORING: this page is grade/edit/tree/INDEX.php. Unlike the view.php/edit.php
+    // precedents (#page-mod-quiz-view, #page-question-edit), the body *id* of an
+    // /index.php page is not reliably `#page-grade-edit-tree`, so an earlier attempt
+    // that anchored on that id matched nothing. Anchor instead on the two selectors the
+    // live DOM is known to expose: the table's OWN id `#grade_edit_tree_table` (Moodle
+    // assigns it to this table on every version) and the `.path-grade-edit-tree` body
+    // *class* (Moodle's own grade.scss rule uses it). An id + !important beats Moodle's
+    // `.path-grade-edit-tree .gradetree-wrapper .setup-grades.table tr th` (0,4,2)
+    // outright. Both are page-unique, so nothing else is touched. Gated by darkMode.
+    rules.push('// Gradebook setup table — dark surface so light/lime text is readable');
+    // Wrapper around the table (a 10px light $gray-100 frame) → dark card surface.
+    // Body *class* .path-grade-edit-tree (confirmed present) + !important beats Moodle.
+    rules.push('.path-grade-edit-tree .gradetree-wrapper {');
+    rules.push(`  background-color: ${tokens.cardBg} !important;`);
+    rules.push('}');
+    // Redefine the Bootstrap table vars on the table (cascades to head + body cells).
+    rules.push('#grade_edit_tree_table {');
+    rules.push(`  --bs-table-bg: ${tokens.cardBg};`);
+    rules.push(`  --bs-table-color: ${tokens.bodyText};`);
+    rules.push(`  --bs-table-border-color: ${tokens.cardBorder};`);
+    rules.push('}');
+    // Cell surface + body text. Covers the header ($f8f9fa) AND the category/item/
+    // total rows (#fff). `#id th` (1,0,1)+!important beats Moodle's (0,4,2) cell rules.
+    rules.push('#grade_edit_tree_table th,');
+    rules.push('#grade_edit_tree_table td,');
+    rules.push('#grade_edit_tree_table tr th {');
+    rules.push(`  background-color: ${tokens.cardBg} !important;`);
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push(`  border-color: ${tokens.cardBorder} !important;`);
+    rules.push('}');
+    // Descendant text inside cells (Name spans, Max grade, Status labels) → light, so
+    // nothing inherits a dark colour from Moodle.
+    rules.push('#grade_edit_tree_table th *,');
+    rules.push('#grade_edit_tree_table td * {');
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push('}');
+    // Links (item-name edit links, category links, sort links) keep the dark-theme
+    // link colour (lime/orange). a:not(.btn) (1,1,1) beats the descendant-text rule.
+    rules.push('#grade_edit_tree_table a:not(.btn) {');
+    rules.push(`  color: ${tokens.linkColour} !important;`);
+    rules.push('}');
+    // Weights (+) add icon + three-dot Actions menu glyphs. The generic
+    // `.icon, .fa { color: ${d.bodyText} }` rule (Icon Visibility Fix, ~L349) keeps
+    // every glyph dark — invisible on the new dark card. Re-light scoped to the table;
+    // :not([class*="text-"]) spares semantic .text-success/.text-danger status icons.
+    rules.push('#grade_edit_tree_table .icon:not([class*="text-"]),');
+    rules.push('#grade_edit_tree_table .fa:not([class*="text-"]) {');
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push('}');
+    // Muted/secondary metadata (dimmed labels, hints) → dark-theme muted token so it
+    // stays legible but visually secondary. The extra class beats the body-text rule.
+    rules.push('#grade_edit_tree_table .text-muted,');
+    rules.push('#grade_edit_tree_table .dimmed_text,');
+    rules.push('#grade_edit_tree_table small {');
+    rules.push(`  color: ${tokens.mutedText} !important;`);
+    rules.push('}');
+    // Status pills (.badge.bg-light.text-dark — "Natural", "Exclude empty grades")
+    // ship as a LIGHT chip with dark text, but the dark theme (global .badge.text-dark
+    // rule + our `td *` rule) forces the text light → light-on-light = unreadable (the
+    // remaining issue). Give them a dark chip surface + light text, matching the global
+    // `.badge.bg-secondary` dark treatment (cardBorder bg + bodyText). (1,2,0)+!important
+    // beats Bootstrap's `.bg-light` (0,1,0 !important) and our own `td *` rule (1,0,1).
+    rules.push('#grade_edit_tree_table .badge.bg-light {');
+    rules.push(`  background-color: ${tokens.cardBorder} !important;`);
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push('}');
+    rules.push('#grade_edit_tree_table .badge.bg-light * {');
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push('}');
+    rules.push('');
+    // ── Quiz timer (#quiz-timer) — dark text on the always-white timer box ──
+    // During a timed quiz attempt the countdown timer (mod/quiz/templates/timer.mustache:
+    // `#quiz-timer-wrapper > #quiz-timer.quiz-timer-inner`, the "Time left" text node +
+    // `<span id="quiz-time-left">` digits) is painted by Boost's modules.scss as a FIXED
+    // white box (`#quiz-timer-wrapper #quiz-timer { background:#fff; border:1px solid
+    // #ca3120 }`) with no dark variant. The dark theme leaves the bg white but the text
+    // inherits the light $body-color → light-on-white = invisible. User wants the light
+    // bg KEPT + dark text → fixed-dark: force d.bodyText (#1d2125, ~16:1 on white).
+    // Anchored on the timer's own stable ids (hardcoded 4.4–5.x), NOT the body id, so it
+    // covers attempt + summary pages + teacher preview in one rule.
+    // `:not([class*="timeleft"])` is CRITICAL: in the last ~100s JS adds .timeleft0–16
+    // classes that ramp the box red→pink with their own AA-tuned text — excluding them
+    // leaves the low-time warning state untouched. Background/border are never touched.
+    rules.push('#quiz-timer-wrapper #quiz-timer:not([class*="timeleft"]),');
+    rules.push('#quiz-timer-wrapper #quiz-timer:not([class*="timeleft"]) * {');
+    rules.push(`  color: ${d.bodyText} !important;`);
+    rules.push('}');
+    rules.push('');
   }
 
   const block2 = rules.join('\n');
