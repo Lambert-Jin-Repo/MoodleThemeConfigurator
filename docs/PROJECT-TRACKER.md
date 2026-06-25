@@ -1588,3 +1588,30 @@ Match Moodle's OWN focus rule, don't broad-scope. The earlier instinct was `#reg
 - `lib/scss-generator.ts` (the focus rule), `docs/moodle-cloud-constraints.md` (1 selector row), `docs/PROJECT-TRACKER.md` (this section), `CLAUDE.md` (status bullet). Memory: `project_dark_theme_focus_link_text.md`.
 
 **Branch:** `worktree-fix+dark-theme-enrolment-icons` (off main `f52e845`, after PR #21).
+
+---
+
+## Session: 2026-06-26 — Dark Theme: User report teacher route (#144)
+
+### Issue
+When a TEACHER views a specific student's grade (Participants → student → Grades), the `.user-grade` table rendered washed-out/light on dark themes — the #136 dark-surface fix wasn't applying. User wanted it to match the (dark) grader report.
+
+### Root cause
+The `.user-grade` table renders in TWO routes that NEVER share a body class:
+- `grade/report/user/index.php` → body `.path-grade-report-user` (student's own report + teacher "User report" via the Grades dropdown) — #136 anchored here.
+- `course/user.php?mode=grade` → body `.path-course-user`, wrapping the same table in a literal `<div class="grade-report-user">` (teacher → Participants → student → Grades). #136's body-class anchor missed it.
+Moodle's PLUGIN CSS `grade/report/user/styles.css` (hardcoded light hex, un-important, identical 4.4–5.x — NOT `grade.scss`) dual-anchors every rule `.path-grade-report-user …, .grade-report-user …`.
+
+### Fix (`lib/scss-generator.ts`, the #136 block refactored)
+Mirror Moodle's dual-anchor: wrapped the entire #136 rule set in `['.path-grade-report-user', '.grade-report-user'].forEach((p) => …)` so the identical dark treatment (cardBg cells, bodyText text, linkColour links, `--bs-border-color → cardBorder`, `.user-report-container` repaint, `img.itemicon` filter, mutedText) emits under BOTH prefixes. The `.path-grade-report-user` output is byte-identical to verified #136 (23 selector occurrences each, symmetric).
+
+### Verification
+- `npm run build` + `npm run lint` clean. Generator output: Dark Lime + Dark Ember emit both prefixes (23 `.path-grade-report-user` + 23 `.grade-report-user`); all 8 light presets + Moodle Default emit **0**. **User-verified on Moodle Cloud** (teacher Participants route now dark; student's-own report unchanged).
+
+### Presets / Controls
+- **No new token.** Reuses `cardBg`/`cardBorder`/`bodyText`/`mutedText`/`linkColour` → no preset edits, no control / quick-palette change.
+
+### Files Modified
+- `lib/scss-generator.ts` (the #136 block → 2-prefix loop), `docs/moodle-cloud-constraints.md` (extended the #136 row), `docs/PROJECT-TRACKER.md` (this section), `CLAUDE.md` (status bullet). Memory: `project_dark_theme_grade_report_user.md` (updated).
+
+**Branch:** `worktree-fix+dark-theme-enrolment-icons` (off main `f52e845`, after PR #21).
