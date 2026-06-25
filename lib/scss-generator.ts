@@ -1304,21 +1304,25 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push(`  color: ${tokens.bodyText} !important;`);
     rules.push('}');
     rules.push('');
-    // ── Quiz view page (#page-mod-quiz-view) — "Your attempts" summary table ──
+    // ── Quiz attempt-summary table (.quizreviewsummary) — "Your attempts" / review ──
     // mod/quiz's own stylesheet hardcodes `table.quizreviewsummary td.cell` LIGHT
-    // (`background:#fafafa`, no .bg-white class), so the dark theme's light text —
-    // the Status value ("In progress") and the Started date — is invisible on the
-    // light cell. Unlike the quiz-edit fix (dark text on light), the user wants a
-    // DARK surface here: give the cells the dark CARD surface + light text, links
-    // lime. ID-anchored to #page-mod-quiz-view. (1,2,2)+!important beats Moodle's
+    // (`background:#fafafa`, th.cell `#f0f0f0`, no .bg-white class), so the dark theme's
+    // light text — Status/Started/Completed/Duration/Grade — is invisible on the light
+    // cell. The user wants a DARK surface here (consistent across all quiz pages): give
+    // the cells the dark CARD surface + light text, links lime. The SAME table is
+    // emitted by review_summary_table() on view.php (#page-mod-quiz-view), review.php
+    // (#page-mod-quiz-review) AND summary.php (#page-mod-quiz-summary), so anchor on the
+    // quiz body-id PREFIX `[id^="page-mod-quiz-"]` (same pattern as the `.que .info`
+    // block below) — one rule covers all three. `.quizreviewsummary` is unique to this
+    // table, so no other generaltable is touched. (0,3,2)+!important beats Moodle's
     // `table.quizreviewsummary td.cell` (0,2,2).
-    rules.push('#page-mod-quiz-view .quizreviewsummary td.cell,');
-    rules.push('#page-mod-quiz-view .quizreviewsummary th.cell {');
+    rules.push('[id^="page-mod-quiz-"] .quizreviewsummary td.cell,');
+    rules.push('[id^="page-mod-quiz-"] .quizreviewsummary th.cell {');
     rules.push(`  background-color: ${tokens.cardBg} !important;`);
     rules.push(`  color: ${tokens.bodyText} !important;`);
     rules.push(`  border-color: ${tokens.cardBorder} !important;`);
     rules.push('}');
-    rules.push('#page-mod-quiz-view .quizreviewsummary a:not(.btn) {');
+    rules.push('[id^="page-mod-quiz-"] .quizreviewsummary a:not(.btn) {');
     rules.push(`  color: ${tokens.linkColour} !important;`);
     rules.push('}');
     rules.push('');
@@ -1328,7 +1332,7 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     // out of 1.00", Flag/Edit links) is invisible. User wants a DARK surface + light
     // /lime text: give `.que .info` the dark CARD surface, force descendant text
     // light (number/state/grade) and links (Flag question / Edit question) lime. The
-    // pale-blue `.formulation` question body is intentionally left untouched. Anchored
+    // `.formulation` question body is given its own dark surface below (#132). Anchored
     // to the quiz module body-id PREFIX so it covers attempt/preview/review/summary
     // in one rule (quiz-edit has no `.que .info`, so it is unaffected). `.que .info`
     // (0,3,0)+!important beats Moodle's (0,2,0); the a:not(.btn) rule (0,4,1) keeps
@@ -1361,25 +1365,59 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push('  filter: brightness(0) saturate(100%) invert(42%) sepia(93%) saturate(2400%) hue-rotate(320deg) brightness(98%) contrast(96%);');
     rules.push('}');
     rules.push('');
+    // ── Quiz question body (.que .formulation) — dark surface ──
+    // Moodle hardcodes the question body `.que .formulation` LIGHT BLUE (computed from
+    // Bootstrap $info via shift-color → bg #ccf2ff, text #002633). On a dark theme that
+    // pale-blue island clashes with the already-dark `.que .info` sidebar, and the per-
+    // option ✓/✗ feedback icons — recoloured to the dark-preset success(lime)/error(red)
+    // tokens by the generic .text-success/.text-danger rules (~L571) — are nearly
+    // invisible / indistinguishable on the pale blue (lime ✓ ≈ 1.1:1). User chose a DARK
+    // surface (consistent with `.que .info`): give the box the dark CARD surface + light
+    // text + cardBorder, so the vivid lime ✓ / red ✗ read with MAXIMUM separation (lime
+    // ≈ 11.7:1, red ≈ 4.7:1, amber partial ≈ 8:1 — all pass) and there is no white glare.
+    // The ✓/✗ icons keep their semantic colours (their own !important rules at ~L571
+    // win), so we DON'T touch them here. Global `.que .formulation` (question bodies
+    // render the same everywhere — quiz attempt/review/preview, question preview);
+    // (0,2,0)+!important beats Moodle's (0,2,0). In-question links + the "Clear my
+    // choice" control follow the dark link colour (below).
+    rules.push('.que .formulation {');
+    rules.push(`  background-color: ${tokens.cardBg} !important;`);
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push(`  border-color: ${tokens.cardBorder} !important;`);
+    rules.push('}');
+    // Force the question text / options / feedback light. These target text containers,
+    // NOT the ✓/✗ `<i>` icons (which keep their own .text-success/.text-danger colour).
+    rules.push('.que .formulation .qtext,');
+    rules.push('.que .formulation .ablock,');
+    rules.push('.que .formulation .answer,');
+    rules.push('.que .formulation .specificfeedback,');
+    rules.push('.que .formulation .rightanswer,');
+    rules.push('.que .formulation legend {');
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push('}');
+    // In-question links follow the dark link colour (lime/orange).
+    rules.push('.que .formulation a:not(.btn) {');
+    rules.push(`  color: ${tokens.linkColour} !important;`);
+    rules.push('}');
+    rules.push('');
     // ── Multichoice "Clear my choice" link ──
     // After a radio option is selected, Moodle reveals a "Clear my choice" link
-    // (.qtype_multichoice_clearchoice) sitting on the pale-blue `.formulation` box that
-    // Moodle keeps LIGHT. The dark theme's link colour (lime/orange) is near-invisible
-    // on that light-blue bg. Use a high-contrast CFA brand accent — Purple #B500B5 — a
-    // FIXED brand colour (like the #FFFFFF/#1d2125 fixed values): it must stay readable
-    // on Moodle's fixed light-blue box, so it deliberately does NOT follow the dark link
-    // token. Bold it on hover for feedback. Element-scoped to the clear-choice control
-    // (covers <a>/<button>/[role=button] across Moodle versions).
+    // (.qtype_multichoice_clearchoice) inside the question body. Now that `.formulation`
+    // is a dark surface (above), this control follows the dark link colour (lime/orange)
+    // like every other in-question link — the earlier fixed CFA Purple (#B500B5, chosen
+    // when the box was pale-blue) would be too dark on the dark card. Bold on hover for
+    // feedback. Element-scoped to the clear-choice control (covers <a>/<button>/
+    // [role=button] across Moodle versions).
     rules.push('.que .qtype_multichoice_clearchoice,');
     rules.push('.que .qtype_multichoice_clearchoice a,');
     rules.push('.que .qtype_multichoice_clearchoice button,');
     rules.push('.que .qtype_multichoice_clearchoice [role="button"] {');
-    rules.push('  color: #B500B5 !important;'); // CFA Purple — fixed brand accent, readable on the pale-blue formulation
+    rules.push(`  color: ${tokens.linkColour} !important;`);
     rules.push('}');
     rules.push('.que .qtype_multichoice_clearchoice a:hover,');
     rules.push('.que .qtype_multichoice_clearchoice button:hover,');
     rules.push('.que .qtype_multichoice_clearchoice [role="button"]:hover {');
-    rules.push('  color: #B500B5 !important;');
+    rules.push(`  color: ${tokens.linkColour} !important;`);
     rules.push('  font-weight: 700 !important;');
     rules.push('}');
     rules.push('');
@@ -1479,6 +1517,84 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push('#quiz-timer-wrapper #quiz-timer:not([class*="timeleft"]),');
     rules.push('#quiz-timer-wrapper #quiz-timer:not([class*="timeleft"]) * {');
     rules.push(`  color: ${d.bodyText} !important;`);
+    rules.push('}');
+    rules.push('');
+    // ── Quiz "Time limit" preflight dialog — red Cancel button ──
+    // Clicking "Attempt quiz" / "Preview quiz" on a TIMED quiz opens a YUI dialogue
+    // (mod_quiz/preflightcheck.js: M.core.dialogue, extraClass .mod_quiz_preflight_popup)
+    // that JS portals to <body>. The dialog is WHITE, but the global dark rule
+    // `.btn-secondary { color: tokens.bodyText; background: transparent }` (~L903)
+    // paints the standard mform Cancel input (input#id_cancel.btn-secondary[name="cancel"],
+    // emitted by lib/form/cancel.php) light-grey-on-white → invisible. The Cancel markers
+    // (#id_cancel / [data-cancel] / .btn-cancel) are SITE-WIDE (every mform), so we scope to
+    // the dialog's unique popup class .mod_quiz_preflight_popup (stable since Moodle 3.1) and
+    // never touch other forms' cancels. User chose a solid RED/warning button: d.error
+    // (#ca3120 — white-on-red 5.29:1, WCAG AA; NOT tokens.error #F64747 which is only 3.55:1).
+    // d.error (the light-theme default red) because the modal is a fixed WHITE surface — same
+    // fixed-dark reasoning as the quiz-timer / #116 modal fixes. The green "Start attempt"
+    // (name="submitbutton") is untouched.
+    rules.push('.mod_quiz_preflight_popup #id_cancel,');
+    rules.push('.mod_quiz_preflight_popup input[name="cancel"],');
+    rules.push('.mod_quiz_preflight_popup .btn-cancel input {');
+    rules.push(`  background-color: ${d.error} !important;`);
+    rules.push('  color: #FFFFFF !important;');
+    rules.push(`  border-color: ${d.error} !important;`);
+    rules.push('}');
+    // Keep it solid red on hover/focus (beat the global `.btn-secondary:hover` translucent-
+    // white rule, ~L908) with a subtle darken for affordance.
+    rules.push('.mod_quiz_preflight_popup #id_cancel:hover,');
+    rules.push('.mod_quiz_preflight_popup #id_cancel:focus,');
+    rules.push('.mod_quiz_preflight_popup input[name="cancel"]:hover,');
+    rules.push('.mod_quiz_preflight_popup input[name="cancel"]:focus,');
+    rules.push('.mod_quiz_preflight_popup .btn-cancel input:hover,');
+    rules.push('.mod_quiz_preflight_popup .btn-cancel input:focus {');
+    rules.push(`  background-color: ${d.error} !important;`);
+    rules.push('  color: #FFFFFF !important;');
+    rules.push(`  border-color: ${d.error} !important;`);
+    rules.push('  filter: brightness(0.92);');
+    rules.push('}');
+    rules.push('');
+    // ── Quiz navigation buttons (#mod_quiz_navblock .qnbutton) — per-state colours ──
+    // The "Quiz navigation" panel shows numbered question buttons (a.qnbutton). The
+    // visible number is a BARE TEXT NODE coloured by inherited body text, which our dark
+    // rules push near-white → it washes out on Moodle's state-coloured buttons (esp. the
+    // red incorrect/notanswered strip). Moodle puts the state colour on the lower
+    // `.trafficlight` strip + a ✓/✗ pix glyph (a background-IMAGE). User asked for a clear
+    // colour combination for finished quizzes → SOLID per-state fills + a fixed-dark
+    // number `d.bodyText` (#1d2125), which passes WCAG AA on every state bg: lime 12.7:1,
+    // red #F64747 4.56:1, amber 8.3:1, grey 6.2:1 (and Dark Ember green #4CAF50 5.8:1). We
+    // fill BOTH the button and its `.trafficlight` (overriding only background-color, so
+    // the ✓/✗ glyph image survives → state still conveyed non-chromatically, WCAG 1.4.1).
+    // Backgrounds follow the active dark preset via the semantic tokens. Base (not-yet-
+    // answered / answersaved, during an attempt) → a light surface so the dark number
+    // reads; the graded states override it. Scoped to #mod_quiz_navblock (with the
+    // .path-mod-quiz body class for specificity), so no other buttons are affected; the
+    // block appears on review/attempt/summary pages alike. Dark presets only.
+    // Base: dark number on a light surface (covers notyetanswered/answersaved).
+    rules.push('.path-mod-quiz #mod_quiz_navblock .qnbutton {');
+    rules.push(`  color: ${d.bodyText} !important;`);
+    rules.push('  background-color: #FFFFFF !important;');
+    rules.push('}');
+    // Correct → success (lime on Dark Lime / green on Dark Ember).
+    rules.push('.path-mod-quiz #mod_quiz_navblock .qnbutton.correct,');
+    rules.push('.path-mod-quiz #mod_quiz_navblock .qnbutton.correct .trafficlight {');
+    rules.push(`  background-color: ${tokens.success} !important;`);
+    rules.push('}');
+    // Incorrect → error red (#F64747; dark number = 4.56:1 AA, white would fail at 3.55).
+    rules.push('.path-mod-quiz #mod_quiz_navblock .qnbutton.incorrect,');
+    rules.push('.path-mod-quiz #mod_quiz_navblock .qnbutton.incorrect .trafficlight {');
+    rules.push(`  background-color: ${tokens.error} !important;`);
+    rules.push('}');
+    // Partially correct → warning amber.
+    rules.push('.path-mod-quiz #mod_quiz_navblock .qnbutton.partiallycorrect,');
+    rules.push('.path-mod-quiz #mod_quiz_navblock .qnbutton.partiallycorrect .trafficlight {');
+    rules.push(`  background-color: ${tokens.warning} !important;`);
+    rules.push('}');
+    // Not answered (finished, never answered) → muted grey, distinct from incorrect red.
+    // Moodle paints this state's trafficlight red, so we recolour the strip too.
+    rules.push('.path-mod-quiz #mod_quiz_navblock .qnbutton.notanswered,');
+    rules.push('.path-mod-quiz #mod_quiz_navblock .qnbutton.notanswered .trafficlight {');
+    rules.push(`  background-color: ${tokens.mutedText} !important;`);
     rules.push('}');
     rules.push('');
   }
