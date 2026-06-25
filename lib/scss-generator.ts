@@ -1463,6 +1463,24 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push(`  color: ${tokens.bodyText} !important;`);
     rules.push('}');
     rules.push('');
+    // ── Quiz timer (#quiz-timer) — dark text on the always-white timer box ──
+    // During a timed quiz attempt the countdown timer (mod/quiz/templates/timer.mustache:
+    // `#quiz-timer-wrapper > #quiz-timer.quiz-timer-inner`, the "Time left" text node +
+    // `<span id="quiz-time-left">` digits) is painted by Boost's modules.scss as a FIXED
+    // white box (`#quiz-timer-wrapper #quiz-timer { background:#fff; border:1px solid
+    // #ca3120 }`) with no dark variant. The dark theme leaves the bg white but the text
+    // inherits the light $body-color → light-on-white = invisible. User wants the light
+    // bg KEPT + dark text → fixed-dark: force d.bodyText (#1d2125, ~16:1 on white).
+    // Anchored on the timer's own stable ids (hardcoded 4.4–5.x), NOT the body id, so it
+    // covers attempt + summary pages + teacher preview in one rule.
+    // `:not([class*="timeleft"])` is CRITICAL: in the last ~100s JS adds .timeleft0–16
+    // classes that ramp the box red→pink with their own AA-tuned text — excluding them
+    // leaves the low-time warning state untouched. Background/border are never touched.
+    rules.push('#quiz-timer-wrapper #quiz-timer:not([class*="timeleft"]),');
+    rules.push('#quiz-timer-wrapper #quiz-timer:not([class*="timeleft"]) * {');
+    rules.push(`  color: ${d.bodyText} !important;`);
+    rules.push('}');
+    rules.push('');
   }
 
   const block2 = rules.join('\n');
