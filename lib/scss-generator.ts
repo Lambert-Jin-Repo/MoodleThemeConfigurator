@@ -1999,6 +1999,37 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push(`  color: ${d.bodyText} !important;`);
     rules.push('}');
     rules.push('');
+
+    // ── Focused content links — dark text on Moodle's light focus highlight (#143) ──
+    // Generalises the #142 move-dialog focus fix. Moodle Boost `core.scss` has ONE
+    // rule ("Rule A") that paints a LIGHT box behind a focused link AND sets dark
+    // text on it — its own intent:
+    //   .aalink, a:not([class]), .arrow_link, .activityinstance > a,
+    //   #page-footer a:not([class]) { &:focus, &.focus {
+    //     color: $gray-900; background-color: lighten($primary, 50%); } }
+    // (no `!important`, stable 4.4–5.x). On dark themes our global
+    // `a:hover, a:focus { color: ${tokens.linkHover} !important }` OVERRODE Moodle's
+    // dark `$gray-900` (our `!important` wins) while Moodle's un-important LIGHT
+    // `background-color` still applied → lime/orange link text on a pale box →
+    // unreadable (the user's "invisible when clicked": course-name `.aalink`,
+    // "Teacher:"/category class-less `<a>`, etc.). Fix = RESTORE the dark text Moodle
+    // intended, on EXACTLY Rule A's selectors (the only ones that get the light box),
+    // via the fixed-dark token `d.bodyText` (#1d2125 ≈ $gray-900). This is inherently
+    // safe everywhere: Rule A always pairs these selectors with a light box, so dark
+    // text is always correct — and it can't hit buttons/`[role=button]`/`.nav-link`
+    // (Moodle "Rule B" gives THOSE only a translucent focus ring, NO light fill), so
+    // the navbar/drawer/dropdown/button dark-bg focus states are untouched. No region
+    // scoping or `:not()` chains needed. Cover `:focus`, `.focus` (JS-set), `:active`.
+    // Specificity: `.aalink:focus` (0,2,0) / `a:not([class]):focus` (0,2,1) beat the
+    // global `a:hover, a:focus` (0,1,1)!important and Moodle's un-important Rule A.
+    rules.push('.aalink:focus, .aalink.focus, .aalink:active,');
+    rules.push('a:not([class]):focus, a:not([class]).focus, a:not([class]):active,');
+    rules.push('.arrow_link:focus, .arrow_link.focus,');
+    rules.push('.activityinstance > a:focus, .activityinstance > a.focus,');
+    rules.push('#page-footer a:not([class]):focus {');
+    rules.push(`  color: ${d.bodyText} !important;`);
+    rules.push('}');
+    rules.push('');
   }
 
   const block2 = rules.join('\n');

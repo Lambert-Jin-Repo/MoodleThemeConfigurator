@@ -1551,3 +1551,40 @@ The `:has()` qualifier adds a class over the global rules — text `(0,3,0)` bea
 - `lib/scss-generator.ts` (the dialog block), `docs/moodle-cloud-constraints.md` (1 selector row), `docs/PROJECT-TRACKER.md` (this section), `CLAUDE.md` (status bullet). Memory: `project_dark_theme_move_dialog.md`.
 
 **Branch:** `worktree-fix+dark-theme-enrolment-icons` (off main `f52e845`, after PR #21).
+
+---
+
+## Session: 2026-06-25 (continued) — Dark Theme: Focused content links → dark text (#143)
+
+### Issue
+On dark themes, clicking/focusing content links (course-name `.aalink`, "Teacher:"/category class-less `<a>`) showed lime/orange text on a pale highlight box → unreadable. User wanted dark text on click, applied broadly (generalises the #142 move-dialog focus fix).
+
+### Root cause (the key finding)
+Moodle Boost `core.scss` has ONE focus-highlight rule ("**Rule A**") that paints a LIGHT box behind a focused link AND already sets dark text (Moodle's intent): `.aalink, a:not([class]), .arrow_link, .activityinstance > a, #page-footer a:not([class]) { &:focus, &.focus { color: $gray-900; background-color: lighten($primary, 50%) } }` (no `!important`, `:focus`/`.focus`, stable 4.4–5.x). On dark themes the generator's GLOBAL `a:hover, a:focus { color: ${tokens.linkHover} !important }` (~L451, (0,1,1)) OVERRODE Moodle's dark `$gray-900` (our `!important` won) while Moodle's un-important LIGHT bg still applied → lime-on-pale.
+
+### Rule A vs Rule B (why the fix is safe)
+The light box comes ONLY from Rule A (link selectors). Buttons / `[role="button"]` / `.nav-link` / `.btn-link` / `.list-group-item-action` / checkboxes are in Moodle's separate "Rule B" → translucent ring only, NO light fill, no colour change. So the navbar primary-nav links (`.nav-link`, Rule B) never get the light box, and the existing navbar `:focus-visible` override (dark bg + lime text) is independent and safe.
+
+### Fix (`lib/scss-generator.ts`, inside `if (darkMode)`, after #142)
+RESTORE the dark text Moodle intended, on EXACTLY Rule A's selectors:
+```
+.aalink:focus, .aalink.focus, .aalink:active,
+a:not([class]):focus, a:not([class]).focus, a:not([class]):active,
+.arrow_link:focus, .arrow_link.focus,
+.activityinstance > a:focus, .activityinstance > a.focus,
+#page-footer a:not([class]):focus { color: ${d.bodyText} !important; }   /* #1d2125 */
+```
+
+### Lesson
+Match Moodle's OWN focus rule, don't broad-scope. The earlier instinct was `#region-main` + `:not()` exclusions to dodge dark-on-dark. But the light box is EXACTLY Rule A's selectors (always paired with a light box), so matching Rule A is inherently safe everywhere with no region scoping and no `:not()` chains. The "Teacher:"/category links are **class-less `<a>`** (caught by `a:not([class])`), NOT `.aalink`.
+
+### Verification
+- `npm run build` + `npm run lint` clean. Generator output: **Dark Lime** + **Dark Ember** emit `color: #1d2125`; all **8 light presets + Moodle Default** emit **0**. **User-verified on Moodle Cloud** (course-name/teacher/category links dark on click; navbar/drawer/dropdown links keep lime focus).
+
+### Presets / Controls
+- **No new token.** Reuses `d.bodyText` → no preset edits, no control / quick-palette change.
+
+### Files Modified
+- `lib/scss-generator.ts` (the focus rule), `docs/moodle-cloud-constraints.md` (1 selector row), `docs/PROJECT-TRACKER.md` (this section), `CLAUDE.md` (status bullet). Memory: `project_dark_theme_focus_link_text.md`.
+
+**Branch:** `worktree-fix+dark-theme-enrolment-icons` (off main `f52e845`, after PR #21).
