@@ -1418,3 +1418,37 @@ The generic dark rule `.icon, .fa { color: ${d.bodyText} !important }` (`#1d2125
 - `lib/scss-generator.ts` (the rule), `docs/moodle-cloud-constraints.md` (1 selector row), `docs/PROJECT-TRACKER.md` (this section), `CLAUDE.md` (status bullet). Memory: `project_dark_theme_enrolment_icons.md`.
 
 **Branch:** `worktree-fix+dark-theme-enrolment-icons` (off main `f52e845`, after PR #21).
+
+---
+
+## Session: 2026-06-25 (continued) — Dark Theme: Footer "Show footer" help button (#139)
+
+### Issue
+The floating circular **"?" help button** at the bottom-right of every page had an invisible `?` on dark themes. Reported by user with screenshot + DevTools.
+
+### Root cause (two-part)
+(1) The dark footer rule `#page-footer * { color: ${tokens.footerText} #F0EEEE !important }` paints the glyph near-white; AND (2) the button keeps Moodle's **default light `.bg-secondary`** — the dark presets do NOT override `secondaryColour`, so `$secondary` stays the default `#ced4da` (light grey). Near-white `?` on light grey ≈ 1.2:1 → invisible.
+
+### Key lesson — the "lime on light grey" trap (repeat of #135)
+The user asked to make the `?` "lime green", but lime `#BAF73C` on the light `#ced4da` button is **~1.2:1 — even worse** than the near-white. **Always check the element's actual background before recolouring an icon** — recolouring alone doesn't fix contrast if the surface is the wrong brightness. Confirmed the button bg by checking `secondaryColour` is not overridden in either dark preset.
+
+### Fix (user chose "lime ? on a dark circle"; `lib/scss-generator.ts`, inside `if (darkMode)`, after the #138 `.enrolmenticons` rule)
+```
+#page-footer .btn-footer-popover { background-color: ${tokens.cardBg} !important; }
+#page-footer .btn-footer-popover .icon,
+#page-footer .btn-footer-popover .fa { color: ${tokens.infoIconColour} !important; }
+```
+- Darken JUST this button to `cardBg` AND set the `?` to lime `infoIconColour` (= `#BAF73C` on **both** dark presets, unlike `linkColour` = orange on Dark Ember) → lime-on-dark ≈ 9–11:1.
+- Anchor on the stable `.btn-footer-popover` hook (NOT `rounded-circle`/`icon-no-margin`, which churn 4.x↔5.x). Plain FontAwesome `e/question → fa-question`, no `.text-*` → `color:` is the lever.
+- Specificity: bg `(1,1,0)` beats Boost's `.bg-secondary` `(0,1,0)`!important; icon `(1,2,0)` beats the footer `#page-footer *` `(1,0,0)`!important; both beat the #135 `.btn-icon:hover` rules (ID > classes) → dark circle + lime `?` in every state (also sidesteps the hover question).
+
+### Verification
+- `npm run build` + `npm run lint` clean. Generator output checked across all presets: **Dark Lime** emits `cardBg #2D2D2E` + `#BAF73C`; **Dark Ember** `#3A3A3B` + `#BAF73C`; all **8 light presets + Moodle Default** emit **0**. **User-verified on Moodle Cloud.**
+
+### Presets / Controls
+- **No new token.** Uses existing `cardBg` + `infoIconColour` → no preset edits, no control / quick-palette change.
+
+### Files Modified
+- `lib/scss-generator.ts` (the 2 rules), `docs/moodle-cloud-constraints.md` (1 selector row), `docs/PROJECT-TRACKER.md` (this section), `CLAUDE.md` (status bullet). Memory: `project_dark_theme_footer_help_button.md`.
+
+**Branch:** `worktree-fix+dark-theme-enrolment-icons` (off main `f52e845`, after PR #21).

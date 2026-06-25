@@ -1809,6 +1809,35 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push(`  color: ${tokens.bodyText} !important;`);
     rules.push('}');
     rules.push('');
+
+    // ── Footer "Show footer" help-button icon (#139) ──
+    // The floating circular help button at the bottom-right of every page —
+    // Boost `footer.mustache`: `<button class="btn btn-icon rounded-circle
+    // bg-secondary btn-footer-popover" data-action="footer-popover"><i class="icon
+    // fa fa-question fa-fw">` (the `?`). The icon is a plain FontAwesome glyph (so
+    // `color:` is the lever, no `.text-*` class). Two facts make the `?` invisible
+    // on dark themes: (1) the dark footer rule `#page-footer * { color: footerText
+    // #F0EEEE }` paints the glyph near-white, and (2) the button keeps Moodle's
+    // default LIGHT `.bg-secondary` (the dark presets do NOT override
+    // `secondaryColour`, so `$secondary` stays `#ced4da`) → near-white on light grey
+    // ≈ 1.2:1. Simply recolouring the glyph lime would be WORSE (lime on #ced4da ≈
+    // 1.2:1, the documented "lime on light grey fails" trap, #135). So — per the
+    // user's choice — darken JUST this one button to the dark card surface and make
+    // the `?` lime green: lime `infoIconColour` (#BAF73C on BOTH dark presets, unlike
+    // `linkColour` which is orange on Dark Ember) on `cardBg` ≈ 9–11:1. Scoped to the
+    // stable `.btn-footer-popover` hook (NOT `rounded-circle`/`icon-no-margin`, which
+    // churn between Moodle 4.x and 5.x) under the `#page-footer` ID. The bg rule
+    // (1,1,0) beats Boost's `.bg-secondary` (0,1,0)!important; the icon rule (1,2,0)
+    // beats the footer `#page-footer *` (1,0,0)!important. Both win over the #135
+    // `.btn-icon:hover` rules (ID > classes) → dark circle + lime `?` in every state.
+    rules.push('#page-footer .btn-footer-popover {');
+    rules.push(`  background-color: ${tokens.cardBg} !important;`);
+    rules.push('}');
+    rules.push('#page-footer .btn-footer-popover .icon,');
+    rules.push('#page-footer .btn-footer-popover .fa {');
+    rules.push(`  color: ${tokens.infoIconColour} !important;`);
+    rules.push('}');
+    rules.push('');
   }
 
   const block2 = rules.join('\n');
