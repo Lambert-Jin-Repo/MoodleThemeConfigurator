@@ -1390,3 +1390,31 @@ Moodle's `grade.scss` styles `.user-grade` from Bootstrap `--bs-table-bg` (= `va
 - `lib/scss-generator.ts` (the rules), `docs/moodle-cloud-constraints.md` (2 selector rows), `docs/PROJECT-TRACKER.md` (this section), `CLAUDE.md` (status bullets). Memory: `project_dark_theme_grade_report_user.md`.
 
 **Branch:** `fix/dark-theme-grade-report-contrast` (off main `fa8611b`, after PR #20).
+
+---
+
+## Session: 2026-06-25 (continued) — Dark Theme: Course-listing enrolment icons (#138)
+
+### Issue
+On the *Available courses* / course-category listing, the per-course **enrolment-method icons** (the "Self enrolment" door glyph `<i class="icon fa-solid fa-right-to-bracket">` in `<div class="enrolmenticons">`, plus guest `fa-key`/`fa-lock`/`fa-lock-open`) were dark-on-dark → unreadable on dark themes. Reported by user with screenshot + DevTools (icon painted `#1d2125` by `.icon, .fa`).
+
+### Root cause
+The generic dark rule `.icon, .fa { color: ${d.bodyText} !important }` (`#1d2125`) paints ALL icons dark so they stay readable on the light wrappers that survive on dark themes. But the enrolment icons sit on the **dark** course-card background (`.coursebox .info .enrolmenticons`) → dark-on-dark. No scoped re-light existed for them.
+
+### Fix (`lib/scss-generator.ts`, inside `if (darkMode)`, appended after the #137 `.cellmenubtn` block)
+- **#138** `.enrolmenticons .icon, .enrolmenticons .fa { color: ${tokens.bodyText} !important }` → re-lights the glyphs to CFA Light Grey `#F0EEEE` ("light white"). Specificity (0,2,0)+`!important` beats the generic (0,1,0). Same resting-state re-light pattern as #137. No `:not([class*="text-"])` guard needed — enrolment icons carry **no** `.text-*` semantic class (verified vs `enrol/*/lib.php` icon maps; the meaning is in the `title`/`aria-label`).
+
+### Research (Moodle 4.4 / 4.5 / 5.0)
+- `.enrolmenticons` is emitted by core `course_enrolment_icons()` inside `.coursebox .info` — stable across versions (only the repo path moved `course/` → `public/course/` in 5.x, not the markup).
+- The FA glyphs come from each enrol plugin's `get_fontawesome_icon_map()` (`enrol_self` withoutkey → `fa-right-to-bracket`, withkey → `fa-key`; `enrol_guest` → `fa-lock-open`/`fa-lock`). They are plain FontAwesome `<i>` → `color:` is the lever, not `filter:`.
+
+### Verification
+- `npm run build` + `npm run lint` clean. Generator output checked across all presets: **Dark Lime + Dark Ember** emit `.enrolmenticons .icon, .enrolmenticons .fa { color: #F0EEEE !important; }`; all **8 light presets + Moodle Default** emit **0** (gated by `isDarkBg(pageBg)`). **User-verified on Moodle Cloud.**
+
+### Presets / Controls
+- **No new token.** Uses existing `bodyText` (every dark preset defines it) → no preset edits, no control / quick-palette change.
+
+### Files Modified
+- `lib/scss-generator.ts` (the rule), `docs/moodle-cloud-constraints.md` (1 selector row), `docs/PROJECT-TRACKER.md` (this section), `CLAUDE.md` (status bullet). Memory: `project_dark_theme_enrolment_icons.md`.
+
+**Branch:** `worktree-fix+dark-theme-enrolment-icons` (off main `f52e845`, after PR #21).

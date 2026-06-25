@@ -1788,6 +1788,27 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push(`  color: ${tokens.bodyText} !important;`);
     rules.push('}');
     rules.push('');
+
+    // ── Course-listing enrolment-method icons (#138) ──
+    // `.enrolmenticons` (core `course_enrolment_icons()`, inside `.coursebox .info`)
+    // holds the per-course enrolment glyphs on the course/category listing —
+    // self enrolment `<i class="icon fa-solid fa-right-to-bracket">`, plus `fa-key`,
+    // `fa-lock`, `fa-lock-open` (guest). They are plain FontAwesome `<i class="icon
+    // fa-...">` (so `color:` is the lever, NOT `filter:`) sitting on the DARK page
+    // background of each course card. The generic dark `.icon, .fa { color:
+    // ${d.bodyText} }` rule paints them dark → dark-on-dark, unreadable (the user's
+    // complaint). Re-light to the theme's light text (`bodyText` = CFA Light Grey
+    // #F0EEEE, reads as white). No enrolment icon carries a `.text-*` semantic class
+    // (verified vs core `enrol/*/lib.php` icon maps — the meaning lives in the
+    // title/aria-label, not the colour), so a blanket re-colour is safe and no
+    // `:not([class*="text-"])` guard is needed. Container `.enrolmenticons` is stable
+    // across Moodle 4.4 / 4.5 / 5.0. Specificity (0,2,0) + `!important` beats the
+    // generic `.icon,.fa` (0,1,0) rule. Same resting-state re-light pattern as #137.
+    rules.push('.enrolmenticons .icon,');
+    rules.push('.enrolmenticons .fa {');
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push('}');
+    rules.push('');
   }
 
   const block2 = rules.join('\n');
