@@ -1481,6 +1481,41 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push(`  color: ${d.bodyText} !important;`);
     rules.push('}');
     rules.push('');
+    // ── Quiz "Time limit" preflight dialog — red Cancel button ──
+    // Clicking "Attempt quiz" / "Preview quiz" on a TIMED quiz opens a YUI dialogue
+    // (mod_quiz/preflightcheck.js: M.core.dialogue, extraClass .mod_quiz_preflight_popup)
+    // that JS portals to <body>. The dialog is WHITE, but the global dark rule
+    // `.btn-secondary { color: tokens.bodyText; background: transparent }` (~L903)
+    // paints the standard mform Cancel input (input#id_cancel.btn-secondary[name="cancel"],
+    // emitted by lib/form/cancel.php) light-grey-on-white → invisible. The Cancel markers
+    // (#id_cancel / [data-cancel] / .btn-cancel) are SITE-WIDE (every mform), so we scope to
+    // the dialog's unique popup class .mod_quiz_preflight_popup (stable since Moodle 3.1) and
+    // never touch other forms' cancels. User chose a solid RED/warning button: d.error
+    // (#ca3120 — white-on-red 5.29:1, WCAG AA; NOT tokens.error #F64747 which is only 3.55:1).
+    // d.error (the light-theme default red) because the modal is a fixed WHITE surface — same
+    // fixed-dark reasoning as the quiz-timer / #116 modal fixes. The green "Start attempt"
+    // (name="submitbutton") is untouched.
+    rules.push('.mod_quiz_preflight_popup #id_cancel,');
+    rules.push('.mod_quiz_preflight_popup input[name="cancel"],');
+    rules.push('.mod_quiz_preflight_popup .btn-cancel input {');
+    rules.push(`  background-color: ${d.error} !important;`);
+    rules.push('  color: #FFFFFF !important;');
+    rules.push(`  border-color: ${d.error} !important;`);
+    rules.push('}');
+    // Keep it solid red on hover/focus (beat the global `.btn-secondary:hover` translucent-
+    // white rule, ~L908) with a subtle darken for affordance.
+    rules.push('.mod_quiz_preflight_popup #id_cancel:hover,');
+    rules.push('.mod_quiz_preflight_popup #id_cancel:focus,');
+    rules.push('.mod_quiz_preflight_popup input[name="cancel"]:hover,');
+    rules.push('.mod_quiz_preflight_popup input[name="cancel"]:focus,');
+    rules.push('.mod_quiz_preflight_popup .btn-cancel input:hover,');
+    rules.push('.mod_quiz_preflight_popup .btn-cancel input:focus {');
+    rules.push(`  background-color: ${d.error} !important;`);
+    rules.push('  color: #FFFFFF !important;');
+    rules.push(`  border-color: ${d.error} !important;`);
+    rules.push('  filter: brightness(0.92);');
+    rules.push('}');
+    rules.push('');
   }
 
   const block2 = rules.join('\n');
