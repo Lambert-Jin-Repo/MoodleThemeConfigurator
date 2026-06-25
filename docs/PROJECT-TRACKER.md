@@ -1303,3 +1303,30 @@ On dark themes the **selected** multichoice / true-false answer radio was barely
 - `lib/scss-generator.ts` (the rule), `docs/moodle-cloud-constraints.md` (selector row), `docs/PROJECT-TRACKER.md` (this section), `CLAUDE.md` (status bullet). Memory: `project_dark_theme_quiz_radio.md`.
 
 **Branch:** `worktree-fix+dark-theme-quiz-radio-contrast` (off main).
+
+---
+
+## Session: 2026-06-25 (continued) — Dark Theme: Tooltip Text Contrast
+
+### Issue Found During User Review (real Moodle Cloud, dark presets, with screenshots)
+The Bootstrap tooltip "Open block drawer" (the block-drawer toggle's hover label) rendered **dark text on a near-black box → unreadable** on dark themes. User wanted the tooltip text **lime green**.
+
+### Root cause (additive gap, not a wrong rule)
+`.tooltip` is portalled by Popper to `<body>`, **outside** every dark container the generator overrides (`.bg-white`/`.card`/`.popover`/`.drawer`), so none of those dark-text rules reach `.tooltip-inner`. Under **Bootstrap 5.3** (Moodle 5.x) the tooltip text defaults to `var(--bs-body-bg)` (and the box to `var(--bs-emphasis-color)`) — the dark theme overrides `--bs-body-bg` dark → dark text on the near-black box. The generator's existing "Popover / tooltip" block styled only `.popover`/`.popover-body`, never `.tooltip`. So the fix is purely additive.
+
+### Per-trigger scoping not possible
+Bootstrap tooltips are generic `.tooltip` elements portalled to `<body>` with a random id and **no attribute linking back to the trigger** (`aria-describedby` lives on the trigger, not the tooltip). There is no CSS selector for "just the block-drawer tooltip", so the rule (correctly) covers all tooltips — every dark-theme tooltip had the same dark-on-dark problem.
+
+### Fix (`lib/scss-generator.ts`, inside `if (darkMode)`, appended after the #133 radio block)
+- **#134** `.tooltip .tooltip-inner` → `color: ${tokens.linkColour} !important` = **lime `#BAF73C`** on Dark Lime / orange `#F27927` on Dark Ember. **Colour only** — Moodle's near-black box is kept, giving the best contrast (lime ≈10:1, orange ≈5.8:1, both WCAG AA). `!important` required because `.tooltip-inner` (specificity 0,1,1) ties Bootstrap's own rule.
+
+### Verification
+- `npx tsc --noEmit` clean; `npm run build` passes. Generator output checked: **Dark Lime** emits `color: #BAF73C`, **Dark Ember** emits `color: #F27927`; all 8 **light** presets emit **0** (gated by `isDarkBg(pageBg)`). **User-verified on the real site** — "Open block drawer" now reads in lime.
+
+### Presets / Controls
+- **No new token.** Uses existing `linkColour`, which every dark preset already defines → **no preset edits**. `linkColour` already has a control/quick-palette entry → no control change.
+
+### Files Modified
+- `lib/scss-generator.ts` (the rule), `docs/moodle-cloud-constraints.md` (selector row), `docs/PROJECT-TRACKER.md` (this section), `CLAUDE.md` (status bullet). Memory: `project_dark_theme_tooltip.md`.
+
+**Branch:** `worktree-fix+dark-theme-quiz-radio-contrast` (off main).

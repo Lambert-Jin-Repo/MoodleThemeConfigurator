@@ -1645,6 +1645,23 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push(`  background-color: ${tokens.bodyText} !important;`);
     rules.push('}');
     rules.push('');
+    // ── Tooltips — accent text on dark (#134) ──
+    // Bootstrap's `.tooltip` is portalled to <body>, OUTSIDE every dark container the
+    // generator overrides (.bg-white / .card / .popover / .drawer), so none of those
+    // dark-text rules reach `.tooltip-inner`. Under Bootstrap 5.3 (Moodle 5.x) the
+    // tooltip text defaults to `var(--bs-body-bg)` → the dark theme makes it DARK on
+    // the near-black box → unreadable (e.g. the "Open block drawer" toggle tooltip).
+    // Recolour the text to the theme accent (`linkColour` = lime on Dark Lime / orange
+    // on Dark Ember). Tooltips are generic body-portalled `.tooltip` elements with no
+    // back-reference to their trigger, so there's no selector for just one — this
+    // (correctly) covers ALL tooltips, which all share the same dark-on-dark problem.
+    // Colour only: Moodle's existing near-black box is kept (best contrast — lime
+    // ≈10:1, orange ≈5.8:1). `.tooltip-inner` is specificity (0,1,1) tying Bootstrap's
+    // own rule, so `!important` is required.
+    rules.push('.tooltip .tooltip-inner {');
+    rules.push(`  color: ${tokens.linkColour} !important;`);
+    rules.push('}');
+    rules.push('');
   }
 
   const block2 = rules.join('\n');
