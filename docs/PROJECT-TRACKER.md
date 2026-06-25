@@ -1648,3 +1648,30 @@ Key points: override BOTH `tr .cell` (#fff base) AND `.heading/.category/.avg .c
 - `lib/scss-generator.ts` (the grader-report block), `docs/moodle-cloud-constraints.md` (1 selector row), `docs/PROJECT-TRACKER.md` (this section), `CLAUDE.md` (status bullet). Memory: `project_dark_theme_grader_report.md`.
 
 **Branch:** `worktree-fix+dark-theme-enrolment-icons` (off main `f52e845`, after PR #21).
+
+## Session: 2026-06-26 — Dark Theme: Gradebook grade-status icons (#146)
+
+### Issue
+On dark themes the Grader report **"Overridden" pen icon** (`<i class="icon fa fa-pen-to-square" title="Overridden">` inside `<div class="grade_icons">`) rendered near-black on the dark grade cell → **invisible**. User reported with screenshot + DevTools (winning rule `.icon, .fa { color: #1d2125 !important }`). Same family applies to the other status markers (Hidden/Locked/Excluded/Feedback) and to category/total cells.
+
+### Root cause
+Each grade cell carries a status-icon strip `<div class="text-muted grade_icons data-collapse_gradeicons">` (category/total cells use `.category_grade_icons`), emitted by `grade_structure::set_grade_status_icons()` → `core_grades/status_icons` template (byte-identical 4.4/4.5/5.0/main). The icons are plain `<i class="icon fa fa-…">` — verified vs `lib/templates/pix_icon_fontawesome.mustache`, NONE carries a `.text-*` class (only the container `<div>` has `text-muted`). After #145 repainted grader cells dark (`cardBg`), the generic dark `.icon, .fa { color: #1d2125 !important }` rule **directly** matches each `<i>` and — `!important` on a direct match beats the cell's merely-INHERITED light text colour → near-black glyph on a dark cell.
+
+### Fix (`lib/scss-generator.ts`, tail of `if (darkMode)`, after the #145 grader block)
+Re-light the status glyphs to the theme's light text (the same "light white" as #137/#138):
+```
+.grade_icons .icon, .grade_icons .fa,
+.category_grade_icons .icon, .category_grade_icons .fa { color: ${tokens.bodyText} !important; }
+```
+Covers cell icons (`.grade_icons`) AND category/total icons (`.category_grade_icons`). No `:not([class*="text-"])` guard needed (no semantic icon in the strip). Global scope (gradebook-only classes), same philosophy as #137 `.cellmenubtn` / #138 `.enrolmenticons`; `(0,2,0)`+`!important` beats the generic `.icon,.fa` (0,1,0). The clickable edit/hide/lock **actions** live in a separate `.cellmenubtn` menu (#137), not in `.grade_icons`.
+
+### Verification
+- `npm run build` + `npm run lint` clean (zero warnings). Compiled-generator harness across ALL presets: **Dark Lime** (`pageBg #404041`) + **Dark Ember** (`pageBg #2B2B2C`) emit `.grade_icons .icon, …, .category_grade_icons .fa { color: #F0EEEE !important; }`; a **synthetic custom dark theme** (`pageBg #11141A`, `bodyText #E8E8E8`) emits the rule with its OWN `#E8E8E8` (proves it follows ANY dark theme, not just presets); all **8 light presets + Moodle Default + CFA Dark Chrome** (which is actually a light-bg preset, `pageBg #FFFFFF`) emit **0** (gated by `isDarkBg(pageBg)`). **User-verified on Moodle Cloud.**
+
+### Presets / Controls
+- **No new token.** Reuses `bodyText` → no preset edits, no control / quick-palette change. Purely additive (a new gradebook-only selector group at the tail of `if (darkMode)`; modifies no existing rule) → no impact on any existing design.
+
+### Files Modified
+- `lib/scss-generator.ts` (the grade-status-icon block), `docs/moodle-cloud-constraints.md` (1 selector row), `docs/PROJECT-TRACKER.md` (this section), `CLAUDE.md` (status bullet). Memory: `project_dark_theme_grade_status_icons.md`.
+
+**Branch:** `worktree-dark-theme-grade-status-icons` (off main `c6425ef`, after PR #22).

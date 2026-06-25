@@ -2077,6 +2077,41 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push(`  border-top-color: ${tokens.cardBorder} !important;`);
     rules.push('}');
     rules.push('');
+
+    // ── Gradebook grade-status icons (#146) ──
+    // Each grade cell carries a status-icon strip `<div class="text-muted grade_icons
+    // data-collapse_gradeicons">` (category/total cells use `.category_grade_icons`),
+    // emitted by `grade_structure::set_grade_status_icons()` →
+    // `core_grades/status_icons` template — stable, byte-identical across Moodle
+    // 4.4 / 4.5 / 5.0 / main. It holds up to five FontAwesome status markers:
+    // Overridden (`fa-pen-to-square`, the user's complaint — a static `role="img"`
+    // indicator), Hidden (`fa-eye-slash`), Locked (`fa-lock`), Excluded
+    // (`fa-circle-minus`), Feedback (`fa-asterisk`). They are plain `<i class="icon
+    // fa fa-...">` glyphs (so `color:` is the lever, NOT `filter:`) and — verified vs
+    // `lib/templates/pix_icon_fontawesome.mustache` — NONE carries a `.text-*`
+    // semantic class (only the CONTAINER div has `text-muted`), so a blanket re-light
+    // is safe and no `:not([class*="text-"])` guard is needed (cf. #138).
+    //
+    // On dark themes the generator's general `.icon, .fa { color: ${d.bodyText}
+    // (#1d2125) }` rule directly matches each `<i>` and — being `!important` on a
+    // direct match — beats the merely-INHERITED light text colour of the now-dark
+    // grader/user cells (#145 `cardBg` cells / #136). Result: near-black glyph on a
+    // dark cell → invisible (DevTools confirmed `.icon,.fa { #1d2125 }` winning).
+    // Re-light the strip's glyphs to the theme's light text (`bodyText` = CFA Light
+    // Grey #F0EEEE) — the same "light white" used for #137 `.cellmenubtn` and #138
+    // `.enrolmenticons`, so the icons match the rest of the dark UI. Specificity
+    // (0,2,0) + `!important` beats the generic `.icon` (0,1,0). `.grade_icons` /
+    // `.category_grade_icons` are gradebook-only classes (rendered solely by the
+    // grade reports, whose cells are dark on dark themes), so a global scope is safe
+    // and consistent with #137/#138 — no page anchor needed. Dark presets only (inside
+    // `if (darkMode)`); light presets emit nothing.
+    rules.push('.grade_icons .icon,');
+    rules.push('.grade_icons .fa,');
+    rules.push('.category_grade_icons .icon,');
+    rules.push('.category_grade_icons .fa {');
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push('}');
+    rules.push('');
   }
 
   const block2 = rules.join('\n');
