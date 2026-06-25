@@ -1332,7 +1332,7 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     // out of 1.00", Flag/Edit links) is invisible. User wants a DARK surface + light
     // /lime text: give `.que .info` the dark CARD surface, force descendant text
     // light (number/state/grade) and links (Flag question / Edit question) lime. The
-    // pale-blue `.formulation` question body is intentionally left untouched. Anchored
+    // `.formulation` question body is given its own dark surface below (#132). Anchored
     // to the quiz module body-id PREFIX so it covers attempt/preview/review/summary
     // in one rule (quiz-edit has no `.que .info`, so it is unaffected). `.que .info`
     // (0,3,0)+!important beats Moodle's (0,2,0); the a:not(.btn) rule (0,4,1) keeps
@@ -1365,25 +1365,59 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push('  filter: brightness(0) saturate(100%) invert(42%) sepia(93%) saturate(2400%) hue-rotate(320deg) brightness(98%) contrast(96%);');
     rules.push('}');
     rules.push('');
+    // ── Quiz question body (.que .formulation) — dark surface ──
+    // Moodle hardcodes the question body `.que .formulation` LIGHT BLUE (computed from
+    // Bootstrap $info via shift-color → bg #ccf2ff, text #002633). On a dark theme that
+    // pale-blue island clashes with the already-dark `.que .info` sidebar, and the per-
+    // option ✓/✗ feedback icons — recoloured to the dark-preset success(lime)/error(red)
+    // tokens by the generic .text-success/.text-danger rules (~L571) — are nearly
+    // invisible / indistinguishable on the pale blue (lime ✓ ≈ 1.1:1). User chose a DARK
+    // surface (consistent with `.que .info`): give the box the dark CARD surface + light
+    // text + cardBorder, so the vivid lime ✓ / red ✗ read with MAXIMUM separation (lime
+    // ≈ 11.7:1, red ≈ 4.7:1, amber partial ≈ 8:1 — all pass) and there is no white glare.
+    // The ✓/✗ icons keep their semantic colours (their own !important rules at ~L571
+    // win), so we DON'T touch them here. Global `.que .formulation` (question bodies
+    // render the same everywhere — quiz attempt/review/preview, question preview);
+    // (0,2,0)+!important beats Moodle's (0,2,0). In-question links + the "Clear my
+    // choice" control follow the dark link colour (below).
+    rules.push('.que .formulation {');
+    rules.push(`  background-color: ${tokens.cardBg} !important;`);
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push(`  border-color: ${tokens.cardBorder} !important;`);
+    rules.push('}');
+    // Force the question text / options / feedback light. These target text containers,
+    // NOT the ✓/✗ `<i>` icons (which keep their own .text-success/.text-danger colour).
+    rules.push('.que .formulation .qtext,');
+    rules.push('.que .formulation .ablock,');
+    rules.push('.que .formulation .answer,');
+    rules.push('.que .formulation .specificfeedback,');
+    rules.push('.que .formulation .rightanswer,');
+    rules.push('.que .formulation legend {');
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push('}');
+    // In-question links follow the dark link colour (lime/orange).
+    rules.push('.que .formulation a:not(.btn) {');
+    rules.push(`  color: ${tokens.linkColour} !important;`);
+    rules.push('}');
+    rules.push('');
     // ── Multichoice "Clear my choice" link ──
     // After a radio option is selected, Moodle reveals a "Clear my choice" link
-    // (.qtype_multichoice_clearchoice) sitting on the pale-blue `.formulation` box that
-    // Moodle keeps LIGHT. The dark theme's link colour (lime/orange) is near-invisible
-    // on that light-blue bg. Use a high-contrast CFA brand accent — Purple #B500B5 — a
-    // FIXED brand colour (like the #FFFFFF/#1d2125 fixed values): it must stay readable
-    // on Moodle's fixed light-blue box, so it deliberately does NOT follow the dark link
-    // token. Bold it on hover for feedback. Element-scoped to the clear-choice control
-    // (covers <a>/<button>/[role=button] across Moodle versions).
+    // (.qtype_multichoice_clearchoice) inside the question body. Now that `.formulation`
+    // is a dark surface (above), this control follows the dark link colour (lime/orange)
+    // like every other in-question link — the earlier fixed CFA Purple (#B500B5, chosen
+    // when the box was pale-blue) would be too dark on the dark card. Bold on hover for
+    // feedback. Element-scoped to the clear-choice control (covers <a>/<button>/
+    // [role=button] across Moodle versions).
     rules.push('.que .qtype_multichoice_clearchoice,');
     rules.push('.que .qtype_multichoice_clearchoice a,');
     rules.push('.que .qtype_multichoice_clearchoice button,');
     rules.push('.que .qtype_multichoice_clearchoice [role="button"] {');
-    rules.push('  color: #B500B5 !important;'); // CFA Purple — fixed brand accent, readable on the pale-blue formulation
+    rules.push(`  color: ${tokens.linkColour} !important;`);
     rules.push('}');
     rules.push('.que .qtype_multichoice_clearchoice a:hover,');
     rules.push('.que .qtype_multichoice_clearchoice button:hover,');
     rules.push('.que .qtype_multichoice_clearchoice [role="button"]:hover {');
-    rules.push('  color: #B500B5 !important;');
+    rules.push(`  color: ${tokens.linkColour} !important;`);
     rules.push('  font-weight: 700 !important;');
     rules.push('}');
     rules.push('');
