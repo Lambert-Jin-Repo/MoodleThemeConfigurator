@@ -1304,21 +1304,25 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push(`  color: ${tokens.bodyText} !important;`);
     rules.push('}');
     rules.push('');
-    // ── Quiz view page (#page-mod-quiz-view) — "Your attempts" summary table ──
+    // ── Quiz attempt-summary table (.quizreviewsummary) — "Your attempts" / review ──
     // mod/quiz's own stylesheet hardcodes `table.quizreviewsummary td.cell` LIGHT
-    // (`background:#fafafa`, no .bg-white class), so the dark theme's light text —
-    // the Status value ("In progress") and the Started date — is invisible on the
-    // light cell. Unlike the quiz-edit fix (dark text on light), the user wants a
-    // DARK surface here: give the cells the dark CARD surface + light text, links
-    // lime. ID-anchored to #page-mod-quiz-view. (1,2,2)+!important beats Moodle's
+    // (`background:#fafafa`, th.cell `#f0f0f0`, no .bg-white class), so the dark theme's
+    // light text — Status/Started/Completed/Duration/Grade — is invisible on the light
+    // cell. The user wants a DARK surface here (consistent across all quiz pages): give
+    // the cells the dark CARD surface + light text, links lime. The SAME table is
+    // emitted by review_summary_table() on view.php (#page-mod-quiz-view), review.php
+    // (#page-mod-quiz-review) AND summary.php (#page-mod-quiz-summary), so anchor on the
+    // quiz body-id PREFIX `[id^="page-mod-quiz-"]` (same pattern as the `.que .info`
+    // block below) — one rule covers all three. `.quizreviewsummary` is unique to this
+    // table, so no other generaltable is touched. (0,3,2)+!important beats Moodle's
     // `table.quizreviewsummary td.cell` (0,2,2).
-    rules.push('#page-mod-quiz-view .quizreviewsummary td.cell,');
-    rules.push('#page-mod-quiz-view .quizreviewsummary th.cell {');
+    rules.push('[id^="page-mod-quiz-"] .quizreviewsummary td.cell,');
+    rules.push('[id^="page-mod-quiz-"] .quizreviewsummary th.cell {');
     rules.push(`  background-color: ${tokens.cardBg} !important;`);
     rules.push(`  color: ${tokens.bodyText} !important;`);
     rules.push(`  border-color: ${tokens.cardBorder} !important;`);
     rules.push('}');
-    rules.push('#page-mod-quiz-view .quizreviewsummary a:not(.btn) {');
+    rules.push('[id^="page-mod-quiz-"] .quizreviewsummary a:not(.btn) {');
     rules.push(`  color: ${tokens.linkColour} !important;`);
     rules.push('}');
     rules.push('');
@@ -1514,6 +1518,49 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push('  color: #FFFFFF !important;');
     rules.push(`  border-color: ${d.error} !important;`);
     rules.push('  filter: brightness(0.92);');
+    rules.push('}');
+    rules.push('');
+    // ── Quiz navigation buttons (#mod_quiz_navblock .qnbutton) — per-state colours ──
+    // The "Quiz navigation" panel shows numbered question buttons (a.qnbutton). The
+    // visible number is a BARE TEXT NODE coloured by inherited body text, which our dark
+    // rules push near-white → it washes out on Moodle's state-coloured buttons (esp. the
+    // red incorrect/notanswered strip). Moodle puts the state colour on the lower
+    // `.trafficlight` strip + a ✓/✗ pix glyph (a background-IMAGE). User asked for a clear
+    // colour combination for finished quizzes → SOLID per-state fills + a fixed-dark
+    // number `d.bodyText` (#1d2125), which passes WCAG AA on every state bg: lime 12.7:1,
+    // red #F64747 4.56:1, amber 8.3:1, grey 6.2:1 (and Dark Ember green #4CAF50 5.8:1). We
+    // fill BOTH the button and its `.trafficlight` (overriding only background-color, so
+    // the ✓/✗ glyph image survives → state still conveyed non-chromatically, WCAG 1.4.1).
+    // Backgrounds follow the active dark preset via the semantic tokens. Base (not-yet-
+    // answered / answersaved, during an attempt) → a light surface so the dark number
+    // reads; the graded states override it. Scoped to #mod_quiz_navblock (with the
+    // .path-mod-quiz body class for specificity), so no other buttons are affected; the
+    // block appears on review/attempt/summary pages alike. Dark presets only.
+    // Base: dark number on a light surface (covers notyetanswered/answersaved).
+    rules.push('.path-mod-quiz #mod_quiz_navblock .qnbutton {');
+    rules.push(`  color: ${d.bodyText} !important;`);
+    rules.push('  background-color: #FFFFFF !important;');
+    rules.push('}');
+    // Correct → success (lime on Dark Lime / green on Dark Ember).
+    rules.push('.path-mod-quiz #mod_quiz_navblock .qnbutton.correct,');
+    rules.push('.path-mod-quiz #mod_quiz_navblock .qnbutton.correct .trafficlight {');
+    rules.push(`  background-color: ${tokens.success} !important;`);
+    rules.push('}');
+    // Incorrect → error red (#F64747; dark number = 4.56:1 AA, white would fail at 3.55).
+    rules.push('.path-mod-quiz #mod_quiz_navblock .qnbutton.incorrect,');
+    rules.push('.path-mod-quiz #mod_quiz_navblock .qnbutton.incorrect .trafficlight {');
+    rules.push(`  background-color: ${tokens.error} !important;`);
+    rules.push('}');
+    // Partially correct → warning amber.
+    rules.push('.path-mod-quiz #mod_quiz_navblock .qnbutton.partiallycorrect,');
+    rules.push('.path-mod-quiz #mod_quiz_navblock .qnbutton.partiallycorrect .trafficlight {');
+    rules.push(`  background-color: ${tokens.warning} !important;`);
+    rules.push('}');
+    // Not answered (finished, never answered) → muted grey, distinct from incorrect red.
+    // Moodle paints this state's trafficlight red, so we recolour the strip too.
+    rules.push('.path-mod-quiz #mod_quiz_navblock .qnbutton.notanswered,');
+    rules.push('.path-mod-quiz #mod_quiz_navblock .qnbutton.notanswered .trafficlight {');
+    rules.push(`  background-color: ${tokens.mutedText} !important;`);
     rules.push('}');
     rules.push('');
   }
