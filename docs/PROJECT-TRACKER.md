@@ -1520,3 +1520,34 @@ First attempt used `cardBg` (#2D2D2E) → user reported **"no hover effect"** be
 - `lib/scss-generator.ts` (the hover rule), `docs/moodle-cloud-constraints.md` (1 selector row), `docs/PROJECT-TRACKER.md` (this section), `CLAUDE.md` (status bullet). Memory: `project_dark_theme_calendar_hover.md`.
 
 **Branch:** `worktree-fix+dark-theme-enrolment-icons` (off main `f52e845`, after PR #21).
+
+---
+
+## Session: 2026-06-25 (continued) — Dark Theme: Move-block YUI dialog (#142)
+
+### Issue
+Clicking a block's move icon (Dashboard edit mode) opens a YUI dialog ("Move Timeline"/"Move Calendar") that rendered WHITE on dark themes, with lime `.aalink` drop-target links ≈ unreadable on white. The user wanted the whole dialog dark. Follow-up: on CLICK/FOCUS the lime link washed out on Moodle's light focus highlight → wanted dark text in that state.
+
+### Root cause
+Generic `M.core.dialogue` (no distinguishing class/id, portalled to `<body>`, shared base with the file picker/activity chooser). Moodle paints it white from ONE place — `.moodle-dialogue-base .moodle-dialogue-wrap { background-color: $white; border: 1px solid #ccc }` (`core.scss`); hd/bd/ft are transparent (the header "grey bar" is its `border-bottom: #dee2e6`). The generator deliberately keeps ALL `.moodle-dialogue-bd` white-with-dark-text + lime links (L~608-623), so the lime links sat on white.
+
+### Fix (`lib/scss-generator.ts`, inside `if (darkMode)`, after the #141 calendar rule)
+Scoped via **`:has(.dragdrop-keyboard-drag)`** — the dialog's body `<ul>` is its only unique marker, so this targets JUST the move dialog and leaves other YUI dialogs (file picker, datatables) white. **First `:has()` in the generator** (Baseline-2023, fine for Moodle 5.x).
+- `.moodle-dialogue-base:has(.dragdrop-keyboard-drag) .moodle-dialogue-wrap` → `cardBg` + `cardBorder`.
+- `… .moodle-dialogue-hd` → `border-bottom-color cardBorder`; hd/bd/`*`/`.closebutton` → `bodyText` (light).
+- `… .dragdrop-keyboard-drag a, :hover` → `linkColour` (lime/orange, readable on cardBg).
+- `… .dragdrop-keyboard-drag a:focus, :focus-visible, :active` → `d.bodyText` (#1d2125) — Moodle's accessibility focus style paints the clicked item a LIGHT highlight, so flip the focused link text fixed-dark.
+
+### Specificity
+The `:has()` qualifier adds a class over the global rules — text `(0,3,0)` beats `.moodle-dialogue-bd *` `(0,2,0)`!important; link `(0,3,1)` beats `.moodle-dialogue-bd a` `(0,2,1)`; focus `(0,4,1)` beats both.
+
+### Verification
+- `npm run build` + `npm run lint` clean. Generator output: **Dark Lime** + **Dark Ember** emit the block (wrap `#2D2D2E`/`#3A3A3B` + `#555556`, text `#F0EEEE`, links `#BAF73C`/`#F27927`, focus `#1d2125`); all **8 light presets + Moodle Default** emit **0**. **User-verified on Moodle Cloud** (dialog dark; click/focus text dark + readable).
+
+### Presets / Controls
+- **No new token.** Reuses `cardBg`/`cardBorder`/`bodyText`/`linkColour` + `d.bodyText` → no preset edits, no control / quick-palette change.
+
+### Files Modified
+- `lib/scss-generator.ts` (the dialog block), `docs/moodle-cloud-constraints.md` (1 selector row), `docs/PROJECT-TRACKER.md` (this section), `CLAUDE.md` (status bullet). Memory: `project_dark_theme_move_dialog.md`.
+
+**Branch:** `worktree-fix+dark-theme-enrolment-icons` (off main `f52e845`, after PR #21).

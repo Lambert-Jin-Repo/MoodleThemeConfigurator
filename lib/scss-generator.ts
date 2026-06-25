@@ -1945,6 +1945,60 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push(`  box-shadow: inset 0 0 0 2px ${tokens.linkColour} !important;`);
     rules.push('}');
     rules.push('');
+
+    // ── Move-block YUI dialog — dark surface (#142) ──
+    // Clicking a block's move/drag icon (Dashboard edit mode) opens a YUI
+    // `M.core.dialogue` titled "Move <block>". It is a GENERIC dialogue (same base
+    // class as the file picker / activity chooser) with NO distinguishing class or
+    // id, portalled to `<body>`. Moodle paints it white from ONE place —
+    // `.moodle-dialogue-base .moodle-dialogue-wrap { background-color: $white;
+    // border: 1px solid #ccc }` (core.scss); the `-hd`/`-bd`/`-ft` are transparent
+    // over the wrap (the header "grey bar" is just its `border-bottom: #dee2e6`).
+    // The generator deliberately keeps ALL `.moodle-dialogue-bd` white-with-dark-text
+    // (L~608-623) + lime links — so on this dialog the lime `.aalink` drop-targets
+    // sit on white ≈ unreadable (the user's complaint). The dialog's ONLY unique
+    // marker is its body content `<ul class="dragdrop-keyboard-drag">` (unique to the
+    // block-move dialog — the file picker/datatables don't have it), so `:has()`
+    // scopes JUST this dialog dark and leaves the other YUI dialogs white as intended.
+    // (:has() is Baseline-2023, fine for Moodle 5.x's browsers; first use in the gen.)
+    // Repaint the wrap to the dark popup surface (`cardBg`, like dropdowns/cards),
+    // override the hd border, flip header/body/close-× text light (`bodyText`), and
+    // keep the drop-target links at the accent `linkColour` (now readable on dark:
+    // lime ≈10:1, orange ≈4.6:1). Specificity: the `.moodle-dialogue-base:has(…)`
+    // qualifier adds a class over the global rules — text `(0,3,0)` beats the global
+    // `.moodle-dialogue-bd *` `(0,2,0)`!important; links `(0,3,1)` beat `.moodle-
+    // dialogue-bd a` `(0,2,1)`!important. Dark presets only.
+    rules.push('.moodle-dialogue-base:has(.dragdrop-keyboard-drag) .moodle-dialogue-wrap {');
+    rules.push(`  background-color: ${tokens.cardBg} !important;`);
+    rules.push(`  border-color: ${tokens.cardBorder} !important;`);
+    rules.push('}');
+    rules.push('.moodle-dialogue-base:has(.dragdrop-keyboard-drag) .moodle-dialogue-hd {');
+    rules.push(`  border-bottom-color: ${tokens.cardBorder} !important;`);
+    rules.push('}');
+    rules.push('.moodle-dialogue-base:has(.dragdrop-keyboard-drag) .moodle-dialogue-hd,');
+    rules.push('.moodle-dialogue-base:has(.dragdrop-keyboard-drag) .moodle-dialogue-hd *,');
+    rules.push('.moodle-dialogue-base:has(.dragdrop-keyboard-drag) .moodle-dialogue-bd,');
+    rules.push('.moodle-dialogue-base:has(.dragdrop-keyboard-drag) .moodle-dialogue-bd *,');
+    rules.push('.moodle-dialogue-base:has(.dragdrop-keyboard-drag) .closebutton {');
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push('}');
+    rules.push('.moodle-dialogue-base:has(.dragdrop-keyboard-drag) .dragdrop-keyboard-drag a,');
+    rules.push('.moodle-dialogue-base:has(.dragdrop-keyboard-drag) .dragdrop-keyboard-drag a:hover {');
+    rules.push(`  color: ${tokens.linkColour} !important;`);
+    rules.push('}');
+    // On CLICK/FOCUS, Moodle's accessibility focus style (`.aalink:focus`,
+    // `[role="button"]:focus`) paints the focused drop-target item a LIGHT highlight
+    // → the lime link text washes out on it (the user's "invisible when clicked").
+    // The focus highlight is always light, so flip the focused/active link text to
+    // the fixed-dark default (`d.bodyText` #1d2125, ≈ black) — a fixed-dark-on-light
+    // case, like the other always-light surfaces. (0,4,1) [extra `:focus` class] beats
+    // the dialog's own lime link rule (0,3,1) and Moodle's `.aalink:focus` (≈0,2,0).
+    rules.push('.moodle-dialogue-base:has(.dragdrop-keyboard-drag) .dragdrop-keyboard-drag a:focus,');
+    rules.push('.moodle-dialogue-base:has(.dragdrop-keyboard-drag) .dragdrop-keyboard-drag a:focus-visible,');
+    rules.push('.moodle-dialogue-base:has(.dragdrop-keyboard-drag) .dragdrop-keyboard-drag a:active {');
+    rules.push(`  color: ${d.bodyText} !important;`);
+    rules.push('}');
+    rules.push('');
   }
 
   const block2 = rules.join('\n');
