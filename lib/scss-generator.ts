@@ -1915,6 +1915,38 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push('}');
     rules.push('');
 
+    // ── Emoji picker: search box dark field (#148, extends #140) ──
+    // The emoji picker's search input (`lib/templates/emoji/picker.mustache` →
+    // `<input class="form-control border-start-0" data-region="search-input">` inside
+    // `.emoji-picker .card-body .input-group`) stayed WHITE on dark themes. #140 made
+    // the picker `.card`/`.card-body`/`.input-group-text` chip + icons dark, but never
+    // the `.form-control` input. The input sits inside the message-drawer conversation
+    // footer whose root is `<div class="… bg-white …">`
+    // (`message_drawer_view_conversation_footer.mustache`), so the generator's OWN
+    // "white-bg final overrides" rule (`.bg-white .form-control { color: ${d.bodyText}
+    // (#1d2125); background-color: #FFFFFF }`, L~1050-1060, cascade layer 5) forces it
+    // white-bg + dark-text — correct for real white dialogs, wrong for this dark drawer.
+    // Repaint the input to the dark `cardBg` field (matching the already-dark chip, so
+    // the `border-start-0` join reads as one dark pill) + light `bodyText` + `mutedText`
+    // placeholder. The magnifier chip + glyph are ALREADY dark/accent from #140 — not
+    // re-asserted here. `:focus` included so Bootstrap's focus state can't revert it.
+    // Selector `.emoji-picker .input-group .form-control` (0,3,0) beats the culprit
+    // `.bg-white .form-control` (0,2,0) regardless of source order (a bare
+    // `.emoji-picker .form-control` would be a fragile (0,2,0) tie). The full card
+    // picker is messaging-only in stock Moodle (the inline `:smile:` autocomplete +
+    // TinyMCE emoji use other templates), and this is dark-gated, so global
+    // `.emoji-picker` scope is safe. Stable 4.4/4.5/5.0. Dark presets only.
+    rules.push('.emoji-picker .input-group .form-control,');
+    rules.push('.emoji-picker .input-group .form-control:focus {');
+    rules.push(`  background-color: ${tokens.cardBg} !important;`);
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push(`  border-color: ${tokens.cardBorder} !important;`);
+    rules.push('}');
+    rules.push('.emoji-picker .input-group .form-control::placeholder {');
+    rules.push(`  color: ${tokens.mutedText} !important;`);
+    rules.push('}');
+    rules.push('');
+
     // ── Messaging drawer: search view dark surface (#147, extends #140) ──
     // The drawer's SEARCH view (`message_drawer_view_search_header.mustache`, rendered
     // INSIDE `.message-app`) was left light by #140 for two reasons:

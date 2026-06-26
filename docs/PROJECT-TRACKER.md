@@ -1705,3 +1705,31 @@ Make the whole search box one cohesive dark field (like the #140 composer textar
 - `lib/scss-generator.ts` (the search-view block), `docs/moodle-cloud-constraints.md` (#140 row extended), `docs/PROJECT-TRACKER.md` (this section), `CLAUDE.md` (status bullet). Memory: `project_dark_theme_messaging_drawer.md` (updated).
 
 **Branch:** `worktree-dark-theme-grade-status-icons` (off main `c6425ef`, after PR #22).
+
+## Session: 2026-06-26 — Dark Theme: Emoji picker search box (#148, extends #140)
+
+### Issue
+On dark themes, the emoji picker's SEARCH box (message composer → smiley button → search field at top of the picker) rendered WHITE, clashing with the otherwise-dark picker (#140). User wanted it dark.
+
+### Root cause
+The picker (`lib/templates/emoji/picker.mustache`, root `.card.shadow.emoji-picker`) holds `<input class="form-control border-start-0" data-region="search-input">` inside `.card-body .input-group`. #140 darkened the picker `.card`/`.card-body`/`.input-group-text` chip + icons but NEVER the `.form-control` input. The input sits inside the message-drawer conversation **footer**, whose root is `<div class="hidden border-top bg-white position-relative">` (`message_drawer_view_conversation_footer.mustache`, verified 4.4/4.5/5.0) — so the generator's OWN "white-bg final overrides" rule (`.bg-white .form-control { color: ${d.bodyText} #1d2125; background-color: #FFFFFF }`, L1050-1060, cascade layer 5) forced the input white-bg + dark-text. The magnifier chip + glyph were already dark/lime from #140 (so the user saw a dark chip + lime magnifier + WHITE input). **Research correction:** the emoji picker is NOT portalled out of `.message-app` (it renders into the in-footer `[data-region="emoji-picker-container"]`); the earlier #140 "JS portals out" note was wrong. Scoping to `.emoji-picker` is still correct/simplest.
+
+### Fix (`lib/scss-generator.ts`, after the #140 emoji-picker rules, inside `if (darkMode)`)
+```
+.emoji-picker .input-group .form-control,
+.emoji-picker .input-group .form-control:focus {
+  background-color: ${tokens.cardBg} !important; color: ${tokens.bodyText} !important; border-color: ${tokens.cardBorder} !important; }
+.emoji-picker .input-group .form-control::placeholder { color: ${tokens.mutedText} !important; }
+```
+Repaint ONLY the input to the dark `cardBg` field (matching the already-dark chip → the `border-start-0` join reads as one dark pill) + light `bodyText` + `mutedText` placeholder. `:focus` included so Bootstrap's focus state can't revert it. Chip/magnifier left to #140. Selector `.emoji-picker .input-group .form-control` **(0,3,0)** beats the culprit `.bg-white .form-control` (0,2,0) regardless of source order (a bare `.emoji-picker .form-control` would be a fragile (0,2,0) tie). The full card picker is messaging-only in stock Moodle (the inline `:smile:` autocomplete + TinyMCE emoji use other templates), and this is dark-gated → global `.emoji-picker` scope is safe.
+
+### Verification
+- `npm run build` + `npm run lint` clean. Compiled-generator harness: Dark Lime + Dark Ember + a synthetic custom dark theme emit the block (input cardBg/bodyText/cardBorder, placeholder mutedText, `:focus` present) each with their OWN tokens; all 8 light presets + Moodle Default emit **0**. **User-verified on Moodle Cloud.**
+
+### Presets / Controls
+- **No new token.** Reuses `cardBg`/`bodyText`/`cardBorder`/`mutedText` → no preset edits, no control / quick-palette change.
+
+### Files Modified
+- `lib/scss-generator.ts` (the emoji-search block), `docs/moodle-cloud-constraints.md` (#140 row extended + "portalled" correction), `docs/PROJECT-TRACKER.md` (this section), `CLAUDE.md` (status bullet). Memory: `project_dark_theme_messaging_drawer.md` (updated, incl. portalled correction).
+
+**Branch:** `worktree-dark-theme-grade-status-icons` (off main `c6425ef`, after PR #22).
