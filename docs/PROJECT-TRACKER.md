@@ -1771,3 +1771,30 @@ Mirror #145/#136 — repaint the whole table dark, anchored on the body class + 
 - `lib/scss-generator.ts` (the activity-report block), `docs/moodle-cloud-constraints.md` (1 selector row), `docs/PROJECT-TRACKER.md` (this section), `CLAUDE.md` (status bullet). Memory: `project_dark_theme_activity_report.md`.
 
 **Branch:** `worktree-dark-theme-grade-status-icons` (off main `c6425ef`, after PR #22).
+
+## Session: 2026-06-26 — Dark Theme: Alert-info icon + link re-light (#150)
+
+### Issue
+On dark themes, inside the `.alert.alert-info` "Custom certificate information not available" box (course Activities overview): (1) the info `(i)` icon was dark → invisible; (2) the "Custom certificate overview" link was NOT lime at rest like other page links.
+
+### Root cause
+The generator darkens `.alert-info` to the dark card surface (L~1040: `.well, .alert-info { background-color: cardBg; color: bodyText; border-color: cardBorder }`) — but ONLY `.alert-info`, not the semantic success/warning/danger alerts (those keep Moodle's light subtle bg). Inside the darkened info alert: (1) the icon `<i class="icon fa fa-circle-info fa-fw">` (Moodle `notification_base.mustache` → `i/circleinfo`, FontAwesome, NO `.text-*` class) is painted dark `#1d2125` by the global `.icon, .fa` rule (L~349) → dark-on-dark. (2) a bare `<a>` (NOT `.alert-link`) is coloured by MOODLE's own `core.scss` `.alert-info a { color: darken(shift-color($info,40%),10%) }` (a dark shade for the LIGHT alert; (0,1,1), non-important) — it never picks up `$primary`/`--bs-link-color`, so it stays dark-on-dark, not lime.
+
+### Fix (`lib/scss-generator.ts`, tail of `if (darkMode)`, after #149)
+```
+.alert-info .icon, .alert-info .fa { color: ${tokens.bodyText} !important; }   /* white #F0EEEE */
+.alert-info a { color: ${tokens.linkColour} !important; }                       /* lime/orange rest */
+.alert-info a:hover, .alert-info a:focus { color: ${tokens.linkHover} !important; }  /* normal hover preserved */
+```
+**MUST scope to `.alert-info`** (NOT `.alert`) — the other alert types stay light and must keep their dark semantic icon/link colours; a blanket `.alert .icon`/`.alert a` would make them invisible (and clobber semantic icon colours). Specificity: `.alert-info .icon` (0,2,0) beats the global `.icon` (0,1,0); `.alert-info a` (0,2,0)+`!important` beats Moodle's `.alert-info a` (0,1,1); the hover rule (0,2,1) beats both the rest rule and the global `a:hover` so the link still brightens on hover like every other link. Icon = `bodyText` (white per the CFA guide, not hardcoded); link = `linkColour`.
+
+### Verification
+- `npm run build` + `npm run lint` clean. Compiled-generator harness: Dark Lime + Dark Ember + a synthetic custom dark theme emit all three rules (icon `bodyText`, link `linkColour`, hover `linkHover`) each with their OWN tokens; all 8 light presets + Moodle Default emit **0**; leak check clean (every alert rule is `.alert-info`-scoped — no bare `.alert`). **User-verified on Moodle Cloud.**
+
+### Presets / Controls
+- **No new token.** Reuses `bodyText`/`linkColour`/`linkHover` → no preset edits, no control / quick-palette change.
+
+### Files Modified
+- `lib/scss-generator.ts` (the alert-info block), `docs/moodle-cloud-constraints.md` (1 selector row), `docs/PROJECT-TRACKER.md` (this section), `CLAUDE.md` (status bullet). Memory: `project_dark_theme_alert_info.md`.
+
+**Branch:** `worktree-dark-theme-grade-status-icons` (off main `c6425ef`, after PR #22).

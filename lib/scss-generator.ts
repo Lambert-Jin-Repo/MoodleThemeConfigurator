@@ -2253,6 +2253,40 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push(`  color: ${tokens.mutedText} !important;`);
     rules.push('}');
     rules.push('');
+
+    // ── Alert-info: re-light icon + link on the darkened info alert (#150) ──
+    // The generator darkens `.alert-info` to the dark card surface (L~1040:
+    // `.well, .alert-info { background-color: cardBg; color: bodyText; border-color:
+    // cardBorder }`) — but only `.alert-info`, NOT the semantic success/warning/danger
+    // alerts (those keep Moodle's light subtle bg). Two things inside the darkened
+    // info alert were left dark-on-dark:
+    //  (1) the info icon `<i class="icon fa fa-circle-info fa-fw">` (Moodle
+    //      `notification_base.mustache` → `i/circleinfo`; FontAwesome, NO `.text-*`
+    //      class) is painted dark `#1d2125` by the global `.icon, .fa` rule (L~349) →
+    //      invisible. Re-light to `bodyText` (white, CFA Light Grey #F0EEEE).
+    //  (2) a bare `<a>` (NOT `.alert-link`) is coloured by MOODLE's own `core.scss`
+    //      `.alert-info a { color: darken(shift-color($info,40%),10%) }` (a dark shade
+    //      for the LIGHT alert; (0,1,1), non-important) — it never picks up `$primary`
+    //      / `--bs-link-color`, so it stays dark-on-dark, not lime. Force it to
+    //      `linkColour` at rest + preserve the normal `linkHover` on hover so it
+    //      behaves like every other page link.
+    // MUST scope to `.alert-info` (NOT `.alert`) — the other alert types stay light and
+    // must keep their dark semantic icon/link colours. Specificity: `.alert-info .icon`
+    // (0,2,0) beats the global `.icon` (0,1,0); `.alert-info a` (0,2,0)+`!important`
+    // beats Moodle's `.alert-info a` (0,1,1); the hover rule (0,2,1) beats both the rest
+    // rule and the global `a:hover` (0,1,1). Dark presets only.
+    rules.push('.alert-info .icon,');
+    rules.push('.alert-info .fa {');
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push('}');
+    rules.push('.alert-info a {');
+    rules.push(`  color: ${tokens.linkColour} !important;`);
+    rules.push('}');
+    rules.push('.alert-info a:hover,');
+    rules.push('.alert-info a:focus {');
+    rules.push(`  color: ${tokens.linkHover} !important;`);
+    rules.push('}');
+    rules.push('');
   }
 
   const block2 = rules.join('\n');
