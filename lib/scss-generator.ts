@@ -2287,6 +2287,29 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push(`  color: ${tokens.linkHover} !important;`);
     rules.push('}');
     rules.push('');
+
+    // ── Signup / forgot-password: darken the .login-container "card" (#151) ──
+    // The signup (`login/signup.php`) and forgot-password (`login/forgot_password.php`)
+    // pages use the Boost `login` page layout (`theme/boost/templates/login.mustache`),
+    // which wraps the mform in `<div class="login-container">`. Moodle's
+    // `theme/boost/scss/moodle/login.scss` paints it WHITE (`$logincontainer-bg: $white`,
+    // un-`!important`, byte-identical 4.4/4.5/5.0). It is NOT a `.card` and NOT `.bg-white`,
+    // so none of the generator's dark surfaces reached it: the inputs already render dark
+    // (global `.form-control` rule), the page is dark (`#region-main`), but the container
+    // stayed white → inconsistent. The labels inside inherit `bodyText` (light) so they
+    // were near-invisible on the white card too. Repaint the container to `cardBg` (same as
+    // every other `.card`) so it reads as one cohesive dark card; labels become readable and
+    // the inputs stay distinct via their `cardBorder` outline.
+    // The login page itself (`#page-login-index`) has its own dark handling above (L~269,
+    // gated behind login tokens) — these body-id-scoped rules never touch it. Scope to the
+    // two body ids (NOT bare `.login-container`, which would also hit the login page).
+    // Specificity `body#…` (1,1,0) + `!important` beats Moodle's un-`!important` white.
+    rules.push('body#page-login-signup .login-container,');
+    rules.push('body#page-login-forgot_password .login-container {');
+    rules.push(`  background-color: ${tokens.cardBg} !important;`);
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push('}');
+    rules.push('');
   }
 
   const block2 = rules.join('\n');

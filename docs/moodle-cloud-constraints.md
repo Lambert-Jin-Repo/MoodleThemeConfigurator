@@ -159,7 +159,7 @@ Tested against Moodle 5.0+ Boost theme. All confirmed to survive Bootstrap 5 mig
 | Navbar background | `.navbar.fixed-top` | **Moodle 5.0+ uses `.bg-body`** (Bootstrap 5.3 token-based bg); Moodle 4.x used `.bg-white`. SCSS overrides should target both for cross-version safety. Needs `!important`. |
 | Navbar links | `.navbar.fixed-top .nav-link, .navbar.fixed-top .navbar-brand` | |
 | Login page body | `body#page-login-index` | Moodle body ID convention |
-| Login container | `.login-container` | In `login.mustache` template |
+| Login container | `.login-container` | In `theme/boost/templates/login.mustache` (Boost `login` page layout). Painted WHITE by `login.scss` `$logincontainer-bg: $white` (un-`!important`, byte-identical 4.4/4.5/5.0). Shared by the login (`#page-login-index`), signup (`#page-login-signup`), and forgot-password (`#page-login-forgot_password`) pages — NOT a `.card` and NOT `.bg-white`. **Dark themes (#151):** repaint signup + forgot-password to `cardBg`/`bodyText` via `body#page-login-signup .login-container, body#page-login-forgot_password .login-container` (body-id-scoped so the login page's own dark handling is untouched). `body#…` (1,1,0)+`!important` beats Boost's un-`!important` white. |
 | Login heading | `.login-heading` | `h1.login-heading` or `h2.login-heading` |
 | Login form inputs | `.login-form input[type="text"], .login-form input[type="password"]` | |
 | Login button | `#loginbtn` | Stable ID |

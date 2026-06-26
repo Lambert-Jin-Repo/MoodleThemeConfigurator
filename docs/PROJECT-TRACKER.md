@@ -1798,3 +1798,39 @@ The generator darkens `.alert-info` to the dark card surface (L~1040: `.well, .a
 - `lib/scss-generator.ts` (the alert-info block), `docs/moodle-cloud-constraints.md` (1 selector row), `docs/PROJECT-TRACKER.md` (this section), `CLAUDE.md` (status bullet). Memory: `project_dark_theme_alert_info.md`.
 
 **Branch:** `worktree-dark-theme-grade-status-icons` (off main `c6425ef`, after PR #22).
+
+---
+
+## Session: 2026-06-26 — Signup + forgot-password white card (#151)
+
+### Issue
+On dark themes, the New-account (`login/signup.php`) and Forgot-password (`login/forgot_password.php`) form **cards** rendered WHITE while their input fields were already dark and the page background (`#region-main`) was dark → visually inconsistent. The light labels inside (inheriting `bodyText`) were also near-invisible on the white card.
+
+### Root cause
+Both pages use Boost's `login` page layout (`theme/boost/templates/login.mustache`), which wraps the mform in `<div class="login-container">` (`region-main` → `.login-wrapper` → `.login-container`). Moodle's `theme/boost/scss/moodle/login.scss` paints it `$logincontainer-bg: $white` (un-`!important`, byte-identical 4.4/4.5/5.0). It is **NOT** a Bootstrap `.card` and **NOT** `.bg-white`, so none of the generator's dark surfaces matched it — the inputs darken via the global `.form-control` rule and `#region-main` darkens via its own rule, but the container stayed white. Body ids: `#page-login-signup`, `#page-login-forgot_password` (NOT `/index.php` pages, so no `-index` suffix).
+
+### Fix (`lib/scss-generator.ts`, tail of `if (darkMode)`, after #150)
+```
+body#page-login-signup .login-container,
+body#page-login-forgot_password .login-container {
+  background-color: ${tokens.cardBg} !important;   /* Dark Lime #2D2D2E, Ember #3A3A3B */
+  color: ${tokens.bodyText} !important;             /* #F0EEEE */
+}
+```
+One cohesive dark card; labels readable, inputs stay distinct via their `cardBorder` outline.
+
+**MUST scope to the two body ids** (NOT bare `.login-container`) — the login page (`#page-login-index`) shares the same class but has its own dark handling (L~269, gated behind login tokens); a bare rule would clobber it. `body#…` (1,1,0)+`!important` beats Boost's un-`!important` `$white`.
+
+### Verification
+- `npm run lint` clean. Compiled-generator harness: Dark Lime (`#2D2D2E`) + Dark Ember (`#3A3A3B`) + a synthetic custom dark theme emit the rule with their OWN `cardBg`/`bodyText`; 8 light presets + Moodle Default + CFA Dark Chrome (light-bg) emit **0**. **User-verified on Moodle Cloud** (both cards).
+
+### Presets / Controls
+- **No new token.** Reuses `cardBg`/`bodyText` → no preset edits, no control / quick-palette change.
+
+### Process note
+First Edit accidentally landed on the `main` checkout (absolute path resolved outside the worktree). Caught it, reverted `main` (`git checkout -- lib/scss-generator.ts`), re-applied inside the worktree. Lesson: when editing in a worktree, the file_path MUST include the `.claude/worktrees/<name>/` segment.
+
+### Files Modified
+- `lib/scss-generator.ts` (the signup/forgot-password block), `docs/moodle-cloud-constraints.md` (login-container row), `docs/PROJECT-TRACKER.md` (this section), `CLAUDE.md` (status bullets). Memory: `project_dark_theme_login_container.md`.
+
+**Branch:** `worktree-worktree-dark-theme-login-container` (off main `abefbbb`, after PR #23).
