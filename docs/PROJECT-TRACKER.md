@@ -1834,3 +1834,43 @@ First Edit accidentally landed on the `main` checkout (absolute path resolved ou
 - `lib/scss-generator.ts` (the signup/forgot-password block), `docs/moodle-cloud-constraints.md` (login-container row), `docs/PROJECT-TRACKER.md` (this section), `CLAUDE.md` (status bullets). Memory: `project_dark_theme_login_container.md`.
 
 **Branch:** `worktree-worktree-dark-theme-login-container` (off main `abefbbb`, after PR #23).
+
+---
+
+## Session: 2026-06-26 — Login-page polish: button-link hover + hide duplicate signup (#152)
+
+Same branch as #151. While building the custom login page (a "Create new account" `<a class="btn btn-primary btn-lg">` placed in the login **Instructions** field, with Moodle's auto signup button hidden), two issues surfaced. Both fixes are **PERMANENT** per the user's directive — they must persist in every future export.
+
+### (a) Button-styled link had invisible text on hover
+**Issue:** hovering the custom "Create new account" button made its text disappear.
+**Root cause:** the button is an `<a class="btn btn-primary">`. The generator's base `.btn-primary { color: ${tokens.btnPrimaryText} }` is (0,1,0); the global `a:hover, a:focus { color: ${tokens.linkHover} !important }` is (0,1,1) — higher — so on hover the text flipped to the lime link-hover colour, on the lime button → invisible. Real `<button>`s (e.g. `#loginbtn` "Log in") are immune because they aren't `<a>`.
+**Fix** (`lib/scss-generator.ts`, Buttons section, after `.btn-primary:hover`):
+```
+a.btn-primary:hover, a.btn-primary:focus { color: ${tokens.btnPrimaryText} !important; }
+```
+(0,2,1) beats the global `a:hover` (0,1,1) and only targets button-links; `.btn-primary:hover` still darkens the bg (`btnPrimaryHover`) for the visible hover effect. General fix — benefits any `<a class="btn-primary">` site-wide. Gated with the existing Buttons block (emits whenever custom primary-button colours are set, i.e. all CFA presets).
+
+### (b) Duplicate "Create new account" button
+**Issue:** Moodle auto-renders its own signup button in `.login-signup` (when self-registration is on), duplicating the custom one in the Instructions.
+**Fix** (`lib/scss-generator.ts`, new unconditional block after the Login section):
+```
+body#page-login-index .login-signup { display: none !important; }
+```
+Emitted **UNCONDITIONALLY** (every preset incl. Moodle Default) so the login layout is stable across themes. This is the SCSS half of a pairing — the other half is the custom button in Moodle's Instructions HTML, which the generator can't emit.
+
+### Button height
+The custom button needed `btn-lg` (Moodle's "Log in" is `btn btn-primary btn-lg`) to match height — a one-class HTML change in the Instructions field, not SCSS.
+
+### ⚠️ Permanence (user directive)
+"Make sure all future updates on any visual issues will carry this value." Both rules are baked into the generator (the hide rule unconditionally; the hover fix in the always-relevant Buttons block) with `DO NOT remove` comments, documented here + in CLAUDE.md, and captured in memory `project_login_page_customisations.md`. Future visual-issue work MUST preserve them.
+
+### Verification
+- `npm run lint` + `npm run build` clean. Harness: the hide rule emits for all 11 presets (incl. Moodle Default); the hover fix emits for all CFA presets (Dark Lime text `#1D2125`, Dark Ember `#FFFFFF`). **User-verified on Moodle Cloud.**
+
+### Presets / Controls
+- **No new token.** Hover fix reuses `btnPrimaryText`; hide rule is structural. No preset edits, no control / quick-palette change.
+
+### Files Modified
+- `lib/scss-generator.ts` (Buttons hover rule + unconditional login-signup hide), `docs/moodle-cloud-constraints.md`, `docs/PROJECT-TRACKER.md` (this section), `CLAUDE.md` (status sub-bullet). Memory: `project_login_page_customisations.md`.
+
+**Branch:** `worktree-worktree-dark-theme-login-container` (off main `abefbbb`, after PR #23).

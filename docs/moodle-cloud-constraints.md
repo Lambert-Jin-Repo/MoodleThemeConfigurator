@@ -162,7 +162,9 @@ Tested against Moodle 5.0+ Boost theme. All confirmed to survive Bootstrap 5 mig
 | Login container | `.login-container` | In `theme/boost/templates/login.mustache` (Boost `login` page layout). Painted WHITE by `login.scss` `$logincontainer-bg: $white` (un-`!important`, byte-identical 4.4/4.5/5.0). Shared by the login (`#page-login-index`), signup (`#page-login-signup`), and forgot-password (`#page-login-forgot_password`) pages — NOT a `.card` and NOT `.bg-white`. **Dark themes (#151):** repaint signup + forgot-password to `cardBg`/`bodyText` via `body#page-login-signup .login-container, body#page-login-forgot_password .login-container` (body-id-scoped so the login page's own dark handling is untouched). `body#…` (1,1,0)+`!important` beats Boost's un-`!important` white. |
 | Login heading | `.login-heading` | `h1.login-heading` or `h2.login-heading` |
 | Login form inputs | `.login-form input[type="text"], .login-form input[type="password"]` | |
-| Login button | `#loginbtn` | Stable ID |
+| Login button | `#loginbtn` | Stable ID. Rendered `btn btn-primary btn-lg` — a custom Create-account link must also use `btn-lg` to match its height. |
+| Signup button (auto) | `.login-signup` | The "Create new account" button Moodle auto-renders on the login page when self-registration is on. **CFA hides it permanently** (`body#page-login-index .login-signup { display: none !important }`, emitted unconditionally) because CFA places its own Create-account button in the login **Instructions** field. #152 |
+| Button-styled links | `a.btn-primary` | An `<a class="btn btn-primary">` loses its text on hover under dark themes: the global `a:hover { color: linkHover !important }` (0,1,1) beats the base `.btn-primary { color }` (0,1,0). Fix: `a.btn-primary:hover, a.btn-primary:focus { color: ${tokens.btnPrimaryText} !important }` (0,2,1). Real `<button>`s are unaffected. #152 |
 | Secondary nav active | `.secondary-navigation .nav-tabs .nav-link.active` | Moodle 4.0+ |
 | Footer | `#page-footer` | In `footer.mustache` |
 | Progress bars | `.progress-bar` | Bootstrap class |
