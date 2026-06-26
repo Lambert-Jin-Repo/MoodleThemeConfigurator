@@ -1333,6 +1333,98 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push(`  color: ${tokens.bodyText} !important;`);
     rules.push('}');
     rules.push('');
+    // ── Question bank — datafilter panel DARK surface (#155) ──
+    // The "Match … of the following" filter is Moodle's generic core/datafilter
+    // component, built from three Bootstrap LIGHT utilities in the markup (no Moodle
+    // SCSS, no !important): the outer panel `.filter-group.bg-light`, each condition
+    // row's inner card `[data-filterregion="filter"] … .bg-white`, and the value pill
+    // `.badge.bg-secondary.text-dark`. A pre-existing GLOBAL half-measure (~L1093)
+    // keeps that panel light + forces its text dark — correct for OTHER datafilter
+    // pages (Participants etc.), but the user wants the QUESTION BANK filter dark to
+    // match the rest of the dark theme. Scope every rule to `#page-question-edit` so
+    // ONLY the qbank changes (the global rules stay intact elsewhere). 3-level depth:
+    // panel `drawerBg` (darkest, recessed), rows/fields `cardBg` (raised, bordered) —
+    // mirrors the light design's panel-darker-than-rows hierarchy in BOTH presets
+    // (drawerBg #1D2125 is always darker than cardBg). `#page-question-edit …` (1,x,0)
+    // beats both Bootstrap's un-!important utilities and the generator's own
+    // `.bg-white`/`[data-filterregion]` overrides (0,2,0).
+    // (1) surfaces
+    rules.push('#page-question-edit .filter-group.bg-light {');
+    rules.push(`  background-color: ${tokens.drawerBg} !important;`);
+    rules.push(`  border-color: ${tokens.cardBorder} !important;`);
+    rules.push('}');
+    rules.push('#page-question-edit .filter-group [data-filterregion="filter"] .bg-white {');
+    rules.push(`  background-color: ${tokens.cardBg} !important;`);
+    rules.push(`  border-color: ${tokens.cardBorder} !important;`);
+    rules.push('}');
+    // (2) all filter text → light (buttons + value pill handled below)
+    rules.push('#page-question-edit .filter-group,');
+    rules.push('#page-question-edit .filter-group label,');
+    rules.push('#page-question-edit .filter-group legend,');
+    rules.push('#page-question-edit .filter-group p,');
+    rules.push('#page-question-edit .filter-group span,');
+    rules.push('#page-question-edit .filter-group .bg-white,');
+    rules.push('#page-question-edit .filter-group .bg-white label,');
+    rules.push('#page-question-edit .filter-group .bg-white span,');
+    rules.push('#page-question-edit .filter-group .bg-white div,');
+    rules.push('#page-question-edit .filter-group [data-filterregion="filtermatch"] label,');
+    rules.push('#page-question-edit .filter-group [data-filterregion="filtermatch"] span,');
+    rules.push('#page-question-edit .filter-group [data-filterregion="joinadverb"],');
+    rules.push('#page-question-edit .filter-group [data-filterregion="joinadverb"] div {');
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push('}');
+    // (3) selects (custom-select join/type) + autocomplete value input → dark field
+    rules.push('#page-question-edit .filter-group .custom-select,');
+    rules.push('#page-question-edit .filter-group select,');
+    rules.push('#page-question-edit .filter-group .form-control {');
+    rules.push(`  background-color: ${tokens.cardBg} !important;`);
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push(`  border-color: ${tokens.cardBorder} !important;`);
+    rules.push('}');
+    rules.push('#page-question-edit .filter-group .form-control::placeholder {');
+    rules.push(`  color: ${tokens.mutedText} !important;`);
+    rules.push('}');
+    // (4) value pill `.badge.bg-secondary.text-dark` → dark chip (like the grade-badge fix)
+    rules.push('#page-question-edit .filter-group .badge.bg-secondary {');
+    rules.push(`  background-color: ${tokens.cardBorder} !important;`);
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push('}');
+    // (5) icons (Add +, remove ⊗, pill ×) → light; spare any semantic .text-* icon
+    rules.push('#page-question-edit .filter-group .icon:not([class*="text-"]),');
+    rules.push('#page-question-edit .filter-group .fa:not([class*="text-"]) {');
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push('}');
+    // (6) buttons: "Show all" (btn-light) + "Clear filters" (btn-secondary, overriding
+    // the global white half-measure) → dark secondary; "Add condition" (btn-link) text
+    // light. "Apply filters" (.btn-primary, lime) is left to the Buttons section.
+    rules.push('#page-question-edit .filter-group .btn-light,');
+    rules.push('#page-question-edit .filter-group [data-filterregion="actions"] .btn-secondary {');
+    rules.push(`  background-color: transparent !important;`);
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push(`  border-color: ${tokens.cardBorder} !important;`);
+    rules.push('}');
+    rules.push('#page-question-edit .filter-group .btn-link,');
+    rules.push('#page-question-edit .filter-group .btn-link span,');
+    rules.push('#page-question-edit .filter-group [data-filteraction="add"],');
+    rules.push('#page-question-edit .filter-group [data-filteraction="add"] span {');
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push('}');
+    // (7) "Reset columns" (a.btn.btn-outline-dark.action-link[data-action="reset"],
+    // below the filter, NOT inside .filter-group) uses Bootstrap `.btn-outline-dark`
+    // → dark text/border, invisible on the dark page. The generator handles
+    // `.btn-outline-secondary`/`-primary` but not `-dark`. Re-light to bodyText
+    // (white) + cardBorder, qbank-scoped. The `.bg-white .btn` override (~L1080)
+    // still keeps it dark inside any white container.
+    rules.push('#page-question-edit .btn-outline-dark {');
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push(`  border-color: ${tokens.cardBorder} !important;`);
+    rules.push('}');
+    rules.push('#page-question-edit .btn-outline-dark:hover,');
+    rules.push('#page-question-edit .btn-outline-dark:focus {');
+    rules.push(`  background-color: rgba(255,255,255,0.08) !important;`);
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push('}');
+    rules.push('');
     // ── Quiz attempt-summary table (.quizreviewsummary) — "Your attempts" / review ──
     // mod/quiz's own stylesheet hardcodes `table.quizreviewsummary td.cell` LIGHT
     // (`background:#fafafa`, th.cell `#f0f0f0`, no .bg-white class), so the dark theme's

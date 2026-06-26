@@ -1937,3 +1937,38 @@ Generator harness across all presets (merging each preset's **`overrides`** — 
 - `lib/scss-generator.ts` (preflight dialog dark-surface block), `docs/moodle-cloud-constraints.md` (selector row), `docs/PROJECT-TRACKER.md` (this section). Memory: `project_dark_theme_quiz_cancel_button.md` (extended). Also corrected the #153 verification note (named dark presets DO emit — harness `overrides` fix).
 
 **Branch:** `fix/dark-theme-login-eye-icon` (same branch as #153, per user request).
+
+---
+
+## Session: 2026-06-26 — Dark Theme: Question bank filter panel (#155)
+
+**Issue:** On dark themes the Question bank "Match … of the following" FILTER panel rendered white/light. User wanted it dark (CFA design), **question-bank only** (no impact on other pages).
+
+**Root cause:** the filter is Moodle's generic `core/datafilter` component (byte-identical 4.4/4.5/5.0), built from THREE Bootstrap LIGHT utilities in the markup (no Moodle SCSS, no `!important`): outer panel `.filter-group.bg-light`, each condition row's inner card `.bg-white`, and the value pill `.badge.bg-secondary.text-dark`. A pre-existing GLOBAL half-measure (`scss-generator.ts:~1093`) keeps the panel light + forces text dark — correct for OTHER datafilter pages (Participants `user/index.php`, the quiz-edit "Add from qbank" modal).
+
+**Scope decision (user):** the same `.filter-group` is reused on **Participants** and inside the **quiz-edit white modal**. After reviewing impact, user chose **question-bank only for now**. So every new rule is scoped to **`#page-question-edit`**; the global half-measure stays intact for the other pages (zero impact elsewhere — leak-checked: zero bare `.filter-group` rules emitted).
+
+### Fix (`lib/scss-generator.ts`, appended to the #118-121 qbank block ~L1335)
+3-level depth (mirrors the light design's panel-darker-than-rows hierarchy in BOTH presets — `drawerBg` #1D2125 is *always* darker than cardBg; pageBg/cardBg ordering FLIPS between Lime and Ember so pageBg is unusable):
+- panel `.filter-group.bg-light` → `drawerBg` + `cardBorder`
+- row cards `[data-filterregion="filter"] .bg-white` → `cardBg` + `cardBorder`
+- text (labels, AND/OR, "Match…") → `bodyText`
+- `.custom-select`/`select`/`.form-control` → `cardBg` field + `bodyText` + `cardBorder`; placeholder `mutedText`
+- value pill `.badge.bg-secondary` → `cardBorder` chip + `bodyText`
+- icons (Add +, remove ⊗, pill ×) → `bodyText` (`:not([class*="text-"])` guard)
+- "Show all" (`btn-light`) + "Clear filters" (`btn-secondary`, overriding the global white half-measure) → transparent + `bodyText` + `cardBorder`; **Apply (`btn-primary` lime) untouched**
+- `#page-question-edit …` (1,x,0)+`!important` beats Bootstrap's un-`!important` utilities AND the generator's own `.bg-white`/`[data-filterregion]` overrides (0,2,0).
+
+### #155b — "Reset columns" button
+`a.btn.btn-outline-dark.action-link[data-action="reset"]` (below the filter, NOT inside `.filter-group`) uses Bootstrap `.btn-outline-dark` → dark text/border, invisible on the dark page. The generator handles `.btn-outline-secondary`/`-primary` on dark but NOT `-dark`. Fix: `#page-question-edit .btn-outline-dark` → `bodyText` (white) + `cardBorder` (+ hover rgba overlay). The `.bg-white .btn` override (~L1080) still keeps it dark inside any white container.
+
+### Verification
+Harness across all presets (merging each preset's **`overrides`**): Dark Lime + Dark Ember emit the full block (28 filter lines + 3 btn-outline-dark lines); 8 light presets + Moodle Default emit none; leak check = zero bare `.filter-group` rules. **User-verified on Moodle Cloud** (filter panel + Reset columns).
+
+### Presets / Controls
+- **No new token.** Reuses `drawerBg`/`cardBg`/`cardBorder`/`bodyText`/`mutedText`. No preset edits, no control / quick-palette change.
+
+### Files Modified
+- `lib/scss-generator.ts` (qbank filter dark block + btn-outline-dark), `docs/moodle-cloud-constraints.md` (2 selector rows), `docs/PROJECT-TRACKER.md` (this section). Memory: `project_dark_theme_qbank_filter_panel.md`.
+
+**Branch:** `fix/dark-theme-login-eye-icon` (same branch as #153/#154, per user request).
