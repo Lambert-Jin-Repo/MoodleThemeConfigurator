@@ -236,6 +236,17 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push(`  background-color: ${tokens.btnPrimaryHover} !important;`);
     rules.push(`  border-color: ${tokens.btnPrimaryHover} !important;`);
     rules.push(`}`);
+    // Button-styled links — <a class="btn btn-primary"> (e.g. a custom "Create new
+    // account" link dropped into the login instructions) — must keep the button text
+    // colour on hover/focus. The global `a:hover, a:focus { color: linkHover }` (0,1,1)
+    // otherwise overrides the base `.btn-primary { color }` (0,1,0), so the text turns
+    // the link-hover colour and VANISHES on the same-hued button. This (0,2,1) rule
+    // beats the global one and only targets links that are buttons (real <button>s are
+    // unaffected — they're not `a`). The `.btn-primary:hover` bg change above still
+    // provides the visible hover effect.
+    rules.push(`a.btn-primary:hover, a.btn-primary:focus {`);
+    rules.push(`  color: ${tokens.btnPrimaryText} !important;`);
+    rules.push(`}`);
     rules.push('');
   }
 
@@ -298,6 +309,22 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     }
     rules.push('');
   }
+
+  // --- Login page: hide Moodle's auto-rendered signup button (PERMANENT) ---
+  // The CFA login page places a custom "Create new account" <a class="btn btn-primary
+  // btn-lg"> at the top of the login Instructions field (Moodle config, Site admin →
+  // Plugins → Authentication → Manage authentication → Instructions). Moodle ALSO
+  // auto-renders its own "Create new account" button in `.login-signup` when self-
+  // registration is on, which would duplicate it — so hide the auto one.
+  // Emitted UNCONDITIONALLY (every preset/export) so the login-page layout is stable
+  // across all themes. The custom button itself lives in Moodle's Instructions HTML,
+  // which the generator can't emit — this rule is the SCSS half of that pairing.
+  // DO NOT remove when working on other visual issues. See docs/PROJECT-TRACKER.md (#152).
+  rules.push('// ── Login Page: hide duplicate signup button ──');
+  rules.push('body#page-login-index .login-signup {');
+  rules.push('  display: none !important;');
+  rules.push('}');
+  rules.push('');
 
   // --- Breadcrumb ---
   if (tokens.breadcrumbBg !== 'transparent' && tokens.breadcrumbBg !== d.breadcrumbBg) {
@@ -2285,6 +2312,29 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push('.alert-info a:hover,');
     rules.push('.alert-info a:focus {');
     rules.push(`  color: ${tokens.linkHover} !important;`);
+    rules.push('}');
+    rules.push('');
+
+    // ── Signup / forgot-password: darken the .login-container "card" (#151) ──
+    // The signup (`login/signup.php`) and forgot-password (`login/forgot_password.php`)
+    // pages use the Boost `login` page layout (`theme/boost/templates/login.mustache`),
+    // which wraps the mform in `<div class="login-container">`. Moodle's
+    // `theme/boost/scss/moodle/login.scss` paints it WHITE (`$logincontainer-bg: $white`,
+    // un-`!important`, byte-identical 4.4/4.5/5.0). It is NOT a `.card` and NOT `.bg-white`,
+    // so none of the generator's dark surfaces reached it: the inputs already render dark
+    // (global `.form-control` rule), the page is dark (`#region-main`), but the container
+    // stayed white → inconsistent. The labels inside inherit `bodyText` (light) so they
+    // were near-invisible on the white card too. Repaint the container to `cardBg` (same as
+    // every other `.card`) so it reads as one cohesive dark card; labels become readable and
+    // the inputs stay distinct via their `cardBorder` outline.
+    // The login page itself (`#page-login-index`) has its own dark handling above (L~269,
+    // gated behind login tokens) — these body-id-scoped rules never touch it. Scope to the
+    // two body ids (NOT bare `.login-container`, which would also hit the login page).
+    // Specificity `body#…` (1,1,0) + `!important` beats Moodle's un-`!important` white.
+    rules.push('body#page-login-signup .login-container,');
+    rules.push('body#page-login-forgot_password .login-container {');
+    rules.push(`  background-color: ${tokens.cardBg} !important;`);
+    rules.push(`  color: ${tokens.bodyText} !important;`);
     rules.push('}');
     rules.push('');
   }
