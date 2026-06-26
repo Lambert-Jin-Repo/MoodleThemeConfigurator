@@ -1874,3 +1874,34 @@ The custom button needed `btn-lg` (Moodle's "Log in" is `btn btn-primary btn-lg`
 - `lib/scss-generator.ts` (Buttons hover rule + unconditional login-signup hide), `docs/moodle-cloud-constraints.md`, `docs/PROJECT-TRACKER.md` (this section), `CLAUDE.md` (status sub-bullet). Memory: `project_login_page_customisations.md`.
 
 **Branch:** `worktree-worktree-dark-theme-login-container` (off main `abefbbb`, after PR #23).
+
+---
+
+## Session: 2026-06-26 — Dark Theme: Login password show/hide eye icon (#153)
+
+**Issue:** On dark themes the login page (`#page-login-index`) password-field show/hide **"eye" toggle icon** was dark-on-dark → invisible (user screenshot + DevTools: winning rule `.icon, .fa { color: #1d2125 !important }`).
+
+**DOM:** `<div class="toggle-sensitive-wrapper input-group"> … <button class="toggle-sensitive-btn btn btn-secondary" aria-label="Toggle sensitive"><i class="icon fa-regular fa-eye fa-fw"></i></button></div>` — Moodle's password-unmask feature.
+
+**Root cause:** the generic dark rule `.icon, .fa { color: ${d.bodyText} #1d2125 !important }` (scss-generator L376) directly matches the `<i class="icon fa-eye">` and paints it dark; on the dark login card it disappears. Same icon-on-dark-surface family as #139/#146/#150.
+
+### Fix (`lib/scss-generator.ts`, appended to the existing login-dark block, L979-988)
+```
+body#page-login-index .toggle-sensitive-btn .icon,
+body#page-login-index .toggle-sensitive-btn .fa { color: ${tokens.bodyText} !important; }
+```
+Re-light to `tokens.bodyText` (CFA Light Grey `#F0EEEE`, the same white as the other login text, per the user). `(1,2,0)`+`!important` beats the generic `.icon` `(0,1,0)`. Colour only — the `.btn-secondary` transparent-bg/cardBorder treatment (L930) is untouched.
+
+### Gating / scope
+Added to the existing login-dark block, gated on `tokens.loginBg !== d.loginBg && isDarkBg(tokens.loginBg)` — so it tracks the login page's own dark handling exactly (emits only when the login page itself is themed dark). The **signup page** (`#page-login-signup`) renders the password field as a plain input WITHOUT the eye toggle (confirmed by user screenshot), so no fix is needed there.
+
+### Verification
+Generator harness across all presets: synthetic custom dark login emits the rule; named Dark Lime/Ember presets gate the same way (no hardcoded dark `loginBg`); 8 light presets + Moodle Default emit none. **User-verified on Moodle Cloud.**
+
+### Presets / Controls
+- **No new token.** Reuses `bodyText`. No preset edits, no control / quick-palette change.
+
+### Files Modified
+- `lib/scss-generator.ts` (login-dark block + 2 selectors), `docs/moodle-cloud-constraints.md` (selector row), `docs/PROJECT-TRACKER.md` (this section). Memory: `project_dark_theme_login_eye_icon.md`.
+
+**Branch:** `fix/dark-theme-login-eye-icon` (off main `20440fc`, after PR #24).

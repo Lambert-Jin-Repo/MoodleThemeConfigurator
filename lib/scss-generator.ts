@@ -981,6 +981,8 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
       rules.push('body#page-login-index .login-heading,');
       rules.push('body#page-login-index label,');
       rules.push('body#page-login-index .login-form-forgotpassword a,');
+      rules.push('body#page-login-index .toggle-sensitive-btn .icon,');
+      rules.push('body#page-login-index .toggle-sensitive-btn .fa,');
       rules.push('body#page-login-index .login-signup a {');
       rules.push(`  color: ${tokens.bodyText} !important;`);
       rules.push(`}`);
