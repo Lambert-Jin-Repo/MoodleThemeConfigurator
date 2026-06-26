@@ -2102,6 +2102,37 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push('}');
     rules.push('');
 
+    // ── Quiz "Time limit" preflight dialog — dark surface (#154) ──
+    // The YUI `M.core.dialogue` opened from "Attempt/Preview quiz" on a timed quiz
+    // (class `.mod_quiz_preflight_popup`, portalled to <body>) renders WHITE on dark
+    // themes: Moodle `core.scss` paints `.moodle-dialogue-wrap { background: $white }`
+    // + header `border-bottom: 1px solid #dee2e6`, and the generator deliberately keeps
+    // generic `.moodle-dialogue-bd` white-with-dark-text (L~640). Repaint THIS dialog to
+    // the CFA dark card, mirroring the #142 move-dialog. Scoped to the popup's unique
+    // class so other YUI dialogs (file picker, datatables) stay white.
+    rules.push('.mod_quiz_preflight_popup .moodle-dialogue-wrap {');
+    rules.push(`  background-color: ${tokens.cardBg} !important;`);
+    rules.push(`  border-color: ${tokens.cardBorder} !important;`);
+    rules.push('}');
+    rules.push('.mod_quiz_preflight_popup .moodle-dialogue-hd {');
+    rules.push(`  border-bottom-color: ${tokens.cardBorder} !important;`);
+    rules.push('}');
+    // Light text on the header + body. Exclude the buttons (`:not(.btn):not(button)
+    // :not(input):not(a)`) so the green "Start attempt" (Buttons section) and red
+    // "Cancel" (#129) keep their own colours; links handled separately below.
+    rules.push('.mod_quiz_preflight_popup .moodle-dialogue-hd,');
+    rules.push('.mod_quiz_preflight_popup .moodle-dialogue-hd *,');
+    rules.push('.mod_quiz_preflight_popup .moodle-dialogue-bd,');
+    rules.push('.mod_quiz_preflight_popup .moodle-dialogue-bd *:not(.btn):not(button):not(input):not(a),');
+    rules.push('.mod_quiz_preflight_popup .closebutton {');
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push('}');
+    rules.push('.mod_quiz_preflight_popup .moodle-dialogue-bd a,');
+    rules.push('.mod_quiz_preflight_popup .moodle-dialogue-bd a:hover {');
+    rules.push(`  color: ${tokens.linkColour} !important;`);
+    rules.push('}');
+    rules.push('');
+
     // ── Focused content links — dark text on Moodle's light focus highlight (#143) ──
     // Generalises the #142 move-dialog focus fix. Moodle Boost `core.scss` has ONE
     // rule ("Rule A") that paints a LIGHT box behind a focused link AND sets dark

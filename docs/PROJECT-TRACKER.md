@@ -1896,7 +1896,7 @@ Re-light to `tokens.bodyText` (CFA Light Grey `#F0EEEE`, the same white as the o
 Added to the existing login-dark block, gated on `tokens.loginBg !== d.loginBg && isDarkBg(tokens.loginBg)` — so it tracks the login page's own dark handling exactly (emits only when the login page itself is themed dark). The **signup page** (`#page-login-signup`) renders the password field as a plain input WITHOUT the eye toggle (confirmed by user screenshot), so no fix is needed there.
 
 ### Verification
-Generator harness across all presets: synthetic custom dark login emits the rule; named Dark Lime/Ember presets gate the same way (no hardcoded dark `loginBg`); 8 light presets + Moodle Default emit none. **User-verified on Moodle Cloud.**
+Generator harness across all presets (merging each preset's `overrides`): **Dark Lime + Dark Ember + synthetic custom dark emit** the rule (they each set a dark `loginBg`); 8 light presets + Moodle Default emit none. **User-verified on Moodle Cloud.**
 
 ### Presets / Controls
 - **No new token.** Reuses `bodyText`. No preset edits, no control / quick-palette change.
@@ -1905,3 +1905,35 @@ Generator harness across all presets: synthetic custom dark login emits the rule
 - `lib/scss-generator.ts` (login-dark block + 2 selectors), `docs/moodle-cloud-constraints.md` (selector row), `docs/PROJECT-TRACKER.md` (this section). Memory: `project_dark_theme_login_eye_icon.md`.
 
 **Branch:** `fix/dark-theme-login-eye-icon` (off main `20440fc`, after PR #24).
+
+---
+
+## Session: 2026-06-26 — Dark Theme: Quiz "Time limit" preflight dialog dark surface (#154)
+
+**Issue:** On dark themes the quiz **"Time limit" preflight dialog** (opened from *Attempt/Preview quiz* on a timed quiz) rendered as a WHITE window. User asked to darken the whole dialog to the CFA design pattern, keeping the green "Start attempt" + red "Cancel" buttons.
+
+**Root cause:** the dialog is a YUI `M.core.dialogue` (class `.mod_quiz_preflight_popup`, portalled to `<body>`). Moodle `core.scss` paints `.moodle-dialogue-wrap { background: $white }` + header `border-bottom: 1px solid #dee2e6`, and the generator deliberately keeps generic `.moodle-dialogue-bd` white-with-dark-text (`scss-generator.ts:~640`). This is the SAME dialog as #129 (which only recoloured the Cancel button).
+
+### Fix (`lib/scss-generator.ts`, inside `if (darkMode)`, after the #142 move-dialog block ~L2104)
+Mirror the #142 move-dialog dark surface, scoped to the popup's unique class:
+```
+.mod_quiz_preflight_popup .moodle-dialogue-wrap { background-color: ${tokens.cardBg}; border-color: ${tokens.cardBorder} }
+.mod_quiz_preflight_popup .moodle-dialogue-hd  { border-bottom-color: ${tokens.cardBorder} }
+.mod_quiz_preflight_popup .moodle-dialogue-hd, … .moodle-dialogue-hd *,
+.mod_quiz_preflight_popup .moodle-dialogue-bd, … .moodle-dialogue-bd *:not(.btn):not(button):not(input):not(a),
+.mod_quiz_preflight_popup .closebutton { color: ${tokens.bodyText} }
+.mod_quiz_preflight_popup .moodle-dialogue-bd a, … a:hover { color: ${tokens.linkColour} }
+```
+- **Buttons preserved:** the body text sweep excludes `.btn`/`button`/`input`/`a` via `:not()`, so the green "Start attempt" (Buttons section) and red "Cancel" (#129, `#FFFFFF` on `d.error`) keep their own colours (their selectors are also more specific).
+- **Scope:** `.mod_quiz_preflight_popup` is unique to this dialog → other YUI dialogs (file picker, datatables, move dialog) stay white. `(0,2,0)`+`!important` beats the generic dialog rules (L640/647) + Moodle's un-`!important` white wrap/grey border.
+
+### Verification
+Generator harness across all presets (merging each preset's **`overrides`** — note: the key is `overrides`, NOT `tokens`; a `...p.tokens` spread silently merges nothing and every preset reads light): Dark Lime + Dark Ember + synthetic custom dark each emit the 9-line surface block; 8 light presets + Moodle Default emit none. **User-verified on Moodle Cloud.**
+
+### Presets / Controls
+- **No new token.** Reuses `cardBg`/`cardBorder`/`bodyText`/`linkColour`. No preset edits, no control / quick-palette change.
+
+### Files Modified
+- `lib/scss-generator.ts` (preflight dialog dark-surface block), `docs/moodle-cloud-constraints.md` (selector row), `docs/PROJECT-TRACKER.md` (this section). Memory: `project_dark_theme_quiz_cancel_button.md` (extended). Also corrected the #153 verification note (named dark presets DO emit — harness `overrides` fix).
+
+**Branch:** `fix/dark-theme-login-eye-icon` (same branch as #153, per user request).
