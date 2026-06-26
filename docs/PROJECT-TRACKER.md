@@ -1972,3 +1972,29 @@ Harness across all presets (merging each preset's **`overrides`**): Dark Lime + 
 - `lib/scss-generator.ts` (qbank filter dark block + btn-outline-dark), `docs/moodle-cloud-constraints.md` (2 selector rows), `docs/PROJECT-TRACKER.md` (this section). Memory: `project_dark_theme_qbank_filter_panel.md`.
 
 **Branch:** `fix/dark-theme-login-eye-icon` (same branch as #153/#154, per user request).
+
+---
+
+## Session: 2026-06-26 — Dark Theme: Quiz report table + chart + Highest-grade (#156)
+
+Quiz report page (`mod/quiz/report.php?mode=overview`, body `#page-mod-quiz-report`). Three parts, all dark-presets-only.
+
+### #156a — attempts table white cells
+`table#attempts.flexible.generaltable.table-striped` had white cells. `mod/quiz/styles.css` (scoped `body.path-mod-quiz`, NOT `!important`) hardcodes the STICKY name column light (`#fff`/`#f7f7f7`) + the GRADED attempt row light-blue (`tr.gradedattempt` `#d9edf7`); plus generic Boost `.generaltable` sticky/striping. **BS4 (4.4-5.0) striping = fixed `rgba(0,0,0,.05/.075)`, NOT `--bs-table-striped-bg` (that's BS5).** Fix mirrors #149: redefine `--bs-table-*`/`--bs-border-color` + explicit `thead/tbody/tr/th/td` bg `cardBg`+`bodyText`+`cardBorder`; explicit `.sticky-column` + `tr.gradedattempt td/th` rule; links lime via `.generaltable a:not(.btn)`. Body-id + `.generaltable` covers all report modes + the "Show chart data" table.
+
+### #156b — bar CHART (platform limitation + workaround)
+The chart is a **Chart.js `<canvas>`** (`lib/amd/src/chart_output_chartjs.js`). Bars/axis/grid/legend are JS-painted PIXELS — **NO SCSS can recolour them**. Bar colour = Chart.js palette (`#875692` purple). Only `$CFG->chart_colorset` (PHP, not on Moodle Cloud) or custom JS (not on Cloud) can change them. User asked for lime/white bars → **explained it's impossible via the theme tool.** Workaround user accepted: the canvas is transparent + its content is designed for a LIGHT bg, so give the HTML wrapper `.chart-image` a fixed `#FFFFFF` backdrop (+ padding + radius) → existing chart content reads clearly. Scoped to `.chart-image` (NOT `.chart-area`) so the accessible "Show chart data" table stays dark.
+
+### #156c — inline "Highest grade" highlight spans (reported in two passes)
+The grade-method name is wrapped in TWO inline-highlight classes, both light-blue (`#d9edf7`) on dark: intro text → `span.gradedattempt`; form "(Highest grade)" → `span.highlight` (Moodle's GENERIC search-highlight class, core text `#00BFFF`). Fix BOTH: `#page-mod-quiz-report span.gradedattempt, … span.highlight` → `cardBg` + **lime** `infoIconColour` (`#BAF73C` both presets; NOT `linkColour` = orange on Ember — user wanted lime, precedent #139) + `cardBorder`. Targets ONLY inline spans (not the table `tr/td.gradedattempt`); `.highlight` body-id-scoped so generic search-highlighting elsewhere is untouched.
+
+### Verification
+Harness (merging each preset's `overrides`): Dark Lime + Dark Ember emit the full quiz-report block; 8 light presets + Moodle Default emit none. **User-verified on Moodle Cloud** (table, chart backdrop, both Highest-grade highlights).
+
+### Presets / Controls
+- **No new token.** Reuses `cardBg`/`cardBorder`/`bodyText`/`linkColour`/`infoIconColour` + fixed `#FFFFFF` (designed-for-light chart backdrop). No preset edits, no control / quick-palette change.
+
+### Files Modified
+- `lib/scss-generator.ts` (quiz-report dark block), `docs/moodle-cloud-constraints.md` (3 selector rows incl. the chart-canvas limitation), `docs/PROJECT-TRACKER.md` (this section). Memory: `project_dark_theme_quiz_report.md`.
+
+**Branch:** `fix/dark-theme-login-eye-icon` (same branch as #153/#154/#155, per user request).

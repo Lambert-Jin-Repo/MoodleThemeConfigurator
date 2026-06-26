@@ -2462,6 +2462,86 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push(`  color: ${tokens.bodyText} !important;`);
     rules.push('}');
     rules.push('');
+
+    // ── Quiz report attempts table — dark surface (#156) ──
+    // The quiz report (`mod/quiz/report.php`, body `#page-mod-quiz-report`) attempts
+    // table (`table#attempts.flexible.generaltable.table-striped`) has WHITE cells on
+    // dark themes. Root cause: `mod/quiz/styles.css` (scoped `body.path-mod-quiz`, NOT
+    // !important) hardcodes the STICKY name column light (`#fff`/`#f7f7f7`) and the
+    // GRADED (counted) attempt row light-blue (`.gradedattempt` `#d9edf7`); plus the
+    // generic Boost `.generaltable` sticky/striping. Repaint dark, mirroring #149
+    // (activity report) — redefine the BS table vars AND explicit cell bg (covers
+    // BS4 striping + the sticky/graded hardcodes). Anchored on the body id +
+    // `.generaltable` so it covers ALL quiz report modes (overview/responses/stats)
+    // AND the "Show chart data" accessible table. The bar CHART itself is a Chart.js
+    // <canvas> (JS-painted pixels) and CANNOT be themed via SCSS — out of scope.
+    rules.push('#page-mod-quiz-report {');
+    rules.push(`  --bs-border-color: ${tokens.cardBorder};`);
+    rules.push('}');
+    rules.push('#page-mod-quiz-report .generaltable {');
+    rules.push(`  --bs-table-bg: ${tokens.cardBg};`);
+    rules.push(`  --bs-table-color: ${tokens.bodyText};`);
+    rules.push(`  --bs-table-border-color: ${tokens.cardBorder};`);
+    rules.push(`  --bs-border-color: ${tokens.cardBorder};`);
+    rules.push(`  background-color: ${tokens.cardBg} !important;`);
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push('}');
+    rules.push('#page-mod-quiz-report .generaltable thead,');
+    rules.push('#page-mod-quiz-report .generaltable tbody,');
+    rules.push('#page-mod-quiz-report .generaltable tr,');
+    rules.push('#page-mod-quiz-report .generaltable th,');
+    rules.push('#page-mod-quiz-report .generaltable td {');
+    rules.push(`  background-color: ${tokens.cardBg} !important;`);
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push(`  border-color: ${tokens.cardBorder} !important;`);
+    rules.push('}');
+    // Sticky name column + graded (counted) attempt row — mod/quiz/styles.css hardcodes
+    // these light (`#fff`/`#f7f7f7`/`#d9edf7`); repaint dark. id-scoped → wins regardless.
+    rules.push('#page-mod-quiz-report .generaltable th.sticky-column,');
+    rules.push('#page-mod-quiz-report .generaltable td.sticky-column,');
+    rules.push('#page-mod-quiz-report .generaltable tr.gradedattempt td,');
+    rules.push('#page-mod-quiz-report .generaltable tr.gradedattempt th,');
+    rules.push('#page-mod-quiz-report .generaltable tr.gradedattempt td.sticky-column {');
+    rules.push(`  background-color: ${tokens.cardBg} !important;`);
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push(`  border-color: ${tokens.cardBorder} !important;`);
+    rules.push('}');
+    // Cell links (student name, email, "Review attempt") → lime/orange.
+    rules.push('#page-mod-quiz-report .generaltable a:not(.btn) {');
+    rules.push(`  color: ${tokens.linkColour} !important;`);
+    rules.push('}');
+    // Inline "Highest grade" highlight spans (#156c). The grade-method name is wrapped
+    // in TWO different inline-highlight classes that BOTH render light-blue (#d9edf7,
+    // border #bce8f1) on dark themes → faint text on a pale box:
+    //   • intro text "The grading method for this quiz is Highest grade" → `span.gradedattempt`
+    //   • form  "…one finished attempt per user (Highest grade)"        → `span.highlight`
+    //     (`.highlight` is Moodle's generic search-highlight class; its core text colour
+    //     here is CFA Sky Blue #00BFFF — still poor on the pale box on dark).
+    // Target ONLY the inline spans (NOT the table `tr`/`td.gradedattempt` handled above)
+    // → dark cardBg + LIME text. Use `infoIconColour` (#BAF73C on BOTH dark presets) not
+    // `linkColour` (orange on Ember) since the user asked specifically for lime — same
+    // precedent as the footer help icon. `.highlight` scoped to `#page-mod-quiz-report`
+    // so generic search-highlighting elsewhere is untouched.
+    rules.push('#page-mod-quiz-report span.gradedattempt,');
+    rules.push('#page-mod-quiz-report span.highlight {');
+    rules.push(`  background-color: ${tokens.cardBg} !important;`);
+    rules.push(`  color: ${tokens.infoIconColour} !important;`);
+    rules.push(`  border-color: ${tokens.cardBorder} !important;`);
+    rules.push('}');
+    // Bar CHART backdrop (#156b). The chart is a Chart.js <canvas> whose bars/axis
+    // text/legend are JS-painted pixels (NOT CSS-themeable) and DESIGNED for a light
+    // background; the canvas itself is transparent, so on a dark page the grey axis
+    // text + purple bars are hard to read. Give the canvas's HTML wrapper `.chart-image`
+    // a fixed WHITE card backdrop → the existing light-theme chart content shows through
+    // and reads clearly. Scoped to `.chart-image` only (NOT `.chart-area`) so the
+    // "Show chart data" accessible `.generaltable` stays dark (above). Fixed #FFFFFF
+    // (a designed-for-light surface, like the timer/modal exceptions).
+    rules.push('#page-mod-quiz-report .chart-image {');
+    rules.push('  background-color: #FFFFFF !important;');
+    rules.push('  padding: 1rem !important;');
+    rules.push('  border-radius: 0.5rem !important;');
+    rules.push('}');
+    rules.push('');
   }
 
   const block2 = rules.join('\n');
