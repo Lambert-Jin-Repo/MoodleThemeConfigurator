@@ -1915,6 +1915,82 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push('}');
     rules.push('');
 
+    // ── Emoji picker: search box dark field (#148, extends #140) ──
+    // The emoji picker's search input (`lib/templates/emoji/picker.mustache` →
+    // `<input class="form-control border-start-0" data-region="search-input">` inside
+    // `.emoji-picker .card-body .input-group`) stayed WHITE on dark themes. #140 made
+    // the picker `.card`/`.card-body`/`.input-group-text` chip + icons dark, but never
+    // the `.form-control` input. The input sits inside the message-drawer conversation
+    // footer whose root is `<div class="… bg-white …">`
+    // (`message_drawer_view_conversation_footer.mustache`), so the generator's OWN
+    // "white-bg final overrides" rule (`.bg-white .form-control { color: ${d.bodyText}
+    // (#1d2125); background-color: #FFFFFF }`, L~1050-1060, cascade layer 5) forces it
+    // white-bg + dark-text — correct for real white dialogs, wrong for this dark drawer.
+    // Repaint the input to the dark `cardBg` field (matching the already-dark chip, so
+    // the `border-start-0` join reads as one dark pill) + light `bodyText` + `mutedText`
+    // placeholder. The magnifier chip + glyph are ALREADY dark/accent from #140 — not
+    // re-asserted here. `:focus` included so Bootstrap's focus state can't revert it.
+    // Selector `.emoji-picker .input-group .form-control` (0,3,0) beats the culprit
+    // `.bg-white .form-control` (0,2,0) regardless of source order (a bare
+    // `.emoji-picker .form-control` would be a fragile (0,2,0) tie). The full card
+    // picker is messaging-only in stock Moodle (the inline `:smile:` autocomplete +
+    // TinyMCE emoji use other templates), and this is dark-gated, so global
+    // `.emoji-picker` scope is safe. Stable 4.4/4.5/5.0. Dark presets only.
+    rules.push('.emoji-picker .input-group .form-control,');
+    rules.push('.emoji-picker .input-group .form-control:focus {');
+    rules.push(`  background-color: ${tokens.cardBg} !important;`);
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push(`  border-color: ${tokens.cardBorder} !important;`);
+    rules.push('}');
+    rules.push('.emoji-picker .input-group .form-control::placeholder {');
+    rules.push(`  color: ${tokens.mutedText} !important;`);
+    rules.push('}');
+    rules.push('');
+
+    // ── Messaging drawer: search view dark surface (#147, extends #140) ──
+    // The drawer's SEARCH view (`message_drawer_view_search_header.mustache`, rendered
+    // INSIDE `.message-app`) was left light by #140 for two reasons:
+    //  (1) the search field `<input class="form-control" data-region="search-input">`
+    //      carries NO `.bg-white`/`.bg-light` class — it is white purely from
+    //      Bootstrap's default `$input-bg` (#fff) — so #140's `.bg-white`/`.bg-light`
+    //      repaint never matched it; and
+    //  (2) Moodle's `theme/boost/scss/moodle/search.scss` hardcodes the submit button
+    //      LIGHT: `.simplesearchform .btn-submit { background-color: $gray-100 (#f8f9fa);
+    //      color: $gray-600 }`, and the pre-#140 rule above (`.simplesearchform
+    //      .btn-submit .icon { color: ${d.bodyText} }`) forces that magnifier DARK
+    //      (it assumed the box stays white) → once we darken the box it'd be invisible.
+    // Make the whole search box one cohesive dark field, matching the #140 composer
+    // textarea: dark `cardBg` input + light `bodyText` + `mutedText` placeholder, the
+    // button on the same `cardBg` with the magnifier flipped to the theme accent
+    // (`linkColour` — lime/orange), like the rest of the drawer's interactive icons.
+    // MUST scope to `.message-app` — `.simplesearchform` is a GENERIC class shared by
+    // the navbar global search + course search box (which use `data-region="input"`,
+    // not `search-input`); a bare rule would leak to them. Specificity is the safety
+    // net: the input `.message-app .simplesearchform .form-control` (0,3,0) beats
+    // Bootstrap `.form-control` (0,1,0), the generator's global `.form-control` (0,1,0)
+    // and any `.bg-white .form-control` (0,2,0); the button (0,3,0) beats Moodle's
+    // `.simplesearchform .btn-submit` (0,2,0); the icon (0,4,0) + later source order
+    // beats the pre-#140 `.simplesearchform .btn-submit .icon` (0,2,0). Dark presets only.
+    rules.push('.message-app .simplesearchform .form-control,');
+    rules.push('.message-app .simplesearchform input[data-region="search-input"] {');
+    rules.push(`  background-color: ${tokens.cardBg} !important;`);
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push(`  border-color: ${tokens.cardBorder} !important;`);
+    rules.push('}');
+    rules.push('.message-app .simplesearchform .form-control::placeholder,');
+    rules.push('.message-app .simplesearchform input[data-region="search-input"]::placeholder {');
+    rules.push(`  color: ${tokens.mutedText} !important;`);
+    rules.push('}');
+    rules.push('.message-app .simplesearchform .btn-submit {');
+    rules.push(`  background-color: ${tokens.cardBg} !important;`);
+    rules.push(`  border-color: ${tokens.cardBorder} !important;`);
+    rules.push('}');
+    rules.push('.message-app .simplesearchform .btn-submit .icon,');
+    rules.push('.message-app .simplesearchform .btn-submit .fa {');
+    rules.push(`  color: ${tokens.linkColour} !important;`);
+    rules.push('}');
+    rules.push('');
+
     // ── Calendar month-view day-cell hover (#141) ──
     // Moodle's `calendar.scss` hovers a clickable month day cell to a LIGHT grey:
     // `.maincalendar .calendarmonth .clickable:hover { background-color: #ededed }`
@@ -2075,6 +2151,140 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push('.path-grade-report-grader .gradeparent tr.lastrow td,');
     rules.push('.path-grade-report-grader .gradeparent tr.lastrow th {');
     rules.push(`  border-top-color: ${tokens.cardBorder} !important;`);
+    rules.push('}');
+    rules.push('');
+
+    // ── Gradebook grade-status icons (#146) ──
+    // Each grade cell carries a status-icon strip `<div class="text-muted grade_icons
+    // data-collapse_gradeicons">` (category/total cells use `.category_grade_icons`),
+    // emitted by `grade_structure::set_grade_status_icons()` →
+    // `core_grades/status_icons` template — stable, byte-identical across Moodle
+    // 4.4 / 4.5 / 5.0 / main. It holds up to five FontAwesome status markers:
+    // Overridden (`fa-pen-to-square`, the user's complaint — a static `role="img"`
+    // indicator), Hidden (`fa-eye-slash`), Locked (`fa-lock`), Excluded
+    // (`fa-circle-minus`), Feedback (`fa-asterisk`). They are plain `<i class="icon
+    // fa fa-...">` glyphs (so `color:` is the lever, NOT `filter:`) and — verified vs
+    // `lib/templates/pix_icon_fontawesome.mustache` — NONE carries a `.text-*`
+    // semantic class (only the CONTAINER div has `text-muted`), so a blanket re-light
+    // is safe and no `:not([class*="text-"])` guard is needed (cf. #138).
+    //
+    // On dark themes the generator's general `.icon, .fa { color: ${d.bodyText}
+    // (#1d2125) }` rule directly matches each `<i>` and — being `!important` on a
+    // direct match — beats the merely-INHERITED light text colour of the now-dark
+    // grader/user cells (#145 `cardBg` cells / #136). Result: near-black glyph on a
+    // dark cell → invisible (DevTools confirmed `.icon,.fa { #1d2125 }` winning).
+    // Re-light the strip's glyphs to the theme's light text (`bodyText` = CFA Light
+    // Grey #F0EEEE) — the same "light white" used for #137 `.cellmenubtn` and #138
+    // `.enrolmenticons`, so the icons match the rest of the dark UI. Specificity
+    // (0,2,0) + `!important` beats the generic `.icon` (0,1,0). `.grade_icons` /
+    // `.category_grade_icons` are gradebook-only classes (rendered solely by the
+    // grade reports, whose cells are dark on dark themes), so a global scope is safe
+    // and consistent with #137/#138 — no page anchor needed. Dark presets only (inside
+    // `if (darkMode)`); light presets emit nothing.
+    rules.push('.grade_icons .icon,');
+    rules.push('.grade_icons .fa,');
+    rules.push('.category_grade_icons .icon,');
+    rules.push('.category_grade_icons .fa {');
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push('}');
+    rules.push('');
+
+    // ── Activity (outline) report table — dark surface (#149) ──
+    // Course → Reports → Activity report (`report/outline/index.php`, body class
+    // `.path-report-outline`, stable 4.4/4.5/5.0). The report table (`.generaltable`;
+    // id `#outlinereport` on 4.5/5.0, `#outlinetable` on 4.4 — so anchor on the body
+    // class + `.generaltable`, the only constants and the only table on the page) had
+    // DARK header cells but WHITE data rows. Moodle's `theme/boost/scss/moodle/
+    // tables.scss` paints `.generaltable { background-color: $table-bg (#fff) }` and
+    // `tbody td, th { background-color: inherit }`, so the white table bg propagates to
+    // every cell; the generator's general dark `th { background: rgba(0,0,0,.15) }`
+    // tints only the header `th`, leaving the `td` value cells inheriting Moodle's
+    // white. Repaint the whole table to the dark card surface, like the #145 grader
+    // report / #136 user report. Belt-and-braces for the white source: redefine the
+    // Bootstrap-5.3 table vars (`--bs-table-bg/-color/-border-color`, for the `.table`
+    // cell rule that a recent point release added) AND set explicit `background-color`/
+    // `color` on the table + `thead/tbody/tr/th/td` (for Moodle's `generaltable {…} td,
+    // th { inherit }` + BS4). Borders: Moodle's generaltable cells pull from the GLOBAL
+    // `var(--bs-border-color)` (not the table var) — the #136 gotcha — so redefine
+    // `--bs-border-color: cardBorder` on the `.path-report-outline` scope + explicit
+    // `border-color`. Keep activity links lime via `.generaltable a:not(.btn)` ((0,3,1)
+    // beats the `td *` light-text sweep (0,2,1)). The activity-name icon is an
+    // image-based monologo `<img class="icon">` (`pix_icon('monologo')`) → `color` is
+    // inert, so light it with `filter: brightness(0) invert(1)` (image-based, like the
+    // #136 `img.itemicon`); FA icons (if any) handled via `color` with the standard
+    // `:not([class*="text-"])` semantic guard. Dark presets only.
+    rules.push('.path-report-outline {');
+    rules.push(`  --bs-border-color: ${tokens.cardBorder};`);
+    rules.push('}');
+    rules.push('.path-report-outline .generaltable {');
+    rules.push(`  --bs-table-bg: ${tokens.cardBg};`);
+    rules.push(`  --bs-table-color: ${tokens.bodyText};`);
+    rules.push(`  --bs-table-border-color: ${tokens.cardBorder};`);
+    rules.push(`  --bs-border-color: ${tokens.cardBorder};`);
+    rules.push(`  background-color: ${tokens.cardBg} !important;`);
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push('}');
+    rules.push('.path-report-outline .generaltable thead,');
+    rules.push('.path-report-outline .generaltable tbody,');
+    rules.push('.path-report-outline .generaltable tr,');
+    rules.push('.path-report-outline .generaltable th,');
+    rules.push('.path-report-outline .generaltable td {');
+    rules.push(`  background-color: ${tokens.cardBg} !important;`);
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push(`  border-color: ${tokens.cardBorder} !important;`);
+    rules.push('}');
+    rules.push('.path-report-outline .generaltable th *,');
+    rules.push('.path-report-outline .generaltable td * {');
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push('}');
+    rules.push('.path-report-outline .generaltable a:not(.btn) {');
+    rules.push(`  color: ${tokens.linkColour} !important;`);
+    rules.push('}');
+    rules.push('.path-report-outline .generaltable .icon:not([class*="text-"]),');
+    rules.push('.path-report-outline .generaltable .fa:not([class*="text-"]) {');
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push('}');
+    rules.push('.path-report-outline .generaltable img.icon {');
+    rules.push('  filter: brightness(0) invert(1) !important;');
+    rules.push('}');
+    rules.push('.path-report-outline .generaltable .text-muted,');
+    rules.push('.path-report-outline .generaltable .dimmed_text,');
+    rules.push('.path-report-outline .generaltable small {');
+    rules.push(`  color: ${tokens.mutedText} !important;`);
+    rules.push('}');
+    rules.push('');
+
+    // ── Alert-info: re-light icon + link on the darkened info alert (#150) ──
+    // The generator darkens `.alert-info` to the dark card surface (L~1040:
+    // `.well, .alert-info { background-color: cardBg; color: bodyText; border-color:
+    // cardBorder }`) — but only `.alert-info`, NOT the semantic success/warning/danger
+    // alerts (those keep Moodle's light subtle bg). Two things inside the darkened
+    // info alert were left dark-on-dark:
+    //  (1) the info icon `<i class="icon fa fa-circle-info fa-fw">` (Moodle
+    //      `notification_base.mustache` → `i/circleinfo`; FontAwesome, NO `.text-*`
+    //      class) is painted dark `#1d2125` by the global `.icon, .fa` rule (L~349) →
+    //      invisible. Re-light to `bodyText` (white, CFA Light Grey #F0EEEE).
+    //  (2) a bare `<a>` (NOT `.alert-link`) is coloured by MOODLE's own `core.scss`
+    //      `.alert-info a { color: darken(shift-color($info,40%),10%) }` (a dark shade
+    //      for the LIGHT alert; (0,1,1), non-important) — it never picks up `$primary`
+    //      / `--bs-link-color`, so it stays dark-on-dark, not lime. Force it to
+    //      `linkColour` at rest + preserve the normal `linkHover` on hover so it
+    //      behaves like every other page link.
+    // MUST scope to `.alert-info` (NOT `.alert`) — the other alert types stay light and
+    // must keep their dark semantic icon/link colours. Specificity: `.alert-info .icon`
+    // (0,2,0) beats the global `.icon` (0,1,0); `.alert-info a` (0,2,0)+`!important`
+    // beats Moodle's `.alert-info a` (0,1,1); the hover rule (0,2,1) beats both the rest
+    // rule and the global `a:hover` (0,1,1). Dark presets only.
+    rules.push('.alert-info .icon,');
+    rules.push('.alert-info .fa {');
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push('}');
+    rules.push('.alert-info a {');
+    rules.push(`  color: ${tokens.linkColour} !important;`);
+    rules.push('}');
+    rules.push('.alert-info a:hover,');
+    rules.push('.alert-info a:focus {');
+    rules.push(`  color: ${tokens.linkHover} !important;`);
     rules.push('}');
     rules.push('');
   }

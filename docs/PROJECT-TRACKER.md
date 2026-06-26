@@ -1648,3 +1648,153 @@ Key points: override BOTH `tr .cell` (#fff base) AND `.heading/.category/.avg .c
 - `lib/scss-generator.ts` (the grader-report block), `docs/moodle-cloud-constraints.md` (1 selector row), `docs/PROJECT-TRACKER.md` (this section), `CLAUDE.md` (status bullet). Memory: `project_dark_theme_grader_report.md`.
 
 **Branch:** `worktree-fix+dark-theme-enrolment-icons` (off main `f52e845`, after PR #21).
+
+## Session: 2026-06-26 — Dark Theme: Gradebook grade-status icons (#146)
+
+### Issue
+On dark themes the Grader report **"Overridden" pen icon** (`<i class="icon fa fa-pen-to-square" title="Overridden">` inside `<div class="grade_icons">`) rendered near-black on the dark grade cell → **invisible**. User reported with screenshot + DevTools (winning rule `.icon, .fa { color: #1d2125 !important }`). Same family applies to the other status markers (Hidden/Locked/Excluded/Feedback) and to category/total cells.
+
+### Root cause
+Each grade cell carries a status-icon strip `<div class="text-muted grade_icons data-collapse_gradeicons">` (category/total cells use `.category_grade_icons`), emitted by `grade_structure::set_grade_status_icons()` → `core_grades/status_icons` template (byte-identical 4.4/4.5/5.0/main). The icons are plain `<i class="icon fa fa-…">` — verified vs `lib/templates/pix_icon_fontawesome.mustache`, NONE carries a `.text-*` class (only the container `<div>` has `text-muted`). After #145 repainted grader cells dark (`cardBg`), the generic dark `.icon, .fa { color: #1d2125 !important }` rule **directly** matches each `<i>` and — `!important` on a direct match beats the cell's merely-INHERITED light text colour → near-black glyph on a dark cell.
+
+### Fix (`lib/scss-generator.ts`, tail of `if (darkMode)`, after the #145 grader block)
+Re-light the status glyphs to the theme's light text (the same "light white" as #137/#138):
+```
+.grade_icons .icon, .grade_icons .fa,
+.category_grade_icons .icon, .category_grade_icons .fa { color: ${tokens.bodyText} !important; }
+```
+Covers cell icons (`.grade_icons`) AND category/total icons (`.category_grade_icons`). No `:not([class*="text-"])` guard needed (no semantic icon in the strip). Global scope (gradebook-only classes), same philosophy as #137 `.cellmenubtn` / #138 `.enrolmenticons`; `(0,2,0)`+`!important` beats the generic `.icon,.fa` (0,1,0). The clickable edit/hide/lock **actions** live in a separate `.cellmenubtn` menu (#137), not in `.grade_icons`.
+
+### Verification
+- `npm run build` + `npm run lint` clean (zero warnings). Compiled-generator harness across ALL presets: **Dark Lime** (`pageBg #404041`) + **Dark Ember** (`pageBg #2B2B2C`) emit `.grade_icons .icon, …, .category_grade_icons .fa { color: #F0EEEE !important; }`; a **synthetic custom dark theme** (`pageBg #11141A`, `bodyText #E8E8E8`) emits the rule with its OWN `#E8E8E8` (proves it follows ANY dark theme, not just presets); all **8 light presets + Moodle Default + CFA Dark Chrome** (which is actually a light-bg preset, `pageBg #FFFFFF`) emit **0** (gated by `isDarkBg(pageBg)`). **User-verified on Moodle Cloud.**
+
+### Presets / Controls
+- **No new token.** Reuses `bodyText` → no preset edits, no control / quick-palette change. Purely additive (a new gradebook-only selector group at the tail of `if (darkMode)`; modifies no existing rule) → no impact on any existing design.
+
+### Files Modified
+- `lib/scss-generator.ts` (the grade-status-icon block), `docs/moodle-cloud-constraints.md` (1 selector row), `docs/PROJECT-TRACKER.md` (this section), `CLAUDE.md` (status bullet). Memory: `project_dark_theme_grade_status_icons.md`.
+
+**Branch:** `worktree-dark-theme-grade-status-icons` (off main `c6425ef`, after PR #22).
+
+## Session: 2026-06-26 — Dark Theme: Messaging drawer search view (#147, extends #140)
+
+### Issue
+On dark themes, the messaging drawer's SEARCH view (open the drawer → click the search icon) rendered the search field + submit button LIGHT/white, clashing with the dark conversation drawer (#140). User wanted the search box dark, matching the chat design.
+
+### Root cause
+The search header (`message/templates/message_drawer_view_search_header.mustache`, rendered INSIDE `.message-app`, verified 4.4/4.5/5.0) holds `<input class="form-control" data-region="search-input">` + `<button class="btn btn-submit icon-no-margin">`. Two gaps #140 didn't cover: (1) the input has NO `.bg-white`/`.bg-light` class (white from Bootstrap `$input-bg`, or — where a `.bg-white` ancestor exists — from the generator's own `.bg-white .form-control { #FFFFFF !important }` rule at L1050-1057), so #140's `.bg-white`/`.bg-light` repaint never matched it; (2) Moodle's `theme/boost/scss/moodle/search.scss` hardcodes the button LIGHT (`.simplesearchform .btn-submit { background-color: $gray-100; color: $gray-600 }`), and the pre-#140 rule `.simplesearchform .btn-submit .icon { color: ${d.bodyText} }` forced that magnifier dark (assumed a white box).
+
+### Fix (`lib/scss-generator.ts`, after the #140 emoji-picker rules, inside `if (darkMode)`)
+Make the whole search box one cohesive dark field (like the #140 composer textarea):
+```
+.message-app .simplesearchform .form-control, … input[data-region="search-input"] {
+  background-color: ${tokens.cardBg} !important; color: ${tokens.bodyText} !important; border-color: ${tokens.cardBorder} !important; }
+… ::placeholder { color: ${tokens.mutedText} !important; }
+.message-app .simplesearchform .btn-submit { background-color: ${tokens.cardBg} !important; border-color: ${tokens.cardBorder} !important; }
+.message-app .simplesearchform .btn-submit .icon, … .fa { color: ${tokens.linkColour} !important; }
+```
+**MUST scope to `.message-app`** — `.simplesearchform` is GENERIC (navbar global search + course search box use it too, with `data-region="input"` not `search-input`); a bare rule would leak. Specificity is the safety net: input `(0,3,0)` beats Bootstrap `.form-control` (0,1,0), the global `.form-control` (0,1,0) and `.bg-white .form-control` (0,2,0); button `(0,3,0)` beats Moodle's `.simplesearchform .btn-submit` (0,2,0); icon `(0,4,0)`+later beats the pre-#140 `.simplesearchform .btn-submit .icon` (0,2,0).
+
+### Verification
+- `npm run build` + `npm run lint` clean. Compiled-generator harness: Dark Lime + Dark Ember + a synthetic custom dark theme emit the full block (input cardBg/bodyText/cardBorder, placeholder mutedText, button cardBg, icon linkColour) each with their OWN tokens; all 8 light presets + Moodle Default emit **0**. Leak check: the only unscoped `.simplesearchform` rule is the pre-#140 global dark-icon rule (correct for navbar/course search). **User-verified on Moodle Cloud.**
+
+### Presets / Controls
+- **No new token.** Reuses `cardBg`/`bodyText`/`cardBorder`/`mutedText`/`linkColour` → no preset edits, no control / quick-palette change.
+
+### Files Modified
+- `lib/scss-generator.ts` (the search-view block), `docs/moodle-cloud-constraints.md` (#140 row extended), `docs/PROJECT-TRACKER.md` (this section), `CLAUDE.md` (status bullet). Memory: `project_dark_theme_messaging_drawer.md` (updated).
+
+**Branch:** `worktree-dark-theme-grade-status-icons` (off main `c6425ef`, after PR #22).
+
+## Session: 2026-06-26 — Dark Theme: Emoji picker search box (#148, extends #140)
+
+### Issue
+On dark themes, the emoji picker's SEARCH box (message composer → smiley button → search field at top of the picker) rendered WHITE, clashing with the otherwise-dark picker (#140). User wanted it dark.
+
+### Root cause
+The picker (`lib/templates/emoji/picker.mustache`, root `.card.shadow.emoji-picker`) holds `<input class="form-control border-start-0" data-region="search-input">` inside `.card-body .input-group`. #140 darkened the picker `.card`/`.card-body`/`.input-group-text` chip + icons but NEVER the `.form-control` input. The input sits inside the message-drawer conversation **footer**, whose root is `<div class="hidden border-top bg-white position-relative">` (`message_drawer_view_conversation_footer.mustache`, verified 4.4/4.5/5.0) — so the generator's OWN "white-bg final overrides" rule (`.bg-white .form-control { color: ${d.bodyText} #1d2125; background-color: #FFFFFF }`, L1050-1060, cascade layer 5) forced the input white-bg + dark-text. The magnifier chip + glyph were already dark/lime from #140 (so the user saw a dark chip + lime magnifier + WHITE input). **Research correction:** the emoji picker is NOT portalled out of `.message-app` (it renders into the in-footer `[data-region="emoji-picker-container"]`); the earlier #140 "JS portals out" note was wrong. Scoping to `.emoji-picker` is still correct/simplest.
+
+### Fix (`lib/scss-generator.ts`, after the #140 emoji-picker rules, inside `if (darkMode)`)
+```
+.emoji-picker .input-group .form-control,
+.emoji-picker .input-group .form-control:focus {
+  background-color: ${tokens.cardBg} !important; color: ${tokens.bodyText} !important; border-color: ${tokens.cardBorder} !important; }
+.emoji-picker .input-group .form-control::placeholder { color: ${tokens.mutedText} !important; }
+```
+Repaint ONLY the input to the dark `cardBg` field (matching the already-dark chip → the `border-start-0` join reads as one dark pill) + light `bodyText` + `mutedText` placeholder. `:focus` included so Bootstrap's focus state can't revert it. Chip/magnifier left to #140. Selector `.emoji-picker .input-group .form-control` **(0,3,0)** beats the culprit `.bg-white .form-control` (0,2,0) regardless of source order (a bare `.emoji-picker .form-control` would be a fragile (0,2,0) tie). The full card picker is messaging-only in stock Moodle (the inline `:smile:` autocomplete + TinyMCE emoji use other templates), and this is dark-gated → global `.emoji-picker` scope is safe.
+
+### Verification
+- `npm run build` + `npm run lint` clean. Compiled-generator harness: Dark Lime + Dark Ember + a synthetic custom dark theme emit the block (input cardBg/bodyText/cardBorder, placeholder mutedText, `:focus` present) each with their OWN tokens; all 8 light presets + Moodle Default emit **0**. **User-verified on Moodle Cloud.**
+
+### Presets / Controls
+- **No new token.** Reuses `cardBg`/`bodyText`/`cardBorder`/`mutedText` → no preset edits, no control / quick-palette change.
+
+### Files Modified
+- `lib/scss-generator.ts` (the emoji-search block), `docs/moodle-cloud-constraints.md` (#140 row extended + "portalled" correction), `docs/PROJECT-TRACKER.md` (this section), `CLAUDE.md` (status bullet). Memory: `project_dark_theme_messaging_drawer.md` (updated, incl. portalled correction).
+
+**Branch:** `worktree-dark-theme-grade-status-icons` (off main `c6425ef`, after PR #22).
+
+## Session: 2026-06-26 — Dark Theme: Activity (outline) report table (#149)
+
+### Issue
+On dark themes the Activity report (course → Reports → Activity report) had a DARK header row but WHITE data rows (the "Site news" row). User wanted the table dark.
+
+### Root cause
+`report/outline/index.php` (body class `.path-report-outline`, stable 4.4/4.5/5.0) renders a plain `.generaltable` (id `#outlinereport` on 4.5/5.0, `#outlinetable` on 4.4). Moodle's `theme/boost/scss/moodle/tables.scss` paints `.generaltable { background-color: $table-bg (#fff) }` + `tbody td, th { background-color: inherit }` → the white table bg propagates to every cell. The generator's general dark `th { background: rgba(0,0,0,.15) }` tints ONLY the header `th`; the `td` value cells keep the inherited white → header-dark / rows-white split. (This is generic `.generaltable` behaviour, NOT a grade-specific hardcode like #145/#136.) The activity-name icon is an image-based monologo `<img class="icon">` (`pix_icon('monologo')`) → `color` is inert on it.
+
+### Fix (`lib/scss-generator.ts`, tail of `if (darkMode)`, after #146)
+Mirror #145/#136 — repaint the whole table dark, anchored on the body class + `.generaltable` (NOT the version-specific id):
+```
+.path-report-outline { --bs-border-color: cardBorder; }
+.path-report-outline .generaltable {
+  --bs-table-bg: cardBg; --bs-table-color: bodyText; --bs-table-border-color: cardBorder; --bs-border-color: cardBorder;
+  background-color: cardBg !important; color: bodyText !important; }
+.path-report-outline .generaltable thead, …tbody, …tr, …th, …td { background-color: cardBg !important; color: bodyText !important; border-color: cardBorder !important; }
+.path-report-outline .generaltable th *, …td * { color: bodyText !important; }
+.path-report-outline .generaltable a:not(.btn) { color: linkColour !important; }
+.path-report-outline .generaltable .icon:not([class*="text-"]), ….fa:not([class*="text-"]) { color: bodyText !important; }
+.path-report-outline .generaltable img.icon { filter: brightness(0) invert(1) !important; }   /* monologo img → white */
+.path-report-outline .generaltable .text-muted, ….dimmed_text, …small { color: mutedText !important; }
+```
+**Anchor on `.path-report-outline .generaltable`** — covers 4.4 (`#outlinetable`) + 4.5/5.0 (`#outlinereport`) without dual-id branching (`.generaltable` is the only constant + only table on the page). **Both** the BS5.3 table vars AND explicit cell bg/color (BS4 + Moodle `inherit`), plus the `--bs-border-color` global-var gotcha (#136). Links lime via `a:not(.btn)` ((0,3,1) beats the `td *` sweep (0,2,1)). The monologo `<img>` lit via `filter` (image-based, like #136 `img.itemicon`).
+
+### Verification
+- `npm run build` + `npm run lint` clean. Compiled-generator harness: Dark Lime + Dark Ember + a synthetic custom dark theme emit the full block (table vars + cell bg/color/border, lime links, icon filter, muted text) each with their OWN tokens; all 8 light presets + Moodle Default emit **0**; leak check clean (only the intentional `.path-report-outline { --bs-border-color }` scope line is un-`.generaltable`). **User-verified on Moodle Cloud.**
+
+### Presets / Controls
+- **No new token.** Reuses `cardBg`/`bodyText`/`cardBorder`/`mutedText`/`linkColour` → no preset edits, no control / quick-palette change.
+
+### Related (out of scope, noted for follow-up)
+- **Course participation** report (`report/participation`, body class `.path-report-participation`, table `.generaltable.generalbox.reporttable`) has the IDENTICAL white-`.generaltable` issue and would need the same treatment — separate page, not fixed here.
+
+### Files Modified
+- `lib/scss-generator.ts` (the activity-report block), `docs/moodle-cloud-constraints.md` (1 selector row), `docs/PROJECT-TRACKER.md` (this section), `CLAUDE.md` (status bullet). Memory: `project_dark_theme_activity_report.md`.
+
+**Branch:** `worktree-dark-theme-grade-status-icons` (off main `c6425ef`, after PR #22).
+
+## Session: 2026-06-26 — Dark Theme: Alert-info icon + link re-light (#150)
+
+### Issue
+On dark themes, inside the `.alert.alert-info` "Custom certificate information not available" box (course Activities overview): (1) the info `(i)` icon was dark → invisible; (2) the "Custom certificate overview" link was NOT lime at rest like other page links.
+
+### Root cause
+The generator darkens `.alert-info` to the dark card surface (L~1040: `.well, .alert-info { background-color: cardBg; color: bodyText; border-color: cardBorder }`) — but ONLY `.alert-info`, not the semantic success/warning/danger alerts (those keep Moodle's light subtle bg). Inside the darkened info alert: (1) the icon `<i class="icon fa fa-circle-info fa-fw">` (Moodle `notification_base.mustache` → `i/circleinfo`, FontAwesome, NO `.text-*` class) is painted dark `#1d2125` by the global `.icon, .fa` rule (L~349) → dark-on-dark. (2) a bare `<a>` (NOT `.alert-link`) is coloured by MOODLE's own `core.scss` `.alert-info a { color: darken(shift-color($info,40%),10%) }` (a dark shade for the LIGHT alert; (0,1,1), non-important) — it never picks up `$primary`/`--bs-link-color`, so it stays dark-on-dark, not lime.
+
+### Fix (`lib/scss-generator.ts`, tail of `if (darkMode)`, after #149)
+```
+.alert-info .icon, .alert-info .fa { color: ${tokens.bodyText} !important; }   /* white #F0EEEE */
+.alert-info a { color: ${tokens.linkColour} !important; }                       /* lime/orange rest */
+.alert-info a:hover, .alert-info a:focus { color: ${tokens.linkHover} !important; }  /* normal hover preserved */
+```
+**MUST scope to `.alert-info`** (NOT `.alert`) — the other alert types stay light and must keep their dark semantic icon/link colours; a blanket `.alert .icon`/`.alert a` would make them invisible (and clobber semantic icon colours). Specificity: `.alert-info .icon` (0,2,0) beats the global `.icon` (0,1,0); `.alert-info a` (0,2,0)+`!important` beats Moodle's `.alert-info a` (0,1,1); the hover rule (0,2,1) beats both the rest rule and the global `a:hover` so the link still brightens on hover like every other link. Icon = `bodyText` (white per the CFA guide, not hardcoded); link = `linkColour`.
+
+### Verification
+- `npm run build` + `npm run lint` clean. Compiled-generator harness: Dark Lime + Dark Ember + a synthetic custom dark theme emit all three rules (icon `bodyText`, link `linkColour`, hover `linkHover`) each with their OWN tokens; all 8 light presets + Moodle Default emit **0**; leak check clean (every alert rule is `.alert-info`-scoped — no bare `.alert`). **User-verified on Moodle Cloud.**
+
+### Presets / Controls
+- **No new token.** Reuses `bodyText`/`linkColour`/`linkHover` → no preset edits, no control / quick-palette change.
+
+### Files Modified
+- `lib/scss-generator.ts` (the alert-info block), `docs/moodle-cloud-constraints.md` (1 selector row), `docs/PROJECT-TRACKER.md` (this section), `CLAUDE.md` (status bullet). Memory: `project_dark_theme_alert_info.md`.
+
+**Branch:** `worktree-dark-theme-grade-status-icons` (off main `c6425ef`, after PR #22).
