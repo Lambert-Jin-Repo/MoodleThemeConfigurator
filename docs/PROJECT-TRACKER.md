@@ -1874,3 +1874,157 @@ The custom button needed `btn-lg` (Moodle's "Log in" is `btn btn-primary btn-lg`
 - `lib/scss-generator.ts` (Buttons hover rule + unconditional login-signup hide), `docs/moodle-cloud-constraints.md`, `docs/PROJECT-TRACKER.md` (this section), `CLAUDE.md` (status sub-bullet). Memory: `project_login_page_customisations.md`.
 
 **Branch:** `worktree-worktree-dark-theme-login-container` (off main `abefbbb`, after PR #23).
+
+---
+
+## Session: 2026-06-26 — Dark Theme: Login password show/hide eye icon (#153)
+
+**Issue:** On dark themes the login page (`#page-login-index`) password-field show/hide **"eye" toggle icon** was dark-on-dark → invisible (user screenshot + DevTools: winning rule `.icon, .fa { color: #1d2125 !important }`).
+
+**DOM:** `<div class="toggle-sensitive-wrapper input-group"> … <button class="toggle-sensitive-btn btn btn-secondary" aria-label="Toggle sensitive"><i class="icon fa-regular fa-eye fa-fw"></i></button></div>` — Moodle's password-unmask feature.
+
+**Root cause:** the generic dark rule `.icon, .fa { color: ${d.bodyText} #1d2125 !important }` (scss-generator L376) directly matches the `<i class="icon fa-eye">` and paints it dark; on the dark login card it disappears. Same icon-on-dark-surface family as #139/#146/#150.
+
+### Fix (`lib/scss-generator.ts`, appended to the existing login-dark block, L979-988)
+```
+body#page-login-index .toggle-sensitive-btn .icon,
+body#page-login-index .toggle-sensitive-btn .fa { color: ${tokens.bodyText} !important; }
+```
+Re-light to `tokens.bodyText` (CFA Light Grey `#F0EEEE`, the same white as the other login text, per the user). `(1,2,0)`+`!important` beats the generic `.icon` `(0,1,0)`. Colour only — the `.btn-secondary` transparent-bg/cardBorder treatment (L930) is untouched.
+
+### Gating / scope
+Added to the existing login-dark block, gated on `tokens.loginBg !== d.loginBg && isDarkBg(tokens.loginBg)` — so it tracks the login page's own dark handling exactly (emits only when the login page itself is themed dark). The **signup page** (`#page-login-signup`) renders the password field as a plain input WITHOUT the eye toggle (confirmed by user screenshot), so no fix is needed there.
+
+### Verification
+Generator harness across all presets (merging each preset's `overrides`): **Dark Lime + Dark Ember + synthetic custom dark emit** the rule (they each set a dark `loginBg`); 8 light presets + Moodle Default emit none. **User-verified on Moodle Cloud.**
+
+### Presets / Controls
+- **No new token.** Reuses `bodyText`. No preset edits, no control / quick-palette change.
+
+### Files Modified
+- `lib/scss-generator.ts` (login-dark block + 2 selectors), `docs/moodle-cloud-constraints.md` (selector row), `docs/PROJECT-TRACKER.md` (this section). Memory: `project_dark_theme_login_eye_icon.md`.
+
+**Branch:** `fix/dark-theme-login-eye-icon` (off main `20440fc`, after PR #24).
+
+---
+
+## Session: 2026-06-26 — Dark Theme: Quiz "Time limit" preflight dialog dark surface (#154)
+
+**Issue:** On dark themes the quiz **"Time limit" preflight dialog** (opened from *Attempt/Preview quiz* on a timed quiz) rendered as a WHITE window. User asked to darken the whole dialog to the CFA design pattern, keeping the green "Start attempt" + red "Cancel" buttons.
+
+**Root cause:** the dialog is a YUI `M.core.dialogue` (class `.mod_quiz_preflight_popup`, portalled to `<body>`). Moodle `core.scss` paints `.moodle-dialogue-wrap { background: $white }` + header `border-bottom: 1px solid #dee2e6`, and the generator deliberately keeps generic `.moodle-dialogue-bd` white-with-dark-text (`scss-generator.ts:~640`). This is the SAME dialog as #129 (which only recoloured the Cancel button).
+
+### Fix (`lib/scss-generator.ts`, inside `if (darkMode)`, after the #142 move-dialog block ~L2104)
+Mirror the #142 move-dialog dark surface, scoped to the popup's unique class:
+```
+.mod_quiz_preflight_popup .moodle-dialogue-wrap { background-color: ${tokens.cardBg}; border-color: ${tokens.cardBorder} }
+.mod_quiz_preflight_popup .moodle-dialogue-hd  { border-bottom-color: ${tokens.cardBorder} }
+.mod_quiz_preflight_popup .moodle-dialogue-hd, … .moodle-dialogue-hd *,
+.mod_quiz_preflight_popup .moodle-dialogue-bd, … .moodle-dialogue-bd *:not(.btn):not(button):not(input):not(a),
+.mod_quiz_preflight_popup .closebutton { color: ${tokens.bodyText} }
+.mod_quiz_preflight_popup .moodle-dialogue-bd a, … a:hover { color: ${tokens.linkColour} }
+```
+- **Buttons preserved:** the body text sweep excludes `.btn`/`button`/`input`/`a` via `:not()`, so the green "Start attempt" (Buttons section) and red "Cancel" (#129, `#FFFFFF` on `d.error`) keep their own colours (their selectors are also more specific).
+- **Scope:** `.mod_quiz_preflight_popup` is unique to this dialog → other YUI dialogs (file picker, datatables, move dialog) stay white. `(0,2,0)`+`!important` beats the generic dialog rules (L640/647) + Moodle's un-`!important` white wrap/grey border.
+
+### Verification
+Generator harness across all presets (merging each preset's **`overrides`** — note: the key is `overrides`, NOT `tokens`; a `...p.tokens` spread silently merges nothing and every preset reads light): Dark Lime + Dark Ember + synthetic custom dark each emit the 9-line surface block; 8 light presets + Moodle Default emit none. **User-verified on Moodle Cloud.**
+
+### Presets / Controls
+- **No new token.** Reuses `cardBg`/`cardBorder`/`bodyText`/`linkColour`. No preset edits, no control / quick-palette change.
+
+### Files Modified
+- `lib/scss-generator.ts` (preflight dialog dark-surface block), `docs/moodle-cloud-constraints.md` (selector row), `docs/PROJECT-TRACKER.md` (this section). Memory: `project_dark_theme_quiz_cancel_button.md` (extended). Also corrected the #153 verification note (named dark presets DO emit — harness `overrides` fix).
+
+**Branch:** `fix/dark-theme-login-eye-icon` (same branch as #153, per user request).
+
+---
+
+## Session: 2026-06-26 — Dark Theme: Question bank filter panel (#155)
+
+**Issue:** On dark themes the Question bank "Match … of the following" FILTER panel rendered white/light. User wanted it dark (CFA design), **question-bank only** (no impact on other pages).
+
+**Root cause:** the filter is Moodle's generic `core/datafilter` component (byte-identical 4.4/4.5/5.0), built from THREE Bootstrap LIGHT utilities in the markup (no Moodle SCSS, no `!important`): outer panel `.filter-group.bg-light`, each condition row's inner card `.bg-white`, and the value pill `.badge.bg-secondary.text-dark`. A pre-existing GLOBAL half-measure (`scss-generator.ts:~1093`) keeps the panel light + forces text dark — correct for OTHER datafilter pages (Participants `user/index.php`, the quiz-edit "Add from qbank" modal).
+
+**Scope decision (user):** the same `.filter-group` is reused on **Participants** and inside the **quiz-edit white modal**. After reviewing impact, user chose **question-bank only for now**. So every new rule is scoped to **`#page-question-edit`**; the global half-measure stays intact for the other pages (zero impact elsewhere — leak-checked: zero bare `.filter-group` rules emitted).
+
+### Fix (`lib/scss-generator.ts`, appended to the #118-121 qbank block ~L1335)
+3-level depth (mirrors the light design's panel-darker-than-rows hierarchy in BOTH presets — `drawerBg` #1D2125 is *always* darker than cardBg; pageBg/cardBg ordering FLIPS between Lime and Ember so pageBg is unusable):
+- panel `.filter-group.bg-light` → `drawerBg` + `cardBorder`
+- row cards `[data-filterregion="filter"] .bg-white` → `cardBg` + `cardBorder`
+- text (labels, AND/OR, "Match…") → `bodyText`
+- `.custom-select`/`select`/`.form-control` → `cardBg` field + `bodyText` + `cardBorder`; placeholder `mutedText`
+- value pill `.badge.bg-secondary` → `cardBorder` chip + `bodyText`
+- icons (Add +, remove ⊗, pill ×) → `bodyText` (`:not([class*="text-"])` guard)
+- "Show all" (`btn-light`) + "Clear filters" (`btn-secondary`, overriding the global white half-measure) → transparent + `bodyText` + `cardBorder`; **Apply (`btn-primary` lime) untouched**
+- `#page-question-edit …` (1,x,0)+`!important` beats Bootstrap's un-`!important` utilities AND the generator's own `.bg-white`/`[data-filterregion]` overrides (0,2,0).
+
+### #155b — "Reset columns" button
+`a.btn.btn-outline-dark.action-link[data-action="reset"]` (below the filter, NOT inside `.filter-group`) uses Bootstrap `.btn-outline-dark` → dark text/border, invisible on the dark page. The generator handles `.btn-outline-secondary`/`-primary` on dark but NOT `-dark`. Fix: `#page-question-edit .btn-outline-dark` → `bodyText` (white) + `cardBorder` (+ hover rgba overlay). The `.bg-white .btn` override (~L1080) still keeps it dark inside any white container.
+
+### Verification
+Harness across all presets (merging each preset's **`overrides`**): Dark Lime + Dark Ember emit the full block (28 filter lines + 3 btn-outline-dark lines); 8 light presets + Moodle Default emit none; leak check = zero bare `.filter-group` rules. **User-verified on Moodle Cloud** (filter panel + Reset columns).
+
+### Presets / Controls
+- **No new token.** Reuses `drawerBg`/`cardBg`/`cardBorder`/`bodyText`/`mutedText`. No preset edits, no control / quick-palette change.
+
+### Files Modified
+- `lib/scss-generator.ts` (qbank filter dark block + btn-outline-dark), `docs/moodle-cloud-constraints.md` (2 selector rows), `docs/PROJECT-TRACKER.md` (this section). Memory: `project_dark_theme_qbank_filter_panel.md`.
+
+**Branch:** `fix/dark-theme-login-eye-icon` (same branch as #153/#154, per user request).
+
+---
+
+## Session: 2026-06-26 — Dark Theme: Quiz report table + chart + Highest-grade (#156)
+
+Quiz report page (`mod/quiz/report.php?mode=overview`, body `#page-mod-quiz-report`). Three parts, all dark-presets-only.
+
+### #156a — attempts table white cells
+`table#attempts.flexible.generaltable.table-striped` had white cells. `mod/quiz/styles.css` (scoped `body.path-mod-quiz`, NOT `!important`) hardcodes the STICKY name column light (`#fff`/`#f7f7f7`) + the GRADED attempt row light-blue (`tr.gradedattempt` `#d9edf7`); plus generic Boost `.generaltable` sticky/striping. **BS4 (4.4-5.0) striping = fixed `rgba(0,0,0,.05/.075)`, NOT `--bs-table-striped-bg` (that's BS5).** Fix mirrors #149: redefine `--bs-table-*`/`--bs-border-color` + explicit `thead/tbody/tr/th/td` bg `cardBg`+`bodyText`+`cardBorder`; explicit `.sticky-column` + `tr.gradedattempt td/th` rule; links lime via `.generaltable a:not(.btn)`. Body-id + `.generaltable` covers all report modes + the "Show chart data" table.
+
+### #156b — bar CHART (platform limitation + workaround)
+The chart is a **Chart.js `<canvas>`** (`lib/amd/src/chart_output_chartjs.js`). Bars/axis/grid/legend are JS-painted PIXELS — **NO SCSS can recolour them**. Bar colour = Chart.js palette (`#875692` purple). Only `$CFG->chart_colorset` (PHP, not on Moodle Cloud) or custom JS (not on Cloud) can change them. User asked for lime/white bars → **explained it's impossible via the theme tool.** Workaround user accepted: the canvas is transparent + its content is designed for a LIGHT bg, so give the HTML wrapper `.chart-image` a fixed `#FFFFFF` backdrop (+ padding + radius) → existing chart content reads clearly. Scoped to `.chart-image` (NOT `.chart-area`) so the accessible "Show chart data" table stays dark.
+
+### #156c — inline "Highest grade" highlight spans (reported in two passes)
+The grade-method name is wrapped in TWO inline-highlight classes, both light-blue (`#d9edf7`) on dark: intro text → `span.gradedattempt`; form "(Highest grade)" → `span.highlight` (Moodle's GENERIC search-highlight class, core text `#00BFFF`). Fix BOTH: `#page-mod-quiz-report span.gradedattempt, … span.highlight` → `cardBg` + **lime** `infoIconColour` (`#BAF73C` both presets; NOT `linkColour` = orange on Ember — user wanted lime, precedent #139) + `cardBorder`. Targets ONLY inline spans (not the table `tr/td.gradedattempt`); `.highlight` body-id-scoped so generic search-highlighting elsewhere is untouched.
+
+### Verification
+Harness (merging each preset's `overrides`): Dark Lime + Dark Ember emit the full quiz-report block; 8 light presets + Moodle Default emit none. **User-verified on Moodle Cloud** (table, chart backdrop, both Highest-grade highlights).
+
+### Presets / Controls
+- **No new token.** Reuses `cardBg`/`cardBorder`/`bodyText`/`linkColour`/`infoIconColour` + fixed `#FFFFFF` (designed-for-light chart backdrop). No preset edits, no control / quick-palette change.
+
+### Files Modified
+- `lib/scss-generator.ts` (quiz-report dark block), `docs/moodle-cloud-constraints.md` (3 selector rows incl. the chart-canvas limitation), `docs/PROJECT-TRACKER.md` (this section). Memory: `project_dark_theme_quiz_report.md`.
+
+**Branch:** `fix/dark-theme-login-eye-icon` (same branch as #153/#154/#155, per user request).
+
+---
+
+## Session: 2026-06-26 — Dark Theme: Login focus/click states (#157)
+
+Login page (`body#page-login-index`), matching the CFA OFFICIAL site's focus effect (user reference: focused item = light sky-blue box + near-black text + dashed outline). Dark presets only; gated in the login-dark block.
+
+### #157a — link focus/hover
+Links "Lost password?" + "Cookie Settings" (`.login-form-forgotpassword a`) and the "Need more help?" email mailto (`.login-instructions a:not(.btn)`) are forced WHITE by the login-dark block. On focus (Tab)/click, Moodle Boost "Rule A" paints a light box but our white id-`!important` rule wins → white-on-light = invisible (same trap as #143, our own rule). Fix:
+- **hover** → `infoIconColour` (#BAF73C lime, both presets).
+- **focus/active/focus-visible/.focus** → `d.bodyText` (#1d2125) text + `background-color: #8ADDF9` (the EXACT measured colour of the official focus highlight, RGB 138,221,249 — a fixed designed-for-light value, like `#FFFFFF`/`#1d2125`). ≈14:1 AAA.
+- The email mailto has an INLINE `style="color:#baf73c"` → `!important` beats it; `a:not(.btn)` spares the custom "Create new account" button (#152).
+- (1,2,2) [pseudo] beats the resting login rule (1,1,2); focus block placed after hover so a focused-and-hovered link stays dark-on-blue.
+
+### #157b — button tap/focus ring
+ALL login buttons (`body#page-login-index .btn` — Log in, Create new account, Cookies notice, eye toggle) on `:focus`/`:focus-visible`/`:active` → `outline: 3px dashed #8ADDF9` + `outline-offset: 3px` (sky-blue dashed ring, NOT a bg change). Matches the official dashed focus style.
+
+### Verification
+Harness: emits ONLY for Dark Lime + Dark Ember (the block is inside `if (darkMode=isDarkBg(pageBg))`, so a light preset with a merely-dark loginBg does NOT emit); 8 light presets + Moodle Default none. **User-verified on Moodle Cloud** (links + buttons, incl. exact `#8ADDF9` measured by the user's colour reader).
+
+### Presets / Controls
+- **No new token.** Fixed `#8ADDF9` (designed-for-light focus highlight) + reused `d.bodyText`/`infoIconColour`. No preset edits, no control / quick-palette change.
+
+### Follow-up (planned, NOT in this commit — user reviewing first)
+User asked if this focus styling is site-wide. It is NOT (login-only; #143 covers content-link focus text globally; rest uses Moodle defaults). Agreed best practice for whole-site consistency = ONE global `:focus-visible` ring with a **dual-tone** colour (sky-blue outline + dark box-shadow halo → WCAG 2.4.11 AA on ANY bg; sky-blue alone fails ~1.3:1 on light backgrounds). Decisions: dual-tone, `:focus-visible` (keyboard not click), separate change after review.
+
+### Files Modified
+- `lib/scss-generator.ts` (login-dark block: link focus/hover + button ring), `docs/moodle-cloud-constraints.md` (2 rows), `docs/PROJECT-TRACKER.md` (this section). Memory: `project_dark_theme_login_focus.md`.
+
+**Branch:** `fix/dark-theme-login-eye-icon` (same branch as #153–#156, per user request).

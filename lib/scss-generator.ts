@@ -981,9 +981,65 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
       rules.push('body#page-login-index .login-heading,');
       rules.push('body#page-login-index label,');
       rules.push('body#page-login-index .login-form-forgotpassword a,');
+      rules.push('body#page-login-index .toggle-sensitive-btn .icon,');
+      rules.push('body#page-login-index .toggle-sensitive-btn .fa,');
       rules.push('body#page-login-index .login-signup a {');
       rules.push(`  color: ${tokens.bodyText} !important;`);
       rules.push(`}`);
+      // Login footer links — "Lost password?" and "Cookie Settings" (both
+      // `.login-form-forgotpassword a`) are forced WHITE above. On FOCUS (Tab) or click,
+      // Moodle Boost `core.scss` "Rule A" paints a LIGHT highlight box behind the link
+      // (and intends dark text) — but our white id-`!important` rule wins → white-on-light
+      // = invisible (#157, same trap as #143 but caused by our own login rule).
+      // Match the CFA OFFICIAL site's focus/click effect (user reference): a light
+      // SKY-BLUE box with near-black text. The box bg is the EXACT measured colour of the
+      // official site's focus highlight — RGB(138,221,249) = #8ADDF9 — a FIXED
+      // designed-for-light highlight surface (same fixed-value exception class as the
+      // chart #FFFFFF backdrop and the #1d2125 focus text in this rule; NOT a
+      // theme-following colour, so no token). `d.bodyText` (#1d2125) text on #8ADDF9 ≈
+      // 14:1 (AAA). On HOVER (no box) turn the text LIME (`infoIconColour` #BAF73C, lime
+      // on BOTH presets
+      // — linkColour is orange on Ember). `:hover`/`:focus` add a pseudo → (1,2,2) beats
+      // the resting rule above (1,1,2); the focus/active block is placed AFTER `:hover`
+      // so a focused-and-hovered link stays the sky-blue/dark combo (the box is present).
+      // Also covers the "Need more help?" email mailto in `.login-instructions`
+      // (`a:not(.btn)` spares the custom "Create new account" button placed there, #152).
+      // That mailto carries an INLINE `style="color:#baf73c"` from the CFA instructions
+      // HTML, so it stays lime on the light focus box → unreadable; `!important` beats the
+      // inline style to restore the dark-on-sky-blue focus combo.
+      rules.push('body#page-login-index .login-form-forgotpassword a:hover,');
+      rules.push('body#page-login-index .login-signup a:hover,');
+      rules.push('body#page-login-index .login-instructions a:not(.btn):hover {');
+      rules.push(`  color: ${tokens.infoIconColour} !important;`);
+      rules.push(`}`);
+      rules.push('body#page-login-index .login-form-forgotpassword a:focus,');
+      rules.push('body#page-login-index .login-form-forgotpassword a:focus-visible,');
+      rules.push('body#page-login-index .login-form-forgotpassword a:active,');
+      rules.push('body#page-login-index .login-form-forgotpassword a.focus,');
+      rules.push('body#page-login-index .login-signup a:focus,');
+      rules.push('body#page-login-index .login-signup a:focus-visible,');
+      rules.push('body#page-login-index .login-signup a:active,');
+      rules.push('body#page-login-index .login-signup a.focus,');
+      rules.push('body#page-login-index .login-instructions a:not(.btn):focus,');
+      rules.push('body#page-login-index .login-instructions a:not(.btn):focus-visible,');
+      rules.push('body#page-login-index .login-instructions a:not(.btn):active,');
+      rules.push('body#page-login-index .login-instructions a:not(.btn).focus {');
+      rules.push(`  color: ${d.bodyText} !important;`);
+      rules.push('  background-color: #8ADDF9 !important;');
+      rules.push(`}`);
+      // Button tap/focus indicator (#157b). ALL login-page buttons — "Log in"
+      // (`#loginbtn` .btn-primary), the custom "Create new account" (`.login-instructions
+      // a.btn-primary`, #152), "Cookies notice" (`.btn-secondary`), and the password eye
+      // toggle (`.toggle-sensitive-btn`). On Tab/click add a visible focus RING (NOT a bg
+      // change — keep each button's fill): a sky-blue (#8ADDF9, same as the link focus
+      // box) DASHED outline, offset outward so it reads on the dark page, matching the
+      // official CFA dashed focus style. Keyboard + mouse (`:focus` + `:active`).
+      rules.push('body#page-login-index .btn:focus,');
+      rules.push('body#page-login-index .btn:focus-visible,');
+      rules.push('body#page-login-index .btn:active {');
+      rules.push('  outline: 3px dashed #8ADDF9 !important;');
+      rules.push('  outline-offset: 3px !important;');
+      rules.push('}');
       rules.push('');
     }
 
@@ -1328,6 +1384,98 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push('#page-question-bank-previewquestion-preview #previewcontrols .btn-outline-secondary {');
     rules.push(`  background-color: ${tokens.cardBg} !important;`);
     rules.push(`  border-color: ${tokens.cardBorder} !important;`);
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push('}');
+    rules.push('');
+    // ── Question bank — datafilter panel DARK surface (#155) ──
+    // The "Match … of the following" filter is Moodle's generic core/datafilter
+    // component, built from three Bootstrap LIGHT utilities in the markup (no Moodle
+    // SCSS, no !important): the outer panel `.filter-group.bg-light`, each condition
+    // row's inner card `[data-filterregion="filter"] … .bg-white`, and the value pill
+    // `.badge.bg-secondary.text-dark`. A pre-existing GLOBAL half-measure (~L1093)
+    // keeps that panel light + forces its text dark — correct for OTHER datafilter
+    // pages (Participants etc.), but the user wants the QUESTION BANK filter dark to
+    // match the rest of the dark theme. Scope every rule to `#page-question-edit` so
+    // ONLY the qbank changes (the global rules stay intact elsewhere). 3-level depth:
+    // panel `drawerBg` (darkest, recessed), rows/fields `cardBg` (raised, bordered) —
+    // mirrors the light design's panel-darker-than-rows hierarchy in BOTH presets
+    // (drawerBg #1D2125 is always darker than cardBg). `#page-question-edit …` (1,x,0)
+    // beats both Bootstrap's un-!important utilities and the generator's own
+    // `.bg-white`/`[data-filterregion]` overrides (0,2,0).
+    // (1) surfaces
+    rules.push('#page-question-edit .filter-group.bg-light {');
+    rules.push(`  background-color: ${tokens.drawerBg} !important;`);
+    rules.push(`  border-color: ${tokens.cardBorder} !important;`);
+    rules.push('}');
+    rules.push('#page-question-edit .filter-group [data-filterregion="filter"] .bg-white {');
+    rules.push(`  background-color: ${tokens.cardBg} !important;`);
+    rules.push(`  border-color: ${tokens.cardBorder} !important;`);
+    rules.push('}');
+    // (2) all filter text → light (buttons + value pill handled below)
+    rules.push('#page-question-edit .filter-group,');
+    rules.push('#page-question-edit .filter-group label,');
+    rules.push('#page-question-edit .filter-group legend,');
+    rules.push('#page-question-edit .filter-group p,');
+    rules.push('#page-question-edit .filter-group span,');
+    rules.push('#page-question-edit .filter-group .bg-white,');
+    rules.push('#page-question-edit .filter-group .bg-white label,');
+    rules.push('#page-question-edit .filter-group .bg-white span,');
+    rules.push('#page-question-edit .filter-group .bg-white div,');
+    rules.push('#page-question-edit .filter-group [data-filterregion="filtermatch"] label,');
+    rules.push('#page-question-edit .filter-group [data-filterregion="filtermatch"] span,');
+    rules.push('#page-question-edit .filter-group [data-filterregion="joinadverb"],');
+    rules.push('#page-question-edit .filter-group [data-filterregion="joinadverb"] div {');
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push('}');
+    // (3) selects (custom-select join/type) + autocomplete value input → dark field
+    rules.push('#page-question-edit .filter-group .custom-select,');
+    rules.push('#page-question-edit .filter-group select,');
+    rules.push('#page-question-edit .filter-group .form-control {');
+    rules.push(`  background-color: ${tokens.cardBg} !important;`);
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push(`  border-color: ${tokens.cardBorder} !important;`);
+    rules.push('}');
+    rules.push('#page-question-edit .filter-group .form-control::placeholder {');
+    rules.push(`  color: ${tokens.mutedText} !important;`);
+    rules.push('}');
+    // (4) value pill `.badge.bg-secondary.text-dark` → dark chip (like the grade-badge fix)
+    rules.push('#page-question-edit .filter-group .badge.bg-secondary {');
+    rules.push(`  background-color: ${tokens.cardBorder} !important;`);
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push('}');
+    // (5) icons (Add +, remove ⊗, pill ×) → light; spare any semantic .text-* icon
+    rules.push('#page-question-edit .filter-group .icon:not([class*="text-"]),');
+    rules.push('#page-question-edit .filter-group .fa:not([class*="text-"]) {');
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push('}');
+    // (6) buttons: "Show all" (btn-light) + "Clear filters" (btn-secondary, overriding
+    // the global white half-measure) → dark secondary; "Add condition" (btn-link) text
+    // light. "Apply filters" (.btn-primary, lime) is left to the Buttons section.
+    rules.push('#page-question-edit .filter-group .btn-light,');
+    rules.push('#page-question-edit .filter-group [data-filterregion="actions"] .btn-secondary {');
+    rules.push(`  background-color: transparent !important;`);
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push(`  border-color: ${tokens.cardBorder} !important;`);
+    rules.push('}');
+    rules.push('#page-question-edit .filter-group .btn-link,');
+    rules.push('#page-question-edit .filter-group .btn-link span,');
+    rules.push('#page-question-edit .filter-group [data-filteraction="add"],');
+    rules.push('#page-question-edit .filter-group [data-filteraction="add"] span {');
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push('}');
+    // (7) "Reset columns" (a.btn.btn-outline-dark.action-link[data-action="reset"],
+    // below the filter, NOT inside .filter-group) uses Bootstrap `.btn-outline-dark`
+    // → dark text/border, invisible on the dark page. The generator handles
+    // `.btn-outline-secondary`/`-primary` but not `-dark`. Re-light to bodyText
+    // (white) + cardBorder, qbank-scoped. The `.bg-white .btn` override (~L1080)
+    // still keeps it dark inside any white container.
+    rules.push('#page-question-edit .btn-outline-dark {');
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push(`  border-color: ${tokens.cardBorder} !important;`);
+    rules.push('}');
+    rules.push('#page-question-edit .btn-outline-dark:hover,');
+    rules.push('#page-question-edit .btn-outline-dark:focus {');
+    rules.push(`  background-color: rgba(255,255,255,0.08) !important;`);
     rules.push(`  color: ${tokens.bodyText} !important;`);
     rules.push('}');
     rules.push('');
@@ -2100,6 +2248,37 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push('}');
     rules.push('');
 
+    // ── Quiz "Time limit" preflight dialog — dark surface (#154) ──
+    // The YUI `M.core.dialogue` opened from "Attempt/Preview quiz" on a timed quiz
+    // (class `.mod_quiz_preflight_popup`, portalled to <body>) renders WHITE on dark
+    // themes: Moodle `core.scss` paints `.moodle-dialogue-wrap { background: $white }`
+    // + header `border-bottom: 1px solid #dee2e6`, and the generator deliberately keeps
+    // generic `.moodle-dialogue-bd` white-with-dark-text (L~640). Repaint THIS dialog to
+    // the CFA dark card, mirroring the #142 move-dialog. Scoped to the popup's unique
+    // class so other YUI dialogs (file picker, datatables) stay white.
+    rules.push('.mod_quiz_preflight_popup .moodle-dialogue-wrap {');
+    rules.push(`  background-color: ${tokens.cardBg} !important;`);
+    rules.push(`  border-color: ${tokens.cardBorder} !important;`);
+    rules.push('}');
+    rules.push('.mod_quiz_preflight_popup .moodle-dialogue-hd {');
+    rules.push(`  border-bottom-color: ${tokens.cardBorder} !important;`);
+    rules.push('}');
+    // Light text on the header + body. Exclude the buttons (`:not(.btn):not(button)
+    // :not(input):not(a)`) so the green "Start attempt" (Buttons section) and red
+    // "Cancel" (#129) keep their own colours; links handled separately below.
+    rules.push('.mod_quiz_preflight_popup .moodle-dialogue-hd,');
+    rules.push('.mod_quiz_preflight_popup .moodle-dialogue-hd *,');
+    rules.push('.mod_quiz_preflight_popup .moodle-dialogue-bd,');
+    rules.push('.mod_quiz_preflight_popup .moodle-dialogue-bd *:not(.btn):not(button):not(input):not(a),');
+    rules.push('.mod_quiz_preflight_popup .closebutton {');
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push('}');
+    rules.push('.mod_quiz_preflight_popup .moodle-dialogue-bd a,');
+    rules.push('.mod_quiz_preflight_popup .moodle-dialogue-bd a:hover {');
+    rules.push(`  color: ${tokens.linkColour} !important;`);
+    rules.push('}');
+    rules.push('');
+
     // ── Focused content links — dark text on Moodle's light focus highlight (#143) ──
     // Generalises the #142 move-dialog focus fix. Moodle Boost `core.scss` has ONE
     // rule ("Rule A") that paints a LIGHT box behind a focused link AND sets dark
@@ -2335,6 +2514,86 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push('body#page-login-forgot_password .login-container {');
     rules.push(`  background-color: ${tokens.cardBg} !important;`);
     rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push('}');
+    rules.push('');
+
+    // ── Quiz report attempts table — dark surface (#156) ──
+    // The quiz report (`mod/quiz/report.php`, body `#page-mod-quiz-report`) attempts
+    // table (`table#attempts.flexible.generaltable.table-striped`) has WHITE cells on
+    // dark themes. Root cause: `mod/quiz/styles.css` (scoped `body.path-mod-quiz`, NOT
+    // !important) hardcodes the STICKY name column light (`#fff`/`#f7f7f7`) and the
+    // GRADED (counted) attempt row light-blue (`.gradedattempt` `#d9edf7`); plus the
+    // generic Boost `.generaltable` sticky/striping. Repaint dark, mirroring #149
+    // (activity report) — redefine the BS table vars AND explicit cell bg (covers
+    // BS4 striping + the sticky/graded hardcodes). Anchored on the body id +
+    // `.generaltable` so it covers ALL quiz report modes (overview/responses/stats)
+    // AND the "Show chart data" accessible table. The bar CHART itself is a Chart.js
+    // <canvas> (JS-painted pixels) and CANNOT be themed via SCSS — out of scope.
+    rules.push('#page-mod-quiz-report {');
+    rules.push(`  --bs-border-color: ${tokens.cardBorder};`);
+    rules.push('}');
+    rules.push('#page-mod-quiz-report .generaltable {');
+    rules.push(`  --bs-table-bg: ${tokens.cardBg};`);
+    rules.push(`  --bs-table-color: ${tokens.bodyText};`);
+    rules.push(`  --bs-table-border-color: ${tokens.cardBorder};`);
+    rules.push(`  --bs-border-color: ${tokens.cardBorder};`);
+    rules.push(`  background-color: ${tokens.cardBg} !important;`);
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push('}');
+    rules.push('#page-mod-quiz-report .generaltable thead,');
+    rules.push('#page-mod-quiz-report .generaltable tbody,');
+    rules.push('#page-mod-quiz-report .generaltable tr,');
+    rules.push('#page-mod-quiz-report .generaltable th,');
+    rules.push('#page-mod-quiz-report .generaltable td {');
+    rules.push(`  background-color: ${tokens.cardBg} !important;`);
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push(`  border-color: ${tokens.cardBorder} !important;`);
+    rules.push('}');
+    // Sticky name column + graded (counted) attempt row — mod/quiz/styles.css hardcodes
+    // these light (`#fff`/`#f7f7f7`/`#d9edf7`); repaint dark. id-scoped → wins regardless.
+    rules.push('#page-mod-quiz-report .generaltable th.sticky-column,');
+    rules.push('#page-mod-quiz-report .generaltable td.sticky-column,');
+    rules.push('#page-mod-quiz-report .generaltable tr.gradedattempt td,');
+    rules.push('#page-mod-quiz-report .generaltable tr.gradedattempt th,');
+    rules.push('#page-mod-quiz-report .generaltable tr.gradedattempt td.sticky-column {');
+    rules.push(`  background-color: ${tokens.cardBg} !important;`);
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push(`  border-color: ${tokens.cardBorder} !important;`);
+    rules.push('}');
+    // Cell links (student name, email, "Review attempt") → lime/orange.
+    rules.push('#page-mod-quiz-report .generaltable a:not(.btn) {');
+    rules.push(`  color: ${tokens.linkColour} !important;`);
+    rules.push('}');
+    // Inline "Highest grade" highlight spans (#156c). The grade-method name is wrapped
+    // in TWO different inline-highlight classes that BOTH render light-blue (#d9edf7,
+    // border #bce8f1) on dark themes → faint text on a pale box:
+    //   • intro text "The grading method for this quiz is Highest grade" → `span.gradedattempt`
+    //   • form  "…one finished attempt per user (Highest grade)"        → `span.highlight`
+    //     (`.highlight` is Moodle's generic search-highlight class; its core text colour
+    //     here is CFA Sky Blue #00BFFF — still poor on the pale box on dark).
+    // Target ONLY the inline spans (NOT the table `tr`/`td.gradedattempt` handled above)
+    // → dark cardBg + LIME text. Use `infoIconColour` (#BAF73C on BOTH dark presets) not
+    // `linkColour` (orange on Ember) since the user asked specifically for lime — same
+    // precedent as the footer help icon. `.highlight` scoped to `#page-mod-quiz-report`
+    // so generic search-highlighting elsewhere is untouched.
+    rules.push('#page-mod-quiz-report span.gradedattempt,');
+    rules.push('#page-mod-quiz-report span.highlight {');
+    rules.push(`  background-color: ${tokens.cardBg} !important;`);
+    rules.push(`  color: ${tokens.infoIconColour} !important;`);
+    rules.push(`  border-color: ${tokens.cardBorder} !important;`);
+    rules.push('}');
+    // Bar CHART backdrop (#156b). The chart is a Chart.js <canvas> whose bars/axis
+    // text/legend are JS-painted pixels (NOT CSS-themeable) and DESIGNED for a light
+    // background; the canvas itself is transparent, so on a dark page the grey axis
+    // text + purple bars are hard to read. Give the canvas's HTML wrapper `.chart-image`
+    // a fixed WHITE card backdrop → the existing light-theme chart content shows through
+    // and reads clearly. Scoped to `.chart-image` only (NOT `.chart-area`) so the
+    // "Show chart data" accessible `.generaltable` stays dark (above). Fixed #FFFFFF
+    // (a designed-for-light surface, like the timer/modal exceptions).
+    rules.push('#page-mod-quiz-report .chart-image {');
+    rules.push('  background-color: #FFFFFF !important;');
+    rules.push('  padding: 1rem !important;');
+    rules.push('  border-radius: 0.5rem !important;');
     rules.push('}');
     rules.push('');
   }
