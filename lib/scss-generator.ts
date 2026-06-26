@@ -2188,6 +2188,71 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push(`  color: ${tokens.bodyText} !important;`);
     rules.push('}');
     rules.push('');
+
+    // ── Activity (outline) report table — dark surface (#149) ──
+    // Course → Reports → Activity report (`report/outline/index.php`, body class
+    // `.path-report-outline`, stable 4.4/4.5/5.0). The report table (`.generaltable`;
+    // id `#outlinereport` on 4.5/5.0, `#outlinetable` on 4.4 — so anchor on the body
+    // class + `.generaltable`, the only constants and the only table on the page) had
+    // DARK header cells but WHITE data rows. Moodle's `theme/boost/scss/moodle/
+    // tables.scss` paints `.generaltable { background-color: $table-bg (#fff) }` and
+    // `tbody td, th { background-color: inherit }`, so the white table bg propagates to
+    // every cell; the generator's general dark `th { background: rgba(0,0,0,.15) }`
+    // tints only the header `th`, leaving the `td` value cells inheriting Moodle's
+    // white. Repaint the whole table to the dark card surface, like the #145 grader
+    // report / #136 user report. Belt-and-braces for the white source: redefine the
+    // Bootstrap-5.3 table vars (`--bs-table-bg/-color/-border-color`, for the `.table`
+    // cell rule that a recent point release added) AND set explicit `background-color`/
+    // `color` on the table + `thead/tbody/tr/th/td` (for Moodle's `generaltable {…} td,
+    // th { inherit }` + BS4). Borders: Moodle's generaltable cells pull from the GLOBAL
+    // `var(--bs-border-color)` (not the table var) — the #136 gotcha — so redefine
+    // `--bs-border-color: cardBorder` on the `.path-report-outline` scope + explicit
+    // `border-color`. Keep activity links lime via `.generaltable a:not(.btn)` ((0,3,1)
+    // beats the `td *` light-text sweep (0,2,1)). The activity-name icon is an
+    // image-based monologo `<img class="icon">` (`pix_icon('monologo')`) → `color` is
+    // inert, so light it with `filter: brightness(0) invert(1)` (image-based, like the
+    // #136 `img.itemicon`); FA icons (if any) handled via `color` with the standard
+    // `:not([class*="text-"])` semantic guard. Dark presets only.
+    rules.push('.path-report-outline {');
+    rules.push(`  --bs-border-color: ${tokens.cardBorder};`);
+    rules.push('}');
+    rules.push('.path-report-outline .generaltable {');
+    rules.push(`  --bs-table-bg: ${tokens.cardBg};`);
+    rules.push(`  --bs-table-color: ${tokens.bodyText};`);
+    rules.push(`  --bs-table-border-color: ${tokens.cardBorder};`);
+    rules.push(`  --bs-border-color: ${tokens.cardBorder};`);
+    rules.push(`  background-color: ${tokens.cardBg} !important;`);
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push('}');
+    rules.push('.path-report-outline .generaltable thead,');
+    rules.push('.path-report-outline .generaltable tbody,');
+    rules.push('.path-report-outline .generaltable tr,');
+    rules.push('.path-report-outline .generaltable th,');
+    rules.push('.path-report-outline .generaltable td {');
+    rules.push(`  background-color: ${tokens.cardBg} !important;`);
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push(`  border-color: ${tokens.cardBorder} !important;`);
+    rules.push('}');
+    rules.push('.path-report-outline .generaltable th *,');
+    rules.push('.path-report-outline .generaltable td * {');
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push('}');
+    rules.push('.path-report-outline .generaltable a:not(.btn) {');
+    rules.push(`  color: ${tokens.linkColour} !important;`);
+    rules.push('}');
+    rules.push('.path-report-outline .generaltable .icon:not([class*="text-"]),');
+    rules.push('.path-report-outline .generaltable .fa:not([class*="text-"]) {');
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push('}');
+    rules.push('.path-report-outline .generaltable img.icon {');
+    rules.push('  filter: brightness(0) invert(1) !important;');
+    rules.push('}');
+    rules.push('.path-report-outline .generaltable .text-muted,');
+    rules.push('.path-report-outline .generaltable .dimmed_text,');
+    rules.push('.path-report-outline .generaltable small {');
+    rules.push(`  color: ${tokens.mutedText} !important;`);
+    rules.push('}');
+    rules.push('');
   }
 
   const block2 = rules.join('\n');

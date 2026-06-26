@@ -1733,3 +1733,41 @@ Repaint ONLY the input to the dark `cardBg` field (matching the already-dark chi
 - `lib/scss-generator.ts` (the emoji-search block), `docs/moodle-cloud-constraints.md` (#140 row extended + "portalled" correction), `docs/PROJECT-TRACKER.md` (this section), `CLAUDE.md` (status bullet). Memory: `project_dark_theme_messaging_drawer.md` (updated, incl. portalled correction).
 
 **Branch:** `worktree-dark-theme-grade-status-icons` (off main `c6425ef`, after PR #22).
+
+## Session: 2026-06-26 — Dark Theme: Activity (outline) report table (#149)
+
+### Issue
+On dark themes the Activity report (course → Reports → Activity report) had a DARK header row but WHITE data rows (the "Site news" row). User wanted the table dark.
+
+### Root cause
+`report/outline/index.php` (body class `.path-report-outline`, stable 4.4/4.5/5.0) renders a plain `.generaltable` (id `#outlinereport` on 4.5/5.0, `#outlinetable` on 4.4). Moodle's `theme/boost/scss/moodle/tables.scss` paints `.generaltable { background-color: $table-bg (#fff) }` + `tbody td, th { background-color: inherit }` → the white table bg propagates to every cell. The generator's general dark `th { background: rgba(0,0,0,.15) }` tints ONLY the header `th`; the `td` value cells keep the inherited white → header-dark / rows-white split. (This is generic `.generaltable` behaviour, NOT a grade-specific hardcode like #145/#136.) The activity-name icon is an image-based monologo `<img class="icon">` (`pix_icon('monologo')`) → `color` is inert on it.
+
+### Fix (`lib/scss-generator.ts`, tail of `if (darkMode)`, after #146)
+Mirror #145/#136 — repaint the whole table dark, anchored on the body class + `.generaltable` (NOT the version-specific id):
+```
+.path-report-outline { --bs-border-color: cardBorder; }
+.path-report-outline .generaltable {
+  --bs-table-bg: cardBg; --bs-table-color: bodyText; --bs-table-border-color: cardBorder; --bs-border-color: cardBorder;
+  background-color: cardBg !important; color: bodyText !important; }
+.path-report-outline .generaltable thead, …tbody, …tr, …th, …td { background-color: cardBg !important; color: bodyText !important; border-color: cardBorder !important; }
+.path-report-outline .generaltable th *, …td * { color: bodyText !important; }
+.path-report-outline .generaltable a:not(.btn) { color: linkColour !important; }
+.path-report-outline .generaltable .icon:not([class*="text-"]), ….fa:not([class*="text-"]) { color: bodyText !important; }
+.path-report-outline .generaltable img.icon { filter: brightness(0) invert(1) !important; }   /* monologo img → white */
+.path-report-outline .generaltable .text-muted, ….dimmed_text, …small { color: mutedText !important; }
+```
+**Anchor on `.path-report-outline .generaltable`** — covers 4.4 (`#outlinetable`) + 4.5/5.0 (`#outlinereport`) without dual-id branching (`.generaltable` is the only constant + only table on the page). **Both** the BS5.3 table vars AND explicit cell bg/color (BS4 + Moodle `inherit`), plus the `--bs-border-color` global-var gotcha (#136). Links lime via `a:not(.btn)` ((0,3,1) beats the `td *` sweep (0,2,1)). The monologo `<img>` lit via `filter` (image-based, like #136 `img.itemicon`).
+
+### Verification
+- `npm run build` + `npm run lint` clean. Compiled-generator harness: Dark Lime + Dark Ember + a synthetic custom dark theme emit the full block (table vars + cell bg/color/border, lime links, icon filter, muted text) each with their OWN tokens; all 8 light presets + Moodle Default emit **0**; leak check clean (only the intentional `.path-report-outline { --bs-border-color }` scope line is un-`.generaltable`). **User-verified on Moodle Cloud.**
+
+### Presets / Controls
+- **No new token.** Reuses `cardBg`/`bodyText`/`cardBorder`/`mutedText`/`linkColour` → no preset edits, no control / quick-palette change.
+
+### Related (out of scope, noted for follow-up)
+- **Course participation** report (`report/participation`, body class `.path-report-participation`, table `.generaltable.generalbox.reporttable`) has the IDENTICAL white-`.generaltable` issue and would need the same treatment — separate page, not fixed here.
+
+### Files Modified
+- `lib/scss-generator.ts` (the activity-report block), `docs/moodle-cloud-constraints.md` (1 selector row), `docs/PROJECT-TRACKER.md` (this section), `CLAUDE.md` (status bullet). Memory: `project_dark_theme_activity_report.md`.
+
+**Branch:** `worktree-dark-theme-grade-status-icons` (off main `c6425ef`, after PR #22).
