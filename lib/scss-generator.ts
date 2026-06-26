@@ -1915,6 +1915,50 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push('}');
     rules.push('');
 
+    // ── Messaging drawer: search view dark surface (#147, extends #140) ──
+    // The drawer's SEARCH view (`message_drawer_view_search_header.mustache`, rendered
+    // INSIDE `.message-app`) was left light by #140 for two reasons:
+    //  (1) the search field `<input class="form-control" data-region="search-input">`
+    //      carries NO `.bg-white`/`.bg-light` class — it is white purely from
+    //      Bootstrap's default `$input-bg` (#fff) — so #140's `.bg-white`/`.bg-light`
+    //      repaint never matched it; and
+    //  (2) Moodle's `theme/boost/scss/moodle/search.scss` hardcodes the submit button
+    //      LIGHT: `.simplesearchform .btn-submit { background-color: $gray-100 (#f8f9fa);
+    //      color: $gray-600 }`, and the pre-#140 rule above (`.simplesearchform
+    //      .btn-submit .icon { color: ${d.bodyText} }`) forces that magnifier DARK
+    //      (it assumed the box stays white) → once we darken the box it'd be invisible.
+    // Make the whole search box one cohesive dark field, matching the #140 composer
+    // textarea: dark `cardBg` input + light `bodyText` + `mutedText` placeholder, the
+    // button on the same `cardBg` with the magnifier flipped to the theme accent
+    // (`linkColour` — lime/orange), like the rest of the drawer's interactive icons.
+    // MUST scope to `.message-app` — `.simplesearchform` is a GENERIC class shared by
+    // the navbar global search + course search box (which use `data-region="input"`,
+    // not `search-input`); a bare rule would leak to them. Specificity is the safety
+    // net: the input `.message-app .simplesearchform .form-control` (0,3,0) beats
+    // Bootstrap `.form-control` (0,1,0), the generator's global `.form-control` (0,1,0)
+    // and any `.bg-white .form-control` (0,2,0); the button (0,3,0) beats Moodle's
+    // `.simplesearchform .btn-submit` (0,2,0); the icon (0,4,0) + later source order
+    // beats the pre-#140 `.simplesearchform .btn-submit .icon` (0,2,0). Dark presets only.
+    rules.push('.message-app .simplesearchform .form-control,');
+    rules.push('.message-app .simplesearchform input[data-region="search-input"] {');
+    rules.push(`  background-color: ${tokens.cardBg} !important;`);
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push(`  border-color: ${tokens.cardBorder} !important;`);
+    rules.push('}');
+    rules.push('.message-app .simplesearchform .form-control::placeholder,');
+    rules.push('.message-app .simplesearchform input[data-region="search-input"]::placeholder {');
+    rules.push(`  color: ${tokens.mutedText} !important;`);
+    rules.push('}');
+    rules.push('.message-app .simplesearchform .btn-submit {');
+    rules.push(`  background-color: ${tokens.cardBg} !important;`);
+    rules.push(`  border-color: ${tokens.cardBorder} !important;`);
+    rules.push('}');
+    rules.push('.message-app .simplesearchform .btn-submit .icon,');
+    rules.push('.message-app .simplesearchform .btn-submit .fa {');
+    rules.push(`  color: ${tokens.linkColour} !important;`);
+    rules.push('}');
+    rules.push('');
+
     // ── Calendar month-view day-cell hover (#141) ──
     // Moodle's `calendar.scss` hovers a clickable month day cell to a LIGHT grey:
     // `.maincalendar .calendarmonth .clickable:hover { background-color: #ededed }`

@@ -1675,3 +1675,33 @@ Covers cell icons (`.grade_icons`) AND category/total icons (`.category_grade_ic
 - `lib/scss-generator.ts` (the grade-status-icon block), `docs/moodle-cloud-constraints.md` (1 selector row), `docs/PROJECT-TRACKER.md` (this section), `CLAUDE.md` (status bullet). Memory: `project_dark_theme_grade_status_icons.md`.
 
 **Branch:** `worktree-dark-theme-grade-status-icons` (off main `c6425ef`, after PR #22).
+
+## Session: 2026-06-26 — Dark Theme: Messaging drawer search view (#147, extends #140)
+
+### Issue
+On dark themes, the messaging drawer's SEARCH view (open the drawer → click the search icon) rendered the search field + submit button LIGHT/white, clashing with the dark conversation drawer (#140). User wanted the search box dark, matching the chat design.
+
+### Root cause
+The search header (`message/templates/message_drawer_view_search_header.mustache`, rendered INSIDE `.message-app`, verified 4.4/4.5/5.0) holds `<input class="form-control" data-region="search-input">` + `<button class="btn btn-submit icon-no-margin">`. Two gaps #140 didn't cover: (1) the input has NO `.bg-white`/`.bg-light` class (white from Bootstrap `$input-bg`, or — where a `.bg-white` ancestor exists — from the generator's own `.bg-white .form-control { #FFFFFF !important }` rule at L1050-1057), so #140's `.bg-white`/`.bg-light` repaint never matched it; (2) Moodle's `theme/boost/scss/moodle/search.scss` hardcodes the button LIGHT (`.simplesearchform .btn-submit { background-color: $gray-100; color: $gray-600 }`), and the pre-#140 rule `.simplesearchform .btn-submit .icon { color: ${d.bodyText} }` forced that magnifier dark (assumed a white box).
+
+### Fix (`lib/scss-generator.ts`, after the #140 emoji-picker rules, inside `if (darkMode)`)
+Make the whole search box one cohesive dark field (like the #140 composer textarea):
+```
+.message-app .simplesearchform .form-control, … input[data-region="search-input"] {
+  background-color: ${tokens.cardBg} !important; color: ${tokens.bodyText} !important; border-color: ${tokens.cardBorder} !important; }
+… ::placeholder { color: ${tokens.mutedText} !important; }
+.message-app .simplesearchform .btn-submit { background-color: ${tokens.cardBg} !important; border-color: ${tokens.cardBorder} !important; }
+.message-app .simplesearchform .btn-submit .icon, … .fa { color: ${tokens.linkColour} !important; }
+```
+**MUST scope to `.message-app`** — `.simplesearchform` is GENERIC (navbar global search + course search box use it too, with `data-region="input"` not `search-input`); a bare rule would leak. Specificity is the safety net: input `(0,3,0)` beats Bootstrap `.form-control` (0,1,0), the global `.form-control` (0,1,0) and `.bg-white .form-control` (0,2,0); button `(0,3,0)` beats Moodle's `.simplesearchform .btn-submit` (0,2,0); icon `(0,4,0)`+later beats the pre-#140 `.simplesearchform .btn-submit .icon` (0,2,0).
+
+### Verification
+- `npm run build` + `npm run lint` clean. Compiled-generator harness: Dark Lime + Dark Ember + a synthetic custom dark theme emit the full block (input cardBg/bodyText/cardBorder, placeholder mutedText, button cardBg, icon linkColour) each with their OWN tokens; all 8 light presets + Moodle Default emit **0**. Leak check: the only unscoped `.simplesearchform` rule is the pre-#140 global dark-icon rule (correct for navbar/course search). **User-verified on Moodle Cloud.**
+
+### Presets / Controls
+- **No new token.** Reuses `cardBg`/`bodyText`/`cardBorder`/`mutedText`/`linkColour` → no preset edits, no control / quick-palette change.
+
+### Files Modified
+- `lib/scss-generator.ts` (the search-view block), `docs/moodle-cloud-constraints.md` (#140 row extended), `docs/PROJECT-TRACKER.md` (this section), `CLAUDE.md` (status bullet). Memory: `project_dark_theme_messaging_drawer.md` (updated).
+
+**Branch:** `worktree-dark-theme-grade-status-icons` (off main `c6425ef`, after PR #22).
