@@ -986,6 +986,60 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
       rules.push('body#page-login-index .login-signup a {');
       rules.push(`  color: ${tokens.bodyText} !important;`);
       rules.push(`}`);
+      // Login footer links — "Lost password?" and "Cookie Settings" (both
+      // `.login-form-forgotpassword a`) are forced WHITE above. On FOCUS (Tab) or click,
+      // Moodle Boost `core.scss` "Rule A" paints a LIGHT highlight box behind the link
+      // (and intends dark text) — but our white id-`!important` rule wins → white-on-light
+      // = invisible (#157, same trap as #143 but caused by our own login rule).
+      // Match the CFA OFFICIAL site's focus/click effect (user reference): a light
+      // SKY-BLUE box with near-black text. The box bg is the EXACT measured colour of the
+      // official site's focus highlight — RGB(138,221,249) = #8ADDF9 — a FIXED
+      // designed-for-light highlight surface (same fixed-value exception class as the
+      // chart #FFFFFF backdrop and the #1d2125 focus text in this rule; NOT a
+      // theme-following colour, so no token). `d.bodyText` (#1d2125) text on #8ADDF9 ≈
+      // 14:1 (AAA). On HOVER (no box) turn the text LIME (`infoIconColour` #BAF73C, lime
+      // on BOTH presets
+      // — linkColour is orange on Ember). `:hover`/`:focus` add a pseudo → (1,2,2) beats
+      // the resting rule above (1,1,2); the focus/active block is placed AFTER `:hover`
+      // so a focused-and-hovered link stays the sky-blue/dark combo (the box is present).
+      // Also covers the "Need more help?" email mailto in `.login-instructions`
+      // (`a:not(.btn)` spares the custom "Create new account" button placed there, #152).
+      // That mailto carries an INLINE `style="color:#baf73c"` from the CFA instructions
+      // HTML, so it stays lime on the light focus box → unreadable; `!important` beats the
+      // inline style to restore the dark-on-sky-blue focus combo.
+      rules.push('body#page-login-index .login-form-forgotpassword a:hover,');
+      rules.push('body#page-login-index .login-signup a:hover,');
+      rules.push('body#page-login-index .login-instructions a:not(.btn):hover {');
+      rules.push(`  color: ${tokens.infoIconColour} !important;`);
+      rules.push(`}`);
+      rules.push('body#page-login-index .login-form-forgotpassword a:focus,');
+      rules.push('body#page-login-index .login-form-forgotpassword a:focus-visible,');
+      rules.push('body#page-login-index .login-form-forgotpassword a:active,');
+      rules.push('body#page-login-index .login-form-forgotpassword a.focus,');
+      rules.push('body#page-login-index .login-signup a:focus,');
+      rules.push('body#page-login-index .login-signup a:focus-visible,');
+      rules.push('body#page-login-index .login-signup a:active,');
+      rules.push('body#page-login-index .login-signup a.focus,');
+      rules.push('body#page-login-index .login-instructions a:not(.btn):focus,');
+      rules.push('body#page-login-index .login-instructions a:not(.btn):focus-visible,');
+      rules.push('body#page-login-index .login-instructions a:not(.btn):active,');
+      rules.push('body#page-login-index .login-instructions a:not(.btn).focus {');
+      rules.push(`  color: ${d.bodyText} !important;`);
+      rules.push('  background-color: #8ADDF9 !important;');
+      rules.push(`}`);
+      // Button tap/focus indicator (#157b). ALL login-page buttons — "Log in"
+      // (`#loginbtn` .btn-primary), the custom "Create new account" (`.login-instructions
+      // a.btn-primary`, #152), "Cookies notice" (`.btn-secondary`), and the password eye
+      // toggle (`.toggle-sensitive-btn`). On Tab/click add a visible focus RING (NOT a bg
+      // change — keep each button's fill): a sky-blue (#8ADDF9, same as the link focus
+      // box) DASHED outline, offset outward so it reads on the dark page, matching the
+      // official CFA dashed focus style. Keyboard + mouse (`:focus` + `:active`).
+      rules.push('body#page-login-index .btn:focus,');
+      rules.push('body#page-login-index .btn:focus-visible,');
+      rules.push('body#page-login-index .btn:active {');
+      rules.push('  outline: 3px dashed #8ADDF9 !important;');
+      rules.push('  outline-offset: 3px !important;');
+      rules.push('}');
       rules.push('');
     }
 

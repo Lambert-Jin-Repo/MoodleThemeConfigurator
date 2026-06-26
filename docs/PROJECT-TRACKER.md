@@ -1998,3 +1998,33 @@ Harness (merging each preset's `overrides`): Dark Lime + Dark Ember emit the ful
 - `lib/scss-generator.ts` (quiz-report dark block), `docs/moodle-cloud-constraints.md` (3 selector rows incl. the chart-canvas limitation), `docs/PROJECT-TRACKER.md` (this section). Memory: `project_dark_theme_quiz_report.md`.
 
 **Branch:** `fix/dark-theme-login-eye-icon` (same branch as #153/#154/#155, per user request).
+
+---
+
+## Session: 2026-06-26 — Dark Theme: Login focus/click states (#157)
+
+Login page (`body#page-login-index`), matching the CFA OFFICIAL site's focus effect (user reference: focused item = light sky-blue box + near-black text + dashed outline). Dark presets only; gated in the login-dark block.
+
+### #157a — link focus/hover
+Links "Lost password?" + "Cookie Settings" (`.login-form-forgotpassword a`) and the "Need more help?" email mailto (`.login-instructions a:not(.btn)`) are forced WHITE by the login-dark block. On focus (Tab)/click, Moodle Boost "Rule A" paints a light box but our white id-`!important` rule wins → white-on-light = invisible (same trap as #143, our own rule). Fix:
+- **hover** → `infoIconColour` (#BAF73C lime, both presets).
+- **focus/active/focus-visible/.focus** → `d.bodyText` (#1d2125) text + `background-color: #8ADDF9` (the EXACT measured colour of the official focus highlight, RGB 138,221,249 — a fixed designed-for-light value, like `#FFFFFF`/`#1d2125`). ≈14:1 AAA.
+- The email mailto has an INLINE `style="color:#baf73c"` → `!important` beats it; `a:not(.btn)` spares the custom "Create new account" button (#152).
+- (1,2,2) [pseudo] beats the resting login rule (1,1,2); focus block placed after hover so a focused-and-hovered link stays dark-on-blue.
+
+### #157b — button tap/focus ring
+ALL login buttons (`body#page-login-index .btn` — Log in, Create new account, Cookies notice, eye toggle) on `:focus`/`:focus-visible`/`:active` → `outline: 3px dashed #8ADDF9` + `outline-offset: 3px` (sky-blue dashed ring, NOT a bg change). Matches the official dashed focus style.
+
+### Verification
+Harness: emits ONLY for Dark Lime + Dark Ember (the block is inside `if (darkMode=isDarkBg(pageBg))`, so a light preset with a merely-dark loginBg does NOT emit); 8 light presets + Moodle Default none. **User-verified on Moodle Cloud** (links + buttons, incl. exact `#8ADDF9` measured by the user's colour reader).
+
+### Presets / Controls
+- **No new token.** Fixed `#8ADDF9` (designed-for-light focus highlight) + reused `d.bodyText`/`infoIconColour`. No preset edits, no control / quick-palette change.
+
+### Follow-up (planned, NOT in this commit — user reviewing first)
+User asked if this focus styling is site-wide. It is NOT (login-only; #143 covers content-link focus text globally; rest uses Moodle defaults). Agreed best practice for whole-site consistency = ONE global `:focus-visible` ring with a **dual-tone** colour (sky-blue outline + dark box-shadow halo → WCAG 2.4.11 AA on ANY bg; sky-blue alone fails ~1.3:1 on light backgrounds). Decisions: dual-tone, `:focus-visible` (keyboard not click), separate change after review.
+
+### Files Modified
+- `lib/scss-generator.ts` (login-dark block: link focus/hover + button ring), `docs/moodle-cloud-constraints.md` (2 rows), `docs/PROJECT-TRACKER.md` (this section). Memory: `project_dark_theme_login_focus.md`.
+
+**Branch:** `fix/dark-theme-login-eye-icon` (same branch as #153–#156, per user request).
