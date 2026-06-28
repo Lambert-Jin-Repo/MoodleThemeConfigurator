@@ -2126,3 +2126,25 @@ The ring now lands only on the focused/clicked control. The global #158 ring nev
 
 ### Verification
 Bare `body#page-login-index :active {` gone; scoped `body#page-login-index input:focus,` emits; lint clean; **user-verified on Moodle Cloud**. NO new tokens/presets/controls. Files: `lib/scss-generator.ts`, `CLAUDE.md`, `docs/PROJECT-TRACKER.md`. Memory: `project_sitewide_focus_indicator.md` (updated).
+
+## #161 — Hide Moodle 5.0's re-marked-up signup link
+
+**Branch:** `worktree-feat-sitewide-focus-indicator`. Unconditional (every preset); extends the permanent #152 signup-hide.
+
+### Symptom
+After the Moodle Cloud 5.0 upgrade, a plain "Sign up" link reappeared below "Log in" on the login page — the permanent #152 hide (`.login-signup`) no longer matched it.
+
+### Root cause
+5.0 re-marked-up the auto signup link: it is now `<div class="text-center small mb-3"><a href=".../login/signup.php">Sign up</a></div>`, not `.login-signup`.
+
+### Fix
+Extend the #152 hide to all forms, excluding the custom button:
+```
+body#page-login-index .login-signup,
+body#page-login-index .text-center:has(> a[href*="/login/signup.php"]:not(.btn)),
+body#page-login-index a[href*="/login/signup.php"]:not(.btn) { display: none !important; }
+```
+**CRITICAL `:not(.btn)`**: the custom "Create new account" button (`a.btn-primary` in the Instructions, #152) is *also* a signup link — both selectors exclude `.btn` so only Moodle's plain "Sign up" text link is hidden, the custom button stays. `:has()` is Baseline-2023 (already used in the generator).
+
+### Verification
+Rule emits for all presets (unconditional); `:not(.btn)` preserves the Create-account button; lint clean; **user-verified on Moodle Cloud**. Files: `lib/scss-generator.ts`, `CLAUDE.md`, `docs/PROJECT-TRACKER.md`. Memory: `project_login_page_customisations.md` (updated).

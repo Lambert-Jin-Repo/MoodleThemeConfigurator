@@ -318,7 +318,16 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
   // which the generator can't emit — this rule is the SCSS half of that pairing.
   // DO NOT remove when working on other visual issues. See docs/PROJECT-TRACKER.md (#152).
   rules.push('// ── Login Page: hide duplicate signup button ──');
-  rules.push('body#page-login-index .login-signup {');
+  // Moodle 5.0 re-marked-up the auto signup link: it is no longer (only) `.login-signup`
+  // but `<div class="text-center small mb-3"><a href=".../login/signup.php">Sign up</a></div>`
+  // (#161). Hide all forms. CRITICAL: do NOT hide by bare `a[href*=signup.php]` — the custom
+  // "Create new account" button IS a signup link too (`a.btn-primary` in the Instructions);
+  // exclude it everywhere via `:not(.btn)` (both the link rule AND the `:has` wrapper require a
+  // NON-button signup child) so only Moodle's plain "Sign up" text link is removed. `:has()` is
+  // Baseline-2023 (already used in the generator; fine on Moodle 5.x scssphp).
+  rules.push('body#page-login-index .login-signup,');
+  rules.push('body#page-login-index .text-center:has(> a[href*="/login/signup.php"]:not(.btn)),');
+  rules.push('body#page-login-index a[href*="/login/signup.php"]:not(.btn) {');
   rules.push('  display: none !important;');
   rules.push('}');
   rules.push('');
