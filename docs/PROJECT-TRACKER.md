@@ -2067,3 +2067,36 @@ Generator harness across all 11 presets (merge `PRESET_TEMPLATES[i].overrides`, 
 
 ### Relation to #157's planned follow-up
 #157 noted a **dual-tone** (`:focus-visible` + box-shadow halo) ring as the planned approach. We instead implemented the **box + adaptive per-surface dashed ring** — the user's confirmed visual target (sky-blue box + dark text + white/black dashes), triggered on `:focus`+`:active` (mouse AND keyboard, per the user's explicit requirement). The dual-tone box-shadow halo remains a noted future alternative that could retire the per-surface island logic.
+
+## #159 — Activity-header region dark card (Moodle 5.0 restructure)
+
+**Branch:** `worktree-feat-sitewide-focus-indicator` (on top of #158). Dark presets only.
+
+### Symptom (user, Moodle Cloud, dark theme)
+On activity-PAGE views (quiz `mod/quiz/view.php`, book `mod/book/view.php`, certificate `mod/customcert/view.php`): the intro/description box rendered **light/white** with washed-out **light** text (`#F0EEEE` on white → "Why should you care about the online needs of people with disability?" unreadable); the "Opened:" **dates** were dim; the edit-settings **Save/Cancel sticky bar** was bright white; the **completion** button was broken.
+
+### Root cause — a Moodle Cloud upgrade (4.x→5.0), NOT the #158 focus feature
+The #158 diff is 100% `:focus`/`:active` (cannot paint a resting background); the rules that govern this region are foundational (`709ccde`/`bc27ffc`), unchanged. The break came from Moodle itself:
+- **The white box is `.activity-details`.** The live 5.0 DOM nests `.activity-header > .activity-information > .activity-details > .activity-description#intro`. Moodle's `$gray-100` fill is on the OUTER `.activity-header` (`modules.scss`, un-`!important`, since 4.0) and our existing `.activity-header { transparent !important }` (L847) already beat it — so the washout was the **uncovered, light-rendering `.activity-details`**, not the header fill. A transparent-reveal chain breaks at one light link.
+- **Completion control re-classed in 5.0:** the manual button went from `btn-success` / `btn-outline-secondary` (handled) to the **unhandled** `.btn-subtle-body` ("Mark as done": transparent bg + DARK `--bs-body-color` text + LIGHT `#dee2e6` border → invisible on dark) / `.btn-subtle-success` ("Done": light-green island); auto-completion badges gained `mix-blend-mode: multiply` (a dark-theme killer).
+- `.activity-dates` text: our muted `#A0A0A1` override is sub-AA (**3.96:1** on Dark Lime).
+- `#sticky-footer`: core save/cancel bar carries the BS `.bg-white` utility (white `!important`).
+
+### Fix (appended at the tail of `if (darkMode)`)
+- **(a) Subtree dark card** — paint `.activity-header` + `.activity-information` + `.activity-details` + `.activity-description` + `.no-overflow` with `${tokens.cardBg}` **directly** (solid, NOT transparent-reveal — can't break at a light link).
+- **(b) Separators** — `.activity-header .activity-dates`/`.completion-info`/`.activity-description` light `$border-color #dee2e6` → `${tokens.cardBorder}`.
+- **(c) Dates** — `.activity-dates, .activity-dates .date-item` → `${tokens.bodyText}` (~9:1; covers the card AND the `.header-extras-container` route).
+- **(d) Sticky footer** — `#sticky-footer { background-color: ${tokens.footerBg} !important; border-color: ${tokens.cardBorder} !important }` (id (1,0,0)+`!important` beats `.bg-white`).
+- **(e) Completion control** — `.activity-header .btn-subtle-body`/`.btn-subtle-success` → dark `cardBg` chip + `cardBorder`; "Mark as done" text/icon `bodyText`; "Done" text/icon `${tokens.success}` (lime/green, semantic); the global `.btn-subtle-success .icon { #1d2125 }` rule (L583, assumes light button) is out-specified by the `.activity-header …` scope; `mix-blend-mode: normal` on `.automatic-completion-conditions .badge`; `.badge.bg-light.text-dark` "To do" pill → dark chip.
+
+### Lesson
+**Trust the live DOM over source research.** The Moodle-5.0-source agent insisted `.activity-details` "isn't a real 5.0 class (DevTools artifact)". The user's DevTools showed it real AND the culprit. The **first attempt** (header-`cardBg` + inner-transparent, excluding `.activity-details`) FAILED on Moodle Cloud; the solid-`cardBg`-on-every-container rewrite fixed it.
+
+### Verification
+Generator harness across all 11 presets (merge `PRESET_TEMPLATES[i].overrides`, NOT `.tokens`): the block emits for Dark Lime + Dark Ember + a synthetic custom-dark (token-agnostic), and NOTHING for the 8 light presets + Moodle Default + CFA Dark Chrome (light-bg). `npm run build` + `npm run lint` clean. **User-verified on Moodle Cloud** ("I can confirm it works") for quiz + book + settings footer.
+
+### Files Modified
+- `lib/scss-generator.ts` (new #159 block at the tail of `if (darkMode)`), `CLAUDE.md` (Current Status), `docs/PROJECT-TRACKER.md` (this section), `docs/moodle-cloud-constraints.md` (selector rows). Memory: `project_dark_theme_activity_header.md`. NO new tokens/presets/controls.
+
+### Caveat noted to user
+The customcert intro green/blue band may be the **certificate preview content** (an image/styled cert design), not a structural container — the theme should not recolour it (it would distort the certificate). Pending user confirmation if it persists.

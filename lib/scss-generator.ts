@@ -2592,6 +2592,94 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push('  border-radius: 0.5rem !important;');
     rules.push('}');
     rules.push('');
+
+    // ── Activity-header region — dark card (Moodle 5.0 activity-header restructure, #159) ──
+    // The Moodle Cloud upgrade restructured the activity-page header (quiz/book/assign view).
+    // Moodle paints `.path-mod .activity-header:not(:empty)` with $gray-100 (#f8f9fa, since
+    // 4.0, un-`!important`) AND 5.0 can leak a light wrapper THROUGH our existing
+    // `.activity-header { transparent !important }` (L847) → light box + washed-out light text.
+    // Fix: make the header an OPAQUE dark CARD so neither the fill nor any light ancestor
+    // shows. Appended at the tail of darkMode so it beats L847 by source order (equal
+    // specificity + importance → later wins); `!important` beats Moodle's un-important fill.
+    // Paint EVERY structural container in the subtree with cardBg DIRECTLY — not a
+    // transparent-reveal chain. The live 5.0 DOM nests .activity-information > .activity-details
+    // > .activity-description#intro, and .activity-details renders LIGHT; a transparent-reveal
+    // only works if every link is transparent, so one light link (.activity-details) shows
+    // through. Solid cardBg on each container can't break, whatever Moodle paints behind it.
+    rules.push('// (a) Activity-header subtree → solid dark card (every structural container)');
+    rules.push('.activity-header,');
+    rules.push('.activity-header .activity-information,');
+    rules.push('.activity-header .activity-details,');
+    rules.push('.activity-header .activity-description,');
+    rules.push('.activity-header .activity-description .no-overflow {');
+    rules.push(`  background-color: ${tokens.cardBg} !important;`);
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push('}');
+    // (b) Inner separators — Moodle draws .activity-dates/.completion-info border-bottom and
+    // (5.0) .activity-description border-top with the light $border-color (#dee2e6) → bright
+    // lines on the dark card. Darken to cardBorder.
+    rules.push('// (b) Activity-header inner separator borders → dark');
+    rules.push('.activity-header .activity-dates,');
+    rules.push('.activity-header .completion-info,');
+    rules.push('.activity-header .activity-description {');
+    rules.push(`  border-color: ${tokens.cardBorder} !important;`);
+    rules.push('}');
+    // (c) Activity dates text — Moodle default is $gray-700; our muted override (L686) recolours
+    // it to mutedText #A0A0A1 (~3.96:1 on Dark Lime → fails AA). Dates render BOTH in the header
+    // card AND in the page-header extras (.header-extras-container), so anchor on the bare
+    // `.activity-dates` class to cover both routes. Bump to bodyText (~9:1). Beats L686 by order.
+    rules.push('// (c) Activity dates text → readable (was muted, sub-AA on Dark Lime)');
+    rules.push('.activity-dates, .activity-dates .date-item {');
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push('}');
+    // (d) Sticky form-actions footer — Moodle's core save/cancel bar (`#sticky-footer`, id
+    // hardcoded in lib/templates/sticky_footer.mustache, stable 4.x–5.0) carries the Bootstrap
+    // `.bg-white` utility (white !important) → a jarring bright bar on dark themes. Darken to
+    // footerBg; the #id (1,0,0)+!important beats the `.bg-white` utility (0,1,0)+!important.
+    // Save (lime/orange btn-primary) + Cancel stay readable on the near-black bar.
+    rules.push('// (d) Sticky form-actions footer → dark bar (beats the .bg-white utility)');
+    rules.push('#sticky-footer {');
+    rules.push(`  background-color: ${tokens.footerBg} !important;`);
+    rules.push(`  border-color: ${tokens.cardBorder} !important;`);
+    rules.push('}');
+    // (e) Completion control — THE core 4.4→5.0 regression. 5.0 re-classed the manual-completion
+    // button from btn-success / btn-outline-secondary (handled) to the unhandled btn-subtle-*:
+    //   • "Mark as done" = .btn-subtle-body → transparent bg + DARK --bs-body-color text +
+    //     LIGHT #dee2e6 border → invisible on the dark card.
+    //   • "Done" = .btn-subtle-success → light-green subtle bg → a light island on the dark card.
+    // Re-skin both to a dark chip; keep the "Done = green" cue via the success token (lime on
+    // Dark Lime / green on Dark Ember). Scoped to .activity-header so course-page completion
+    // (handled separately at L751) is untouched. The global .btn-subtle-success .icon rule (L583)
+    // forces icons #1d2125 (dark) assuming a LIGHT button — now that the button is dark, re-light
+    // the icons to match the button text (our .activity-header… selector out-specifies L583).
+    rules.push('// (e) Completion control (5.0 btn-subtle-*) → dark chip on the card');
+    rules.push('.activity-header .btn-subtle-body,');
+    rules.push('.activity-header .btn-subtle-success {');
+    rules.push(`  background-color: ${tokens.cardBg} !important;`);
+    rules.push(`  border-color: ${tokens.cardBorder} !important;`);
+    rules.push('}');
+    rules.push('.activity-header .btn-subtle-body,');
+    rules.push('.activity-header .btn-subtle-body .icon,');
+    rules.push('.activity-header .btn-subtle-body .fa {');
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push('}');
+    rules.push('.activity-header .btn-subtle-success,');
+    rules.push('.activity-header .btn-subtle-success .icon,');
+    rules.push('.activity-header .btn-subtle-success .fa {');
+    rules.push(`  color: ${tokens.success} !important;`);
+    rules.push('}');
+    // Auto-completion conditions: Moodle adds mix-blend-mode:multiply (modules.scss) → each pill
+    // multiplies against the dark card (green/red darken badly, the light "To do" pill vanishes).
+    // Reset to normal; darken the bg-light "To do" pill to a dark chip (semantic green/red badges
+    // keep their colour, just un-multiplied).
+    rules.push('.activity-header .automatic-completion-conditions .badge {');
+    rules.push('  mix-blend-mode: normal !important;');
+    rules.push('}');
+    rules.push('.activity-header .automatic-completion-conditions .badge.bg-light.text-dark {');
+    rules.push(`  background-color: ${tokens.cardBorder} !important;`);
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push('}');
+    rules.push('');
   }
 
   // ── Site-wide Focus / Click Indicator (CFA brand, #158) ──
