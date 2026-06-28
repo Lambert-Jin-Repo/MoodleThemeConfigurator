@@ -2100,3 +2100,29 @@ Generator harness across all 11 presets (merge `PRESET_TEMPLATES[i].overrides`, 
 
 ### Caveat noted to user
 The customcert intro green/blue band may be the **certificate preview content** (an image/styled cert design), not a structural container — the theme should not recolour it (it would distort the certificate). Pending user confirmation if it persists.
+
+## #160 — Login focus-ring scoping (whole-section dashed border)
+
+**Branch:** `worktree-feat-sitewide-focus-indicator` (on top of #159).
+
+### Symptom (user, Moodle Cloud, dark login page)
+Clicking any login control (e.g. the password input) drew the white dashed focus ring around the **whole login card AND each nested form section**, not just the clicked control.
+
+### Root cause
+The #157/#158 login ring used a **bare descendant selector**:
+`body#page-login-index :focus, :focus-visible, :active { outline: 3px dashed #FFFFFF }`.
+`:active` applies to the activated element **and all of its ancestors**, so on mouse-down every wrapping container (`.login-form-password`, `.login-form`, `.login-container`, `#region-main-box`, …) matched and drew its own dashed outline. (A bare `:focus`/`:active` also targets non-focusable containers in general.)
+
+### Fix
+Enumerate focusable element **types** instead of a bare descendant:
+```
+const loginRingEls = ['a', '.btn', 'button', '[role="button"]', 'input', 'select', 'textarea', '[tabindex="0"]'];
+// body#page-login-index ${el}:focus, …:focus-visible, …:active { outline: 3px dashed #FFFFFF; outline-offset: 3px }
+```
+The ring now lands only on the focused/clicked control. The global #158 ring never had this bug: rule 2 (the outline creator) is already element-scoped; rules 3/4 set `outline-color` only (a no-op on elements with no outline).
+
+### Lesson
+**Never use a bare `:active`/`:focus` descendant selector for an `outline`/border** — `:active` matches the activated element + all ancestors. Always enumerate focusable element types.
+
+### Verification
+Bare `body#page-login-index :active {` gone; scoped `body#page-login-index input:focus,` emits; lint clean; **user-verified on Moodle Cloud**. NO new tokens/presets/controls. Files: `lib/scss-generator.ts`, `CLAUDE.md`, `docs/PROJECT-TRACKER.md`. Memory: `project_sitewide_focus_indicator.md` (updated).

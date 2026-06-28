@@ -1025,17 +1025,22 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
       rules.push(`  color: ${d.bodyText} !important;`);
       rules.push('  background-color: #8ADDF9 !important;');
       rules.push(`}`);
-      // Adaptive focus RING on ALL focusable elements on the (dark) login page (#157b,
-      // updated for #158). This matches the site-wide indicator: a dark surface → WHITE
-      // dashes. One catch-all covers buttons ("Log in" `#loginbtn`, the custom "Create
-      // new account" `a.btn-primary` #152, "Cookies notice" `.btn-secondary`), the
-      // password eye toggle, inputs, AND links (links also get the sky-blue box above).
-      // Keep each button's fill (ring only, NOT a box — per the buttons decision).
-      // `body#page-login-index :focus` (1,1,0) beats the global block, so login owns its
-      // ring and needs no explicit exclusion there. Keyboard + mouse (`:focus`+`:active`).
-      rules.push('body#page-login-index :focus,');
-      rules.push('body#page-login-index :focus-visible,');
-      rules.push('body#page-login-index :active {');
+      // Adaptive focus RING on the (dark) login page's focusable ELEMENTS (#157b, updated for
+      // #158, then scoped #160). Matches the site-wide indicator: a dark surface → WHITE dashes.
+      // Covers buttons ("Log in" `#loginbtn`, "Create new account" `a.btn-primary` #152,
+      // "Cookies notice" `.btn-secondary`), the password eye toggle, inputs, selects AND links.
+      // Keep each button's fill (ring only, NOT a box — per the buttons decision). White (1,x,0)
+      // beats the global per-surface ring. Keyboard + mouse (`:focus` + `:active`).
+      // MUST enumerate focusable element TYPES — a BARE `body#page-login-index :active` matched
+      // the clicked element AND (since `:active` applies to the activated element + ALL its
+      // ANCESTORS) every wrapping container, so clicking an input drew the dashed ring around the
+      // whole login card + each form section. Element-scoped → rings only what's actually focused.
+      const loginRingEls = ['a', '.btn', 'button', '[role="button"]', 'input', 'select', 'textarea', '[tabindex="0"]'];
+      rules.push(
+        loginRingEls
+          .map((s) => `body#page-login-index ${s}:focus, body#page-login-index ${s}:focus-visible, body#page-login-index ${s}:active`)
+          .join(',\n') + ' {'
+      );
       rules.push('  outline: 3px dashed #FFFFFF !important;');
       rules.push('  outline-offset: 3px !important;');
       rules.push('}');
