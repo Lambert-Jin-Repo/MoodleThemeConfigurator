@@ -332,6 +332,26 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
   rules.push('}');
   rules.push('');
 
+  // Login "Create new account" button (#162) — the custom <a class="btn btn-primary btn-lg"> in
+  // the Instructions. (a) MATCH the Log in button's text font: Log in is a regular .btn (1rem,
+  // verified `button#loginbtn.btn.btn-primary.w-100` 498×38), but `.btn-lg` renders the Create
+  // text at 1.25rem → force 1rem so the two read the same. (b) UNDERLINE only on hover/click:
+  // Moodle's two-column login underlines all left-content links (`.login-layout-left-content a {
+  // text-decoration: underline }`), underlining the button at rest → remove at rest, restore on
+  // :hover/:focus/:active. Anchored on the signup.php button link (`a.btn-primary` + signup href:
+  // the Log in button is a <button>, the hidden Moodle signup link is `:not(.btn)` — so only the
+  // Create button matches). Unconditional, like the #152/#161 login-button rules.
+  rules.push('body#page-login-index a.btn-primary[href*="/login/signup.php"] {');
+  rules.push('  font-size: 1rem !important;');
+  rules.push('  text-decoration: none !important;');
+  rules.push('}');
+  rules.push('body#page-login-index a.btn-primary[href*="/login/signup.php"]:hover,');
+  rules.push('body#page-login-index a.btn-primary[href*="/login/signup.php"]:focus,');
+  rules.push('body#page-login-index a.btn-primary[href*="/login/signup.php"]:active {');
+  rules.push('  text-decoration: underline !important;');
+  rules.push('}');
+  rules.push('');
+
   // --- Breadcrumb ---
   if (tokens.breadcrumbBg !== 'transparent' && tokens.breadcrumbBg !== d.breadcrumbBg) {
     rules.push('// ── Breadcrumb ──');

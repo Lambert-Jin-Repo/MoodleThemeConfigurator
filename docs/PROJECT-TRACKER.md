@@ -2148,3 +2148,28 @@ body#page-login-index a[href*="/login/signup.php"]:not(.btn) { display: none !im
 
 ### Verification
 Rule emits for all presets (unconditional); `:not(.btn)` preserves the Create-account button; lint clean; **user-verified on Moodle Cloud**. Files: `lib/scss-generator.ts`, `CLAUDE.md`, `docs/PROJECT-TRACKER.md`. Memory: `project_login_page_customisations.md` (updated).
+
+## #162 — "Create new account" button: match Log in font + hover-only underline
+
+**Branch:** `worktree-feat-sitewide-focus-indicator`. Unconditional.
+
+### Request (user, Moodle Cloud login page)
+Make the custom "Create new account" button's text font match the "Log in" button, and show its underline only on hover/click (not at rest).
+
+### Findings (live DevTools)
+- Log in = `button#loginbtn.btn.btn-primary.w-100`, 498×38 — a regular `.btn` (1rem, full-width). The Create button is `a.btn.btn-primary.btn-lg` → text at 1.25rem (`.btn-lg`).
+- The underline is Moodle's, not ours: `.login-layout-left-content a { text-decoration: underline }` (the two-column login underlines all left-content links).
+
+### Fix
+```
+body#page-login-index a.btn-primary[href*="/login/signup.php"] {
+  font-size: 1rem !important;
+  text-decoration: none !important;
+}
+body#page-login-index a.btn-primary[href*="/login/signup.php"]:hover,
+…:focus, …:active { text-decoration: underline !important; }
+```
+Anchored on the signup.php button link (`a.btn-primary` + href — the Log in button is a `<button>`, the hidden Moodle signup link is `:not(.btn)`, so only the Create button matches). (1,2,1)+`!important` beats Moodle's `.login-layout-left-content a` (0,1,1). Per the user's scoped ask, ONLY the font was matched (not padding/width).
+
+### Verification
+Rule emits for all presets (unconditional); lint clean; **user-verified on Moodle Cloud**. Files: `lib/scss-generator.ts`, `CLAUDE.md`, `docs/PROJECT-TRACKER.md`. Memory: `project_login_page_customisations.md` (updated).
