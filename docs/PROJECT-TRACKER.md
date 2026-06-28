@@ -2028,3 +2028,42 @@ User asked if this focus styling is site-wide. It is NOT (login-only; #143 cover
 - `lib/scss-generator.ts` (login-dark block: link focus/hover + button ring), `docs/moodle-cloud-constraints.md` (2 rows), `docs/PROJECT-TRACKER.md` (this section). Memory: `project_dark_theme_login_focus.md`.
 
 **Branch:** `fix/dark-theme-login-eye-icon` (same branch as #153–#156, per user request).
+
+---
+
+## #158 — Site-wide Focus / Click Indicator (generalises #157 + #143)
+
+**Branch:** `worktree-feat-sitewide-focus-indicator` (off `main` @ 18efa04, after PR #25).
+**Spec:** `docs/superpowers/specs/2026-06-27-sitewide-focus-indicator-design.md`.
+
+### Goal
+ONE consistent keyboard + mouse focus indicator across the WHOLE exported theme, matching the CFA official site. Replaces the fragmented focus handling (the conditional `*:focus-visible` ring, the #143 content-link focus fix, the #157 login focus) with one coherent system emitted for ALL 11 presets.
+
+### The indicator (3 layers)
+- **BOX** — `background-color:#8ADDF9` (light tint of CFA Sky Blue `#00BFFF`) + `color:#1d2125` (Near-Black) + `box-shadow:none` — on text-level interactive elements: Moodle Rule-A content links (`.aalink`, `a:not([class])`, `.arrow_link`, `.activityinstance > a`), `#page-footer a:not([class])`, navbar primary nav-links, `.nav-tabs .nav-link` (+ `.secondary-navigation`), `.dropdown-item`. Child icons forced `#1d2125`.
+- **RING** — `3px dashed`, `outline-offset:3px`, on EVERY focusable element. Colour ADAPTIVE per-surface via `focusDashFor(hex)=isDarkBg(hex)?'#FFFFFF':'#1d2125'`. Base = `focusDashFor(pageBg)`. Per-surface overrides (`.navbar` / `#page-footer` / drawer) emitted when their token brightness differs from the page (handles e.g. CFA Dark Chrome's dark navbar on a LIGHT page → white ring). Dark-theme light-on-dark islands → near-black ring.
+- **Buttons / inputs / checkboxes / radios / card-wrapping links = RING ONLY** (no box) — preserves brand fills, quiz traffic-light state buttons (`.qnbutton`), the red preflight Cancel, the `appearance:none` quiz radios (#133), and avoids tinting whole cards/tiles.
+
+### Trigger
+`:focus, :focus-visible, :active, .focus` — fires on Tab AND mouse click (NOT `:focus-visible` alone, which is keyboard-only). The new block is emitted LAST in Block 2 (after `if(darkMode)` closes), UNCONDITIONALLY (all presets).
+
+### Consolidation
+- **DELETED** the legacy `*:focus-visible` solid ring (was conditional on `focusRing`/`focusRingWidth`; those tokens are now inert — retiring that control is a follow-up).
+- **REWORKED** the global `a:hover, a:focus { color: linkHover !important }` → dropped `:focus` (focus text is now owned by the box).
+- **ABSORBED** #143 into the global box (promoted from dark-only to all presets — the same bug existed on light CFA presets).
+- **RESTYLED** login #157 — kept `body#page-login-index`-scoped; one white-ring catch-all matches the global dark-surface ring; login buttons stay ring-only (recoloured white).
+
+### Adversarial review fixes (6, all verified)
+After build, an 8-agent / 6-dimension adversarial review (Opus, max effort) ran. The **tinting** dimension was cleared (the box does NOT flood cards — Rule-A scoping is safe) and **selector validity** confirmed. Patched: (1) navbar dropdown box TEXT lost to the `(0,4,0)` navbar rule → navbar-scoped box variants; (2) navbar dropdown/popover ring leaked white onto the WHITE menus of the 7 light-page+dark-navbar presets → near-black counter-override gated `!darkMode && focusDashFor(navbarBg)!==pageDash`; (3) the near-black island ring vanished on surfaces the generator RE-DARKENS (move/preflight dialogs #142/#154, messaging #140/#147/#148, course-card footer, qbank filter #155) → white re-override; (4) extended the light-island list (`.bg-light`, quiz-edit containers #113, `.alert:not(.alert-info)`, `.fp-select`/`.yui3-datatable`/`.yui3-widget-bd`); (5) id-scoped link colours (grade-setup tree, quiz-report table, messaging contacts) beat the box text → id-scoped box re-assert; (6) muted/secondary descendant text (`.text-muted`/`small`) inside a boxed link → near-black.
+
+### Colours (all fixed, brand-sanctioned — NO new tokens)
+`#8ADDF9` (light tint of CFA Sky Blue `#00BFFF`), `#1d2125` (Near-Black), `#FFFFFF` (White). Same documented fixed-value exception class as the chart backdrop / quiz timer / login surfaces.
+
+### Verification
+Generator harness across all 11 presets (merge `PRESET_TEMPLATES[i].overrides`, NOT `.tokens`): box + base ring emit for EVERY preset incl. Moodle Default; the adaptive ring colour is correct per-surface (CFA Dark Chrome emits white `.navbar`/`#page-footer`/drawer overrides; the 2 dark presets + a synthetic custom-dark emit the near-black island ring + white re-override; the 6 patches emit exactly where expected); the old `*:focus-visible` ring and the `a:hover, a:focus` conflict are gone everywhere. `npm run build` + `npm run lint` clean. **User-verified on Moodle Cloud** ("consistent layout on tap and mouse click" across sections).
+
+### Files Modified
+- `lib/scss-generator.ts` (new #158 block + consolidation edits + `focusDashFor` helper), `docs/moodle-cloud-constraints.md` (Site-wide Focus Indicator section), `docs/PROJECT-TRACKER.md` (this section), `docs/superpowers/specs/2026-06-27-sitewide-focus-indicator-design.md` (spec, committed earlier), `.gitignore` (`.playwright-mcp/`). Memory: `project_sitewide_focus_indicator.md`.
+
+### Relation to #157's planned follow-up
+#157 noted a **dual-tone** (`:focus-visible` + box-shadow halo) ring as the planned approach. We instead implemented the **box + adaptive per-surface dashed ring** — the user's confirmed visual target (sky-blue box + dark text + white/black dashes), triggered on `:focus`+`:active` (mouse AND keyboard, per the user's explicit requirement). The dual-tone box-shadow halo remains a noted future alternative that could retire the per-surface island logic.

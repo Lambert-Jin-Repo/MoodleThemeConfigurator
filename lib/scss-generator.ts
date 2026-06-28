@@ -214,15 +214,12 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push('');
   }
 
-  // --- Focus (use :focus-visible for modern keyboard-only focus) ---
-  if (tokens.focusRing !== d.focusRing || tokens.focusRingWidth !== d.focusRingWidth) {
-    rules.push('// ── Focus Ring ──');
-    rules.push(`*:focus-visible {`);
-    rules.push(`  outline: ${tokens.focusRingWidth}px solid ${tokens.focusRing} !important;`);
-    rules.push(`  outline-offset: 2px;`);
-    rules.push(`}`);
-    rules.push('');
-  }
+  // --- Focus ---
+  // The legacy keyboard-only `*:focus-visible` brand ring is intentionally removed —
+  // superseded by the site-wide Focus / Click Indicator (#158) emitted near the end of
+  // Block 2, which paints an adaptive dashed ring on :focus AND :active for ALL presets.
+  // `focusRing` / `focusRingWidth` are now inert tokens (retiring the control is a
+  // tracked follow-up).
 
   // --- Buttons ---
   if (tokens.btnPrimaryBg !== d.btnPrimaryBg || tokens.btnPrimaryText !== d.btnPrimaryText) {
@@ -475,7 +472,8 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
   // --- Link Hover ---
   if (tokens.linkHover !== d.linkHover) {
     rules.push('// ── Link Hover ──');
-    rules.push(`a:hover, a:focus { color: ${tokens.linkHover} !important; }`);
+    // `:focus` dropped — focus text is owned by the site-wide indicator (#158); hover only.
+    rules.push(`a:hover { color: ${tokens.linkHover} !important; }`);
     rules.push('');
   }
 
@@ -1027,17 +1025,18 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
       rules.push(`  color: ${d.bodyText} !important;`);
       rules.push('  background-color: #8ADDF9 !important;');
       rules.push(`}`);
-      // Button tap/focus indicator (#157b). ALL login-page buttons — "Log in"
-      // (`#loginbtn` .btn-primary), the custom "Create new account" (`.login-instructions
-      // a.btn-primary`, #152), "Cookies notice" (`.btn-secondary`), and the password eye
-      // toggle (`.toggle-sensitive-btn`). On Tab/click add a visible focus RING (NOT a bg
-      // change — keep each button's fill): a sky-blue (#8ADDF9, same as the link focus
-      // box) DASHED outline, offset outward so it reads on the dark page, matching the
-      // official CFA dashed focus style. Keyboard + mouse (`:focus` + `:active`).
-      rules.push('body#page-login-index .btn:focus,');
-      rules.push('body#page-login-index .btn:focus-visible,');
-      rules.push('body#page-login-index .btn:active {');
-      rules.push('  outline: 3px dashed #8ADDF9 !important;');
+      // Adaptive focus RING on ALL focusable elements on the (dark) login page (#157b,
+      // updated for #158). This matches the site-wide indicator: a dark surface → WHITE
+      // dashes. One catch-all covers buttons ("Log in" `#loginbtn`, the custom "Create
+      // new account" `a.btn-primary` #152, "Cookies notice" `.btn-secondary`), the
+      // password eye toggle, inputs, AND links (links also get the sky-blue box above).
+      // Keep each button's fill (ring only, NOT a box — per the buttons decision).
+      // `body#page-login-index :focus` (1,1,0) beats the global block, so login owns its
+      // ring and needs no explicit exclusion there. Keyboard + mouse (`:focus`+`:active`).
+      rules.push('body#page-login-index :focus,');
+      rules.push('body#page-login-index :focus-visible,');
+      rules.push('body#page-login-index :active {');
+      rules.push('  outline: 3px dashed #FFFFFF !important;');
       rules.push('  outline-offset: 3px !important;');
       rules.push('}');
       rules.push('');
@@ -2301,13 +2300,10 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     // scoping or `:not()` chains needed. Cover `:focus`, `.focus` (JS-set), `:active`.
     // Specificity: `.aalink:focus` (0,2,0) / `a:not([class]):focus` (0,2,1) beat the
     // global `a:hover, a:focus` (0,1,1)!important and Moodle's un-important Rule A.
-    rules.push('.aalink:focus, .aalink.focus, .aalink:active,');
-    rules.push('a:not([class]):focus, a:not([class]).focus, a:not([class]):active,');
-    rules.push('.arrow_link:focus, .arrow_link.focus,');
-    rules.push('.activityinstance > a:focus, .activityinstance > a.focus,');
-    rules.push('#page-footer a:not([class]):focus {');
-    rules.push(`  color: ${d.bodyText} !important;`);
-    rules.push('}');
+    // (#143 rule REMOVED — absorbed by the site-wide Focus / Click Indicator (#158) near
+    // the end of Block 2: the global box now paints these exact Rule-A links with the
+    // #8ADDF9 box + #1d2125 text on EVERY preset, light and dark. The Rule-A reasoning
+    // above is why that box is always safe.)
     rules.push('');
 
     // ── Grader report — dark surface for Moodle's light-painted cells (#145) ──
@@ -2597,6 +2593,146 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push('}');
     rules.push('');
   }
+
+  // ── Site-wide Focus / Click Indicator (CFA brand, #158) ──
+  // One consistent indicator on :focus (Tab) AND :active (mouse click) across the whole
+  // site, matching the CFA official site. Emitted UNCONDITIONALLY for every preset.
+  //  • BOX  : sky-blue #8ADDF9 (light tint of CFA Sky Blue) + near-black #1d2125 text on
+  //           text-level links / nav-links / tabs / dropdown items — the elements Moodle's
+  //           own "Rule A" already boxes on focus, plus inline nav controls. (Absorbs +
+  //           promotes the old dark-only #143 fix to ALL themes.)
+  //  • RING : 3px dashed adaptive outline on EVERY focusable element, colour computed
+  //           PER-SURFACE from the surface token's brightness (white on dark, near-black
+  //           on light) — surfaces are token-driven and can be dark on a light-bg preset
+  //           (e.g. CFA Dark Chrome's charcoal navbar) while dark presets hold white
+  //           islands (modals/dialogs/.bg-white/white inputs) that need a near-black ring.
+  //  • Buttons / inputs / checkboxes / radios / card-wrapping links: RING ONLY (no box) —
+  //    preserves brand fills, quiz traffic-light states, the red Cancel, and the
+  //    appearance:none quiz radios (a box would fill the disc).
+  // Login (#page-login-index) keeps its own scoped #157 rules; their #id specificity beats
+  // this block, so no explicit exclusion is needed here.
+  // All four colours are fixed, brand-sanctioned values (#8ADDF9 / #1d2125 / #FFFFFF) —
+  // the same documented fixed-value exception class as the chart backdrop / timer / login.
+  const focusDashFor = (hex: string) => (isDarkBg(hex) ? '#FFFFFF' : '#1d2125');
+  const pageDash = focusDashFor(tokens.pageBg);
+
+  rules.push('// ── Site-wide Focus / Click Indicator (#158) ──');
+
+  // (1) BOX + near-black text on text-level links / nav-links / tabs / dropdown items.
+  rules.push('.aalink:focus, .aalink:active, .aalink.focus,');
+  rules.push('a:not([class]):focus, a:not([class]):active, a:not([class]).focus,');
+  rules.push('.arrow_link:focus, .arrow_link:active, .arrow_link.focus,');
+  rules.push('.activityinstance > a:focus, .activityinstance > a:active, .activityinstance > a.focus,');
+  rules.push('#page-footer a:not([class]):focus, #page-footer a:not([class]):active,');
+  rules.push('.navbar .primary-navigation .nav-link:focus, .navbar .primary-navigation .nav-link:active,');
+  rules.push('.nav-tabs .nav-link:focus, .nav-tabs .nav-link:active,');
+  rules.push('.secondary-navigation .nav-tabs .nav-link:focus, .secondary-navigation .nav-tabs .nav-link:active,');
+  rules.push('.navbar .dropdown-menu .dropdown-item:focus, .navbar .dropdown-menu .dropdown-item:active,');
+  rules.push('.navbar .usermenu .dropdown-menu .dropdown-item:focus, .navbar .usermenu .dropdown-menu .dropdown-item:active,');
+  rules.push('.navbar .popover-region-container .dropdown-item:focus, .navbar .popover-region-container .dropdown-item:active,');
+  rules.push('.dropdown-item:focus, .dropdown-item:active {');
+  rules.push('  background-color: #8ADDF9 !important;');
+  rules.push('  color: #1d2125 !important;');
+  rules.push('  box-shadow: none !important;');
+  rules.push('}');
+
+  // Child icons inside a boxed element → near-black (a lime/orange glyph is illegible on #8ADDF9).
+  rules.push('.aalink:focus .icon, .aalink:focus .fa,');
+  rules.push('a:not([class]):focus .icon, a:not([class]):focus .fa,');
+  rules.push('.navbar .primary-navigation .nav-link:focus .icon, .navbar .primary-navigation .nav-link:focus .fa,');
+  rules.push('.nav-tabs .nav-link:focus .icon, .nav-tabs .nav-link:focus .fa,');
+  rules.push('.dropdown-item:focus .icon, .dropdown-item:focus .fa {');
+  rules.push('  color: #1d2125 !important;');
+  rules.push('}');
+
+  // Box text on links whose resting colour is forced by an #id-scoped rule (grade-setup tree,
+  // quiz-report table, messaging contacts) — those (1,x,x) rules otherwise beat the global box
+  // text, leaving lime/orange text on the box. Re-assert scoped to the same ids (ties + later
+  // source order → box wins). Harmless on light presets (the resting rules are dark-gated).
+  rules.push('#grade_edit_tree_table a:focus, #grade_edit_tree_table a:active,');
+  rules.push('#page-mod-quiz-report .generaltable a:focus, #page-mod-quiz-report .generaltable a:active,');
+  rules.push('.message-app .view-overview-body a:focus, .message-app .view-overview-body a:active {');
+  rules.push('  background-color: #8ADDF9 !important;');
+  rules.push('  color: #1d2125 !important;');
+  rules.push('}');
+
+  // Muted / secondary descendant text inside a boxed element → near-black too, else a
+  // .text-muted / <small> line sits illegibly on the #8ADDF9 box. Enumerated (NOT *:focus)
+  // so coloured chips (.badge.bg-*) keep their own background + text.
+  rules.push('.aalink:focus .text-muted, .aalink:focus small, .aalink:focus .text-secondary, .aalink:focus .coursecategory,');
+  rules.push('a:not([class]):focus .text-muted, a:not([class]):focus small, a:not([class]):focus .text-secondary,');
+  rules.push('.activityinstance > a:focus .text-muted, .activityinstance > a:focus small,');
+  rules.push('.nav-tabs .nav-link:focus .text-muted, .nav-tabs .nav-link:focus small,');
+  rules.push('.dropdown-item:focus .text-muted, .dropdown-item:focus small, .dropdown-item:focus .text-secondary {');
+  rules.push('  color: #1d2125 !important;');
+  rules.push('}');
+
+  // (2) Adaptive dashed RING on every focusable element — base colour = page surface.
+  const ringBase = ['a', '.btn', 'button', '[role="button"]', '.nav-link', '.dropdown-item', 'input', 'select', 'textarea', 'summary', '[tabindex="0"]'];
+  rules.push(`${ringBase.map((s) => `${s}:focus, ${s}:active`).join(',\n')} {`);
+  rules.push(`  outline: 3px dashed ${pageDash} !important;`);
+  rules.push('  outline-offset: 3px !important;');
+  rules.push('}');
+
+  // (3) Per-surface ring colour — override where the surface's brightness differs from the page.
+  [
+    { sels: ['.navbar'], token: tokens.navbarBg },
+    { sels: ['#page-footer'], token: tokens.footerBg },
+    { sels: ['[data-region="right-hand-drawer"]', '.drawer'], token: tokens.drawerBg },
+  ].forEach(({ sels, token }) => {
+    const dash = focusDashFor(token);
+    if (dash !== pageDash) {
+      rules.push(`${sels.map((s) => `${s} :focus, ${s} :active`).join(', ')} {`);
+      rules.push(`  outline-color: ${dash} !important;`);
+      rules.push('}');
+    }
+  });
+
+  // Navbar dropdown / popover menus stay WHITE on light-page presets even when the navbar bar
+  // is dark (CFA Dark Chrome etc.), so the broad `.navbar :focus` white override above would
+  // draw a white ring on a white menu → invisible. Restore the page (near-black) ring on those
+  // nested menus. Anchor on `.popover-region-container` (the panel) so the bell/message TOGGLE
+  // on the dark bar keeps its white ring. (Footer popover is dark on every CFA preset → no twin.)
+  if (!darkMode && focusDashFor(tokens.navbarBg) !== pageDash) {
+    rules.push('.navbar .dropdown-menu :focus, .navbar .dropdown-menu :active,');
+    rules.push('.navbar .popover-region-container :focus, .navbar .popover-region-container :active {');
+    rules.push(`  outline-color: ${pageDash} !important;`);
+    rules.push('}');
+  }
+
+  // (4) Dark themes: light-on-dark islands → near-black ring; then re-whiten the surfaces the
+  //     generator itself DARKENS (a near-black ring on those would vanish).
+  if (darkMode) {
+    // (4a) Genuinely light-on-dark islands (Moodle hardcodes white/grey; the generator keeps
+    //      them light + dark-texts them). A white ring would disappear on these → near-black.
+    rules.push('.bg-white :focus, .bg-white :active,');
+    rules.push('.bg-light :focus, .bg-light :active,');
+    rules.push('.modal-content :focus, .modal-content :active,');
+    rules.push('.moodle-dialogue-wrap :focus, .moodle-dialogue-wrap :active,');
+    rules.push('.moodle-dialogue-bd :focus, .moodle-dialogue-bd :active,');
+    rules.push('.fp-select :focus, .fp-select :active,');
+    rules.push('.yui3-datatable :focus, .yui3-datatable :active,');
+    rules.push('.yui3-widget-bd :focus, .yui3-widget-bd :active,');
+    rules.push('.alert:not(.alert-info) :focus, .alert:not(.alert-info) :active,');
+    rules.push('#page-mod-quiz-edit ul.slots li.section .content :focus, #page-mod-quiz-edit ul.slots li.section .content :active,');
+    rules.push('#page-mod-quiz-edit ul.slots li.activity :focus, #page-mod-quiz-edit ul.slots li.activity :active,');
+    rules.push('#page-mod-quiz-edit .section-heading :focus, #page-mod-quiz-edit .section-heading :active,');
+    rules.push('#page-mod-quiz-edit div.questionbank :focus, #page-mod-quiz-edit div.questionbank :active {');
+    rules.push('  outline-color: #1d2125 !important;');
+    rules.push('}');
+    // (4b) Surfaces the generator RE-DARKENS on dark themes (#140/#142/#147/#148/#154/#155) need
+    //      the WHITE ring back — (4a)'s near-black would vanish on the dark surface. Higher
+    //      specificity than (4a) and placed later → wins. ADD future re-darkened surfaces here.
+    rules.push('.message-app :focus, .message-app :active,');
+    rules.push('.emoji-picker :focus, .emoji-picker :active,');
+    rules.push('.moodle-dialogue-base:has(.dragdrop-keyboard-drag) .moodle-dialogue-wrap :focus, .moodle-dialogue-base:has(.dragdrop-keyboard-drag) .moodle-dialogue-wrap :active,');
+    rules.push('.mod_quiz_preflight_popup .moodle-dialogue-wrap :focus, .mod_quiz_preflight_popup .moodle-dialogue-wrap :active,');
+    rules.push('.card.course-card .card-footer.bg-white :focus, .card.course-card .card-footer.bg-white :active,');
+    rules.push('#page-question-edit .filter-group.bg-light :focus, #page-question-edit .filter-group.bg-light :active {');
+    rules.push('  outline-color: #FFFFFF !important;');
+    rules.push('}');
+  }
+  rules.push('');
 
   const block2 = rules.join('\n');
 

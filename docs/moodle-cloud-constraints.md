@@ -316,6 +316,32 @@ Moodle Boost applies the **"Background image"** admin setting (Site admin → Ap
 - **Requirement:** the admin must set the image in the tool's **"Background Images"** control so `tokens.backgroundImage` is truthy and the gated SCSS engages. The actual image file is still uploaded via Boost's setting (the tool emits only a reminder comment, never the `url()`).
 - **Readability:** content not inside an opaque card (breadcrumb text, section headings, bare paragraphs) now sits over the image — fine over a dark/sparse image (e.g. the CFA charcoal-with-squares brand background), but a busy/bright image could drop contrast; keep `#region-main`/`#page-content` as a translucent scrim if a future image needs it.
 
+## Site-wide Focus / Click Indicator (#158)
+
+A consistent keyboard + mouse focus indicator across the whole theme, emitted as the **last block of Block 2** (UNCONDITIONAL — all presets). Replaces the old `*:focus-visible` ring, absorbs #143, restyles login #157.
+
+**Trigger:** `:focus, :focus-visible, :active, .focus` — shows on **Tab AND mouse click** (`:focus-visible` alone is keyboard-only, so it would miss mouse clicks).
+
+**Three layers:**
+
+| Layer | Value | Applies to |
+|---|---|---|
+| Box (background) | `#8ADDF9` (light tint of CFA Sky Blue `#00BFFF`) | links, nav-links, tabs, dropdown items |
+| Box text | `#1d2125` (Near-Black) | (same — text on the box) |
+| Adaptive dashed ring | `3px dashed`, offset 3px; colour = **white on dark surface / near-black on light** | **every** focusable element |
+
+**Adaptive ring — computed per-surface in the generator** (CSS cannot detect the surface behind an element, but the generator knows each token): `focusDashFor(hex) = isDarkBg(hex) ? '#FFFFFF' : '#1d2125'`. Base = `focusDashFor(pageBg)`. A `.navbar` / `#page-footer` / drawer override is emitted only when that surface's brightness differs from the page (so a dark navbar on a LIGHT-bg preset → white ring). On dark themes: light-on-dark islands (`.bg-white`, `.bg-light`, modals, dialogs, white inputs, quiz-edit containers, alerts, YUI tables) get a **near-black** ring; surfaces the generator itself **re-darkens** (`.message-app`, the move/preflight dialogs, course-card footer, qbank filter) get the **white** ring back via a higher-specificity override placed after the island rule.
+
+**Buttons / inputs / checkboxes / radios / card-wrapping links → RING ONLY** (no box): preserves brand button fills, quiz traffic-light state buttons (`.qnbutton`, WCAG 1.4.1), the red preflight Cancel, and the `appearance:none` quiz radios (#133); and stops the box from tinting a whole card/tile.
+
+**Box selector set:** `.aalink, a:not([class]), .arrow_link, .activityinstance > a, #page-footer a:not([class]), .navbar .primary-navigation .nav-link, .nav-tabs .nav-link, .secondary-navigation .nav-tabs .nav-link, .dropdown-item` — plus navbar dropdown variants (`.navbar .dropdown-menu .dropdown-item`, `.navbar .usermenu .dropdown-menu .dropdown-item`, `.navbar .popover-region-container .dropdown-item`) authored at `(0,4,0)+` to beat the navbar's own `(0,4,0)` text rule on dark presets.
+
+**Cascade notes:** the global `a:hover, a:focus { linkHover }` had its `:focus` dropped (focus text is now the box's job); the box uses `!important` + late source order; id-scoped resting link colours (grade-setup tree `#grade_edit_tree_table`, quiz-report `#page-mod-quiz-report .generaltable`, messaging `.message-app .view-overview-body`) are re-asserted with their own id-scoped box rule.
+
+**WCAG:** 2.4.7 (focus visible), 2.4.11 (≥2px perimeter — 3px dashed), 1.4.11 (ring ≥3:1 vs surface — the adaptive colour guarantees it), 1.4.1 (state buttons stay ring-only). Box text `#1d2125` on `#8ADDF9` ≈ 14:1 (AAA).
+
+**Note:** the `focusRing` / `focusRingWidth` tokens are now **inert** (the old ring they drove was removed); retiring that control-panel input is a follow-up.
+
 ## Bootstrap 4 → 5 Migration (Moodle 4.x → 5.0)
 
 Moodle 5.0 jumped from Bootstrap 4 to **Bootstrap 5.3**. Most "what changed" items below actually changed in Bootstrap 5.0, but are listed here because Moodle adopted the entire 5.x line in a single upgrade.
