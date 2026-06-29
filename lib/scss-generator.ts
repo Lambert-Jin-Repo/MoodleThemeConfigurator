@@ -412,6 +412,42 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
   rules.push('}');
   rules.push('');
 
+  // --- Navbar / drawer logo: size cap (#166) ---
+  // The site logo (`img.logo`, the COMPACT logo) appears in two places: the navbar brand AND the
+  // mobile navigation-drawer header (`.drawerheader > .drawerheading > a[data-region="site-home-
+  // link"] > img.logo`). Moodle Boost gives `.drawerheader` a fixed `height: $navbar-height` (60px)
+  // but applies NO `max-height` to the logo inside it, and the inner `.drawerheading` has no
+  // definite height — so the logo's Bootstrap `.h-100` (`height:100% !important`) can't resolve to
+  // 60px and the image falls back to the served PNG's full size. With an oversized "no-padding"
+  // compact logo (a wide wordmark uploaded where a small square emblem is expected) it balloons, is
+  // vertically centred, and overflows the 60px header → clipped at the top on MOBILE (the drawer
+  // header only renders in the burger drawer; desktop shows the nav inline, so it's mobile-only).
+  // Boost's only cap (`nav.navbar .logo img { max-height:35px }`) never reaches `.drawerheader` and
+  // is itself mis-targeted (it expects `img` INSIDE `.logo`, but the markup is `img.logo`). Fix:
+  // cap the logo height — a `max-height` clamps the used height even against `height:100% !important`
+  // (different properties → used height = min(height, max-height)), so it wins without fighting
+  // `.h-100`. Two surfaces, two caps: the DESKTOP navbar brand logo stays compact at 40px (Boost's
+  // norm is ~35px); the MOBILE drawer-header logo is enlarged to 50px — as large as legibly fits the
+  // 60px header so the small "Centre for Accessibility AUSTRALIA" wordmark reads clearly — and we
+  // zero its Bootstrap `.py-1` (8px) vertical padding so the bigger image keeps clean headroom and
+  // can never re-overflow. The two surfaces never show at once (navbar ≥768px, drawer header <768px),
+  // so the size difference is invisible. `img.logo` matches the navbar brand AND drawer-header logo
+  // but NOT the front-page `#page-header .logo img` (a `.logo` WRAPPER with a child img — different
+  // structure), so there is no collateral. Emitted UNCONDITIONALLY (pure geometry, no colour;
+  // identical for every preset). Verified byte-identical Boost 4.4–5.2. See docs/PROJECT-TRACKER.md (#166).
+  rules.push('// ── Navbar / drawer logo: size cap ──');
+  rules.push('.navbar img.logo {');
+  rules.push('  max-height: 40px !important;');
+  rules.push('  width: auto !important;');
+  rules.push('}');
+  rules.push('.drawerheader img.logo {');
+  rules.push('  max-height: 50px !important;');
+  rules.push('  width: auto !important;');
+  rules.push('  padding-top: 0 !important;');
+  rules.push('  padding-bottom: 0 !important;');
+  rules.push('}');
+  rules.push('');
+
   // --- Breadcrumb ---
   if (tokens.breadcrumbBg !== 'transparent' && tokens.breadcrumbBg !== d.breadcrumbBg) {
     rules.push('// ── Breadcrumb ──');
