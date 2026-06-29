@@ -2189,3 +2189,40 @@ Login bg image empty → login is a clean solid `loginBg`. Upload a login-specif
 
 ### Verification
 Login-card transparent emits for Dark Lime/Ember only (light presets keep solid — gate fix verified after the first attempt wrongly caught Teal Pro); the site-image suppression emits for all presets; lint clean; **user-verified on Moodle Cloud**. Files: `lib/scss-generator.ts`, `CLAUDE.md`, `docs/PROJECT-TRACKER.md`. Memory: `project_login_page_customisations.md` (updated). NO new tokens/presets/controls.
+
+## #165 — Login: hide the left promo column on signup / forgot-password
+
+**Branch:** `worktree-feat+hide-login-promo-signup-forgot` (off `main`, after PR #26 `3279bec`). Moodle Cloud **5.2.1** (Build 20260608).
+
+### Request (user, Moodle Cloud login)
+On the Create account (`/login/signup.php`) and Forgot password (`/login/forgot_password.php`) pages, the left-hand promo content (CFA welcome text + "Create new account" button + "Need help signing in?") is duplicate/redundant — you're already on that form. Remove it on both, keep it on the main login page.
+
+### Findings (live DevTools + Moodle 5.2 source, `MOODLE_502_STABLE`)
+- **Moodle 5.2 introduced a TWO-COLUMN login layout (MDL-87546 — NEW in 5.2, absent on 4.4–5.1).** `theme/boost/templates/core/login_layout.mustache`:
+  ```html
+  <div id="page-content" class="min-vh-100 row g-0">
+    <aside class="login-layout-left col-lg-6 d-none d-lg-flex"> {{> core/login_panel }} </aside>
+    <div id="region-main" class="login-layout-right col-12 col-lg-6"> … the form (.login-container) … </div>
+  </div>
+  ```
+- The left promo = `{{> core/login_panel }}` `leftinstructions`, set in `theme/boost/layout/login.php` from the **global** `$CFG->auth_instructions` (Site admin → Plugins → Authentication → Manage authentication → **Instructions**). One global setting drawn by the same partial → the IDENTICAL panel appears on login, signup AND forgot-password (DevTools confirmed it on signup). That's why it's redundant on signup/forgot.
+- All three pages call `set_pagelayout('login')` → same two-column layout. Body ids: `#page-login-index`, `#page-login-signup`, `#page-login-forgot_password`.
+- Hiding only the aside leaves the right column at `col-lg-6` (50%) → form stranded in the left half with empty space at ≥992px. Must also reflow the right column to full width.
+
+### Fix
+Appended to the **unconditional** Block-2 login section in `lib/scss-generator.ts` (right after the #162 Create-account-button rules), scoped to the two non-index body ids:
+```scss
+body#page-login-signup .login-layout-left,
+body#page-login-forgot_password .login-layout-left { display: none !important; }
+body#page-login-signup .login-layout-right,
+body#page-login-forgot_password .login-layout-right {
+  flex: 0 0 100% !important; max-width: 100% !important; width: 100% !important;
+}
+```
+- **`display:none !important` is mandatory** — the aside carries Bootstrap `.d-lg-flex` (`display:flex !important` at ≥992px); a non-`!important` hide loses.
+- **Right reflow** overrides both BS4 (`flex`/`max-width`) and BS5 (`width`) `.col-lg-6` defs; the form's own `.login-layout-right-content { max-width:576px; margin:auto }` keeps it centred (won't stretch edge-to-edge). `g-0` row → no gutters to compensate.
+- **`#page-login-index` untouched** → main login keeps its promo. **Forward/back-safe:** 5.2-only classes no-op on older builds; below 992px the layout is already single-column (`d-none` left, `col-12` right), so the override only bites at ≥lg.
+- Orthogonal to every existing login rule (#151/#152/#157/#161–164 are `#page-login-index`-scoped or touch different properties).
+
+### Verification
+Generator harness over all 11 presets + a synthetic custom dark theme: rule emits unconditionally (2 occurrences each — hide + reflow), **no leak to `#page-login-index`**. `npm run build` + `npm run lint` + `tsc --noEmit` clean. **User-verified on Moodle Cloud, both pages.** Files: `lib/scss-generator.ts`, `docs/moodle-cloud-constraints.md`, `docs/PROJECT-TRACKER.md`, `CLAUDE.md`. Memory: `project_login_page_customisations.md` (updated). NO new tokens/presets/controls/preview.
