@@ -381,6 +381,37 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
   rules.push('}');
   rules.push('');
 
+  // --- Login page: hide the left promo column on signup / forgot-password (#165) ---
+  // Moodle 5.2 redesigned the login into a TWO-COLUMN layout (MDL-87546, new in 5.2 —
+  // absent on 4.4–5.1). theme/boost/templates/core/login_layout.mustache renders:
+  //   <aside class="login-layout-left col-lg-6 d-none d-lg-flex"> …promo… </aside>
+  //   <div id="region-main" class="login-layout-right col-12 col-lg-6"> …the form… </div>
+  // The left promo is the global Authentication "Instructions" HTML ($CFG->auth_instructions,
+  // via {{>core/login_panel}} leftinstructions) — the CFA welcome text + "Create new account"
+  // button + "Need help signing in?". Because it's ONE global setting drawn by the same partial,
+  // the IDENTICAL panel appears on login AND signup AND forgot-password. On the signup / forgot-
+  // password pages it is redundant (you're already on that form) → hide it and let the form column
+  // span full width. Scope to the two body ids so the MAIN login page (#page-login-index) KEEPS its
+  // promo. Emitted UNCONDITIONALLY (the layout is identical on every preset; pure layout, no colour).
+  // Forward/back-safe: the classes are 5.2-only, so older builds no-op; below 992px the left is
+  // already `d-none` and the right already `col-12`, so the override only bites at ≥lg.
+  // `display:none !important` is REQUIRED — the aside carries Bootstrap `.d-lg-flex`
+  // (`display:flex !important` at ≥992px); a non-`!important` hide would lose. The right-column
+  // reflow overrides both Bootstrap 4 (`flex`/`max-width`) and Bootstrap 5 (`width`) col defs; the
+  // form's own `.login-layout-right-content { max-width:576px; margin:auto }` keeps it centred.
+  rules.push('// ── Login Page: hide the left promo column on signup / forgot-password ──');
+  rules.push('body#page-login-signup .login-layout-left,');
+  rules.push('body#page-login-forgot_password .login-layout-left {');
+  rules.push('  display: none !important;');
+  rules.push('}');
+  rules.push('body#page-login-signup .login-layout-right,');
+  rules.push('body#page-login-forgot_password .login-layout-right {');
+  rules.push('  flex: 0 0 100% !important;');
+  rules.push('  max-width: 100% !important;');
+  rules.push('  width: 100% !important;');
+  rules.push('}');
+  rules.push('');
+
   // --- Breadcrumb ---
   if (tokens.breadcrumbBg !== 'transparent' && tokens.breadcrumbBg !== d.breadcrumbBg) {
     rules.push('// ── Breadcrumb ──');
