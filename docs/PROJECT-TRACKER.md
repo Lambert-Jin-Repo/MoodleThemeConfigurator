@@ -2173,3 +2173,19 @@ Anchored on the signup.php button link (`a.btn-primary` + href — the Log in bu
 
 ### Verification
 Rule emits for all presets (unconditional); lint clean; **user-verified on Moodle Cloud**. Files: `lib/scss-generator.ts`, `CLAUDE.md`, `docs/PROJECT-TRACKER.md`. Memory: `project_login_page_customisations.md` (updated).
+
+## #163 / #164 — Login background: transparent card + ignore the site image
+
+**Branch:** `worktree-feat-sitewide-focus-indicator`.
+
+### #163 — Transparent login card (dark presets)
+User wanted the right login card to blend with the login background image. Paint `body#page-login-index .card, .login-container { background-color: transparent !important }`, **gated on `isDarkBg(tokens.pageBg)`** so only the genuinely-dark presets (Dark Lime/Ember) get it — NOT `isDarkBg(loginBg)`, which would also blank Teal Professional's dark-charcoal login card (a *light* preset whose login bg is `#404041`). The dark `.form-control` inputs keep the form legible on the image; with no login bg image this reveals the near-black `loginBg` (clean seamless dark login). `(1,1,0)`+`!important` beats the global dark `.card { cardBg }` (0,1,0).
+
+### #164 — Login page ignores the SITE background image
+After #163, the transparent card revealed the **site** background image (`theme_boost|backgroundimage`), which Moodle applies to `body` site-wide. The login page should use only its own "Login page background image" (`theme_boost|loginbackgroundimage` → `body.pagelayout-login #page`). Emit UNCONDITIONALLY `body#page-login-index { background-image: none !important }` — suppresses the site image on the login body; the login image lives on the child `#page`, so it's untouched. Unconditional because the site image may be set in Moodle without the configurator knowing. `(1,0,1)`+`!important` beats Moodle's `body { background-image }` (0,0,1).
+
+### Combined effect
+Login bg image empty → login is a clean solid `loginBg`. Upload a login-specific image → it shows through the transparent card, and only there (never the site backdrop).
+
+### Verification
+Login-card transparent emits for Dark Lime/Ember only (light presets keep solid — gate fix verified after the first attempt wrongly caught Teal Pro); the site-image suppression emits for all presets; lint clean; **user-verified on Moodle Cloud**. Files: `lib/scss-generator.ts`, `CLAUDE.md`, `docs/PROJECT-TRACKER.md`. Memory: `project_login_page_customisations.md` (updated). NO new tokens/presets/controls.

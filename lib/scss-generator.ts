@@ -273,7 +273,20 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
       rules.push(`  background-color: ${tokens.loginBg} !important;`);
       rules.push(`}`);
     }
-    if (tokens.loginCardBg !== d.loginCardBg) {
+    // Login card surface. On a DARK-THEME preset, paint it TRANSPARENT (#163, user request) so the
+    // Moodle login background image shows THROUGH the card and it blends seamlessly with the
+    // backdrop — no visible card edge. The form inputs keep their own dark `.form-control` fill,
+    // so the actual form stays legible on the image; with no login bg image this just reveals the
+    // near-black `loginBg` (still a clean seamless dark login). `body#page-login-index .card`
+    // (1,1,0)+`!important` beats the global dark `.card { cardBg }` (0,1,0).
+    // Gate on `isDarkBg(pageBg)` (the genuinely dark presets — Dark Lime/Ember) NOT
+    // `isDarkBg(loginBg)`: light presets like Teal Professional use a dark-charcoal login bg
+    // (#404041) but should KEEP their solid login card. Light presets keep `loginCardBg`.
+    if (isDarkBg(tokens.pageBg)) {
+      rules.push(`body#page-login-index .card, body#page-login-index .login-container {`);
+      rules.push(`  background-color: transparent !important;`);
+      rules.push(`}`);
+    } else if (tokens.loginCardBg !== d.loginCardBg) {
       rules.push(`body#page-login-index .card, body#page-login-index .login-container {`);
       rules.push(`  background-color: ${tokens.loginCardBg} !important;`);
       rules.push(`}`);
@@ -306,6 +319,22 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     }
     rules.push('');
   }
+
+  // --- Login page: ignore the SITE background image, use only the login one (#164) ---
+  // Moodle applies the site-wide "Background image" (theme_boost|backgroundimage) to `body`, so
+  // it bleeds onto the login page too — and the #163 transparent login card + transparent
+  // wrappers reveal it. The login page should use ONLY its own "Login page background image"
+  // (theme_boost|loginbackgroundimage, applied by Moodle to `body.pagelayout-login #page`), or a
+  // clean solid `loginBg` when that's empty. Suppress the site image on the login BODY; the login
+  // image lives on the child `#page`, so it stays. Emitted UNCONDITIONALLY (the login page should
+  // never borrow the site backdrop, and the site image may be set in Moodle without the
+  // configurator knowing). `body#page-login-index` (1,0,1)+`!important` beats Moodle's
+  // `body { background-image }` (0,0,1).
+  rules.push('// ── Login page: ignore the site background image (use only the login one) ──');
+  rules.push('body#page-login-index {');
+  rules.push('  background-image: none !important;');
+  rules.push('}');
+  rules.push('');
 
   // --- Login page: hide Moodle's auto-rendered signup button (PERMANENT) ---
   // The CFA login page places a custom "Create new account" <a class="btn btn-primary
