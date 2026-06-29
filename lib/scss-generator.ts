@@ -214,15 +214,12 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push('');
   }
 
-  // --- Focus (use :focus-visible for modern keyboard-only focus) ---
-  if (tokens.focusRing !== d.focusRing || tokens.focusRingWidth !== d.focusRingWidth) {
-    rules.push('// ── Focus Ring ──');
-    rules.push(`*:focus-visible {`);
-    rules.push(`  outline: ${tokens.focusRingWidth}px solid ${tokens.focusRing} !important;`);
-    rules.push(`  outline-offset: 2px;`);
-    rules.push(`}`);
-    rules.push('');
-  }
+  // --- Focus ---
+  // The legacy keyboard-only `*:focus-visible` brand ring is intentionally removed —
+  // superseded by the site-wide Focus / Click Indicator (#158) emitted near the end of
+  // Block 2, which paints an adaptive dashed ring on :focus AND :active for ALL presets.
+  // `focusRing` / `focusRingWidth` are now inert tokens (retiring the control is a
+  // tracked follow-up).
 
   // --- Buttons ---
   if (tokens.btnPrimaryBg !== d.btnPrimaryBg || tokens.btnPrimaryText !== d.btnPrimaryText) {
@@ -276,7 +273,20 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
       rules.push(`  background-color: ${tokens.loginBg} !important;`);
       rules.push(`}`);
     }
-    if (tokens.loginCardBg !== d.loginCardBg) {
+    // Login card surface. On a DARK-THEME preset, paint it TRANSPARENT (#163, user request) so the
+    // Moodle login background image shows THROUGH the card and it blends seamlessly with the
+    // backdrop — no visible card edge. The form inputs keep their own dark `.form-control` fill,
+    // so the actual form stays legible on the image; with no login bg image this just reveals the
+    // near-black `loginBg` (still a clean seamless dark login). `body#page-login-index .card`
+    // (1,1,0)+`!important` beats the global dark `.card { cardBg }` (0,1,0).
+    // Gate on `isDarkBg(pageBg)` (the genuinely dark presets — Dark Lime/Ember) NOT
+    // `isDarkBg(loginBg)`: light presets like Teal Professional use a dark-charcoal login bg
+    // (#404041) but should KEEP their solid login card. Light presets keep `loginCardBg`.
+    if (isDarkBg(tokens.pageBg)) {
+      rules.push(`body#page-login-index .card, body#page-login-index .login-container {`);
+      rules.push(`  background-color: transparent !important;`);
+      rules.push(`}`);
+    } else if (tokens.loginCardBg !== d.loginCardBg) {
       rules.push(`body#page-login-index .card, body#page-login-index .login-container {`);
       rules.push(`  background-color: ${tokens.loginCardBg} !important;`);
       rules.push(`}`);
@@ -310,6 +320,22 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push('');
   }
 
+  // --- Login page: ignore the SITE background image, use only the login one (#164) ---
+  // Moodle applies the site-wide "Background image" (theme_boost|backgroundimage) to `body`, so
+  // it bleeds onto the login page too — and the #163 transparent login card + transparent
+  // wrappers reveal it. The login page should use ONLY its own "Login page background image"
+  // (theme_boost|loginbackgroundimage, applied by Moodle to `body.pagelayout-login #page`), or a
+  // clean solid `loginBg` when that's empty. Suppress the site image on the login BODY; the login
+  // image lives on the child `#page`, so it stays. Emitted UNCONDITIONALLY (the login page should
+  // never borrow the site backdrop, and the site image may be set in Moodle without the
+  // configurator knowing). `body#page-login-index` (1,0,1)+`!important` beats Moodle's
+  // `body { background-image }` (0,0,1).
+  rules.push('// ── Login page: ignore the site background image (use only the login one) ──');
+  rules.push('body#page-login-index {');
+  rules.push('  background-image: none !important;');
+  rules.push('}');
+  rules.push('');
+
   // --- Login page: hide Moodle's auto-rendered signup button (PERMANENT) ---
   // The CFA login page places a custom "Create new account" <a class="btn btn-primary
   // btn-lg"> at the top of the login Instructions field (Moodle config, Site admin →
@@ -321,8 +347,37 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
   // which the generator can't emit — this rule is the SCSS half of that pairing.
   // DO NOT remove when working on other visual issues. See docs/PROJECT-TRACKER.md (#152).
   rules.push('// ── Login Page: hide duplicate signup button ──');
-  rules.push('body#page-login-index .login-signup {');
+  // Moodle 5.0 re-marked-up the auto signup link: it is no longer (only) `.login-signup`
+  // but `<div class="text-center small mb-3"><a href=".../login/signup.php">Sign up</a></div>`
+  // (#161). Hide all forms. CRITICAL: do NOT hide by bare `a[href*=signup.php]` — the custom
+  // "Create new account" button IS a signup link too (`a.btn-primary` in the Instructions);
+  // exclude it everywhere via `:not(.btn)` (both the link rule AND the `:has` wrapper require a
+  // NON-button signup child) so only Moodle's plain "Sign up" text link is removed. `:has()` is
+  // Baseline-2023 (already used in the generator; fine on Moodle 5.x scssphp).
+  rules.push('body#page-login-index .login-signup,');
+  rules.push('body#page-login-index .text-center:has(> a[href*="/login/signup.php"]:not(.btn)),');
+  rules.push('body#page-login-index a[href*="/login/signup.php"]:not(.btn) {');
   rules.push('  display: none !important;');
+  rules.push('}');
+  rules.push('');
+
+  // Login "Create new account" button (#162) — the custom <a class="btn btn-primary btn-lg"> in
+  // the Instructions. (a) MATCH the Log in button's text font: Log in is a regular .btn (1rem,
+  // verified `button#loginbtn.btn.btn-primary.w-100` 498×38), but `.btn-lg` renders the Create
+  // text at 1.25rem → force 1rem so the two read the same. (b) UNDERLINE only on hover/click:
+  // Moodle's two-column login underlines all left-content links (`.login-layout-left-content a {
+  // text-decoration: underline }`), underlining the button at rest → remove at rest, restore on
+  // :hover/:focus/:active. Anchored on the signup.php button link (`a.btn-primary` + signup href:
+  // the Log in button is a <button>, the hidden Moodle signup link is `:not(.btn)` — so only the
+  // Create button matches). Unconditional, like the #152/#161 login-button rules.
+  rules.push('body#page-login-index a.btn-primary[href*="/login/signup.php"] {');
+  rules.push('  font-size: 1rem !important;');
+  rules.push('  text-decoration: none !important;');
+  rules.push('}');
+  rules.push('body#page-login-index a.btn-primary[href*="/login/signup.php"]:hover,');
+  rules.push('body#page-login-index a.btn-primary[href*="/login/signup.php"]:focus,');
+  rules.push('body#page-login-index a.btn-primary[href*="/login/signup.php"]:active {');
+  rules.push('  text-decoration: underline !important;');
   rules.push('}');
   rules.push('');
 
@@ -475,7 +530,8 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
   // --- Link Hover ---
   if (tokens.linkHover !== d.linkHover) {
     rules.push('// ── Link Hover ──');
-    rules.push(`a:hover, a:focus { color: ${tokens.linkHover} !important; }`);
+    // `:focus` dropped — focus text is owned by the site-wide indicator (#158); hover only.
+    rules.push(`a:hover { color: ${tokens.linkHover} !important; }`);
     rules.push('');
   }
 
@@ -1027,17 +1083,23 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
       rules.push(`  color: ${d.bodyText} !important;`);
       rules.push('  background-color: #8ADDF9 !important;');
       rules.push(`}`);
-      // Button tap/focus indicator (#157b). ALL login-page buttons — "Log in"
-      // (`#loginbtn` .btn-primary), the custom "Create new account" (`.login-instructions
-      // a.btn-primary`, #152), "Cookies notice" (`.btn-secondary`), and the password eye
-      // toggle (`.toggle-sensitive-btn`). On Tab/click add a visible focus RING (NOT a bg
-      // change — keep each button's fill): a sky-blue (#8ADDF9, same as the link focus
-      // box) DASHED outline, offset outward so it reads on the dark page, matching the
-      // official CFA dashed focus style. Keyboard + mouse (`:focus` + `:active`).
-      rules.push('body#page-login-index .btn:focus,');
-      rules.push('body#page-login-index .btn:focus-visible,');
-      rules.push('body#page-login-index .btn:active {');
-      rules.push('  outline: 3px dashed #8ADDF9 !important;');
+      // Adaptive focus RING on the (dark) login page's focusable ELEMENTS (#157b, updated for
+      // #158, then scoped #160). Matches the site-wide indicator: a dark surface → WHITE dashes.
+      // Covers buttons ("Log in" `#loginbtn`, "Create new account" `a.btn-primary` #152,
+      // "Cookies notice" `.btn-secondary`), the password eye toggle, inputs, selects AND links.
+      // Keep each button's fill (ring only, NOT a box — per the buttons decision). White (1,x,0)
+      // beats the global per-surface ring. Keyboard + mouse (`:focus` + `:active`).
+      // MUST enumerate focusable element TYPES — a BARE `body#page-login-index :active` matched
+      // the clicked element AND (since `:active` applies to the activated element + ALL its
+      // ANCESTORS) every wrapping container, so clicking an input drew the dashed ring around the
+      // whole login card + each form section. Element-scoped → rings only what's actually focused.
+      const loginRingEls = ['a', '.btn', 'button', '[role="button"]', 'input', 'select', 'textarea', '[tabindex="0"]'];
+      rules.push(
+        loginRingEls
+          .map((s) => `body#page-login-index ${s}:focus, body#page-login-index ${s}:focus-visible, body#page-login-index ${s}:active`)
+          .join(',\n') + ' {'
+      );
+      rules.push('  outline: 3px dashed #FFFFFF !important;');
       rules.push('  outline-offset: 3px !important;');
       rules.push('}');
       rules.push('');
@@ -2301,13 +2363,10 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     // scoping or `:not()` chains needed. Cover `:focus`, `.focus` (JS-set), `:active`.
     // Specificity: `.aalink:focus` (0,2,0) / `a:not([class]):focus` (0,2,1) beat the
     // global `a:hover, a:focus` (0,1,1)!important and Moodle's un-important Rule A.
-    rules.push('.aalink:focus, .aalink.focus, .aalink:active,');
-    rules.push('a:not([class]):focus, a:not([class]).focus, a:not([class]):active,');
-    rules.push('.arrow_link:focus, .arrow_link.focus,');
-    rules.push('.activityinstance > a:focus, .activityinstance > a.focus,');
-    rules.push('#page-footer a:not([class]):focus {');
-    rules.push(`  color: ${d.bodyText} !important;`);
-    rules.push('}');
+    // (#143 rule REMOVED — absorbed by the site-wide Focus / Click Indicator (#158) near
+    // the end of Block 2: the global box now paints these exact Rule-A links with the
+    // #8ADDF9 box + #1d2125 text on EVERY preset, light and dark. The Rule-A reasoning
+    // above is why that box is always safe.)
     rules.push('');
 
     // ── Grader report — dark surface for Moodle's light-painted cells (#145) ──
@@ -2596,7 +2655,235 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push('  border-radius: 0.5rem !important;');
     rules.push('}');
     rules.push('');
+
+    // ── Activity-header region — dark card (Moodle 5.0 activity-header restructure, #159) ──
+    // The Moodle Cloud upgrade restructured the activity-page header (quiz/book/assign view).
+    // Moodle paints `.path-mod .activity-header:not(:empty)` with $gray-100 (#f8f9fa, since
+    // 4.0, un-`!important`) AND 5.0 can leak a light wrapper THROUGH our existing
+    // `.activity-header { transparent !important }` (L847) → light box + washed-out light text.
+    // Fix: make the header an OPAQUE dark CARD so neither the fill nor any light ancestor
+    // shows. Appended at the tail of darkMode so it beats L847 by source order (equal
+    // specificity + importance → later wins); `!important` beats Moodle's un-important fill.
+    // Paint EVERY structural container in the subtree with cardBg DIRECTLY — not a
+    // transparent-reveal chain. The live 5.0 DOM nests .activity-information > .activity-details
+    // > .activity-description#intro, and .activity-details renders LIGHT; a transparent-reveal
+    // only works if every link is transparent, so one light link (.activity-details) shows
+    // through. Solid cardBg on each container can't break, whatever Moodle paints behind it.
+    rules.push('// (a) Activity-header subtree → solid dark card (every structural container)');
+    rules.push('.activity-header,');
+    rules.push('.activity-header .activity-information,');
+    rules.push('.activity-header .activity-details,');
+    rules.push('.activity-header .activity-description,');
+    rules.push('.activity-header .activity-description .no-overflow {');
+    rules.push(`  background-color: ${tokens.cardBg} !important;`);
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push('}');
+    // (b) Inner separators — Moodle draws .activity-dates/.completion-info border-bottom and
+    // (5.0) .activity-description border-top with the light $border-color (#dee2e6) → bright
+    // lines on the dark card. Darken to cardBorder.
+    rules.push('// (b) Activity-header inner separator borders → dark');
+    rules.push('.activity-header .activity-dates,');
+    rules.push('.activity-header .completion-info,');
+    rules.push('.activity-header .activity-description {');
+    rules.push(`  border-color: ${tokens.cardBorder} !important;`);
+    rules.push('}');
+    // (c) Activity dates text — Moodle default is $gray-700; our muted override (L686) recolours
+    // it to mutedText #A0A0A1 (~3.96:1 on Dark Lime → fails AA). Dates render BOTH in the header
+    // card AND in the page-header extras (.header-extras-container), so anchor on the bare
+    // `.activity-dates` class to cover both routes. Bump to bodyText (~9:1). Beats L686 by order.
+    rules.push('// (c) Activity dates text → readable (was muted, sub-AA on Dark Lime)');
+    rules.push('.activity-dates, .activity-dates .date-item {');
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push('}');
+    // (d) Sticky form-actions footer — Moodle's core save/cancel bar (`#sticky-footer`, id
+    // hardcoded in lib/templates/sticky_footer.mustache, stable 4.x–5.0) carries the Bootstrap
+    // `.bg-white` utility (white !important) → a jarring bright bar on dark themes. Darken to
+    // footerBg; the #id (1,0,0)+!important beats the `.bg-white` utility (0,1,0)+!important.
+    // Save (lime/orange btn-primary) + Cancel stay readable on the near-black bar.
+    rules.push('// (d) Sticky form-actions footer → dark bar (beats the .bg-white utility)');
+    rules.push('#sticky-footer {');
+    rules.push(`  background-color: ${tokens.footerBg} !important;`);
+    rules.push(`  border-color: ${tokens.cardBorder} !important;`);
+    rules.push('}');
+    // (e) Completion control — THE core 4.4→5.0 regression. 5.0 re-classed the manual-completion
+    // button from btn-success / btn-outline-secondary (handled) to the unhandled btn-subtle-*:
+    //   • "Mark as done" = .btn-subtle-body → transparent bg + DARK --bs-body-color text +
+    //     LIGHT #dee2e6 border → invisible on the dark card.
+    //   • "Done" = .btn-subtle-success → light-green subtle bg → a light island on the dark card.
+    // Re-skin both to a dark chip; keep the "Done = green" cue via the success token (lime on
+    // Dark Lime / green on Dark Ember). Scoped to .activity-header so course-page completion
+    // (handled separately at L751) is untouched. The global .btn-subtle-success .icon rule (L583)
+    // forces icons #1d2125 (dark) assuming a LIGHT button — now that the button is dark, re-light
+    // the icons to match the button text (our .activity-header… selector out-specifies L583).
+    rules.push('// (e) Completion control (5.0 btn-subtle-*) → dark chip on the card');
+    rules.push('.activity-header .btn-subtle-body,');
+    rules.push('.activity-header .btn-subtle-success {');
+    rules.push(`  background-color: ${tokens.cardBg} !important;`);
+    rules.push(`  border-color: ${tokens.cardBorder} !important;`);
+    rules.push('}');
+    rules.push('.activity-header .btn-subtle-body,');
+    rules.push('.activity-header .btn-subtle-body .icon,');
+    rules.push('.activity-header .btn-subtle-body .fa {');
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push('}');
+    rules.push('.activity-header .btn-subtle-success,');
+    rules.push('.activity-header .btn-subtle-success .icon,');
+    rules.push('.activity-header .btn-subtle-success .fa {');
+    rules.push(`  color: ${tokens.success} !important;`);
+    rules.push('}');
+    // Auto-completion conditions: Moodle adds mix-blend-mode:multiply (modules.scss) → each pill
+    // multiplies against the dark card (green/red darken badly, the light "To do" pill vanishes).
+    // Reset to normal; darken the bg-light "To do" pill to a dark chip (semantic green/red badges
+    // keep their colour, just un-multiplied).
+    rules.push('.activity-header .automatic-completion-conditions .badge {');
+    rules.push('  mix-blend-mode: normal !important;');
+    rules.push('}');
+    rules.push('.activity-header .automatic-completion-conditions .badge.bg-light.text-dark {');
+    rules.push(`  background-color: ${tokens.cardBorder} !important;`);
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push('}');
+    rules.push('');
   }
+
+  // ── Site-wide Focus / Click Indicator (CFA brand, #158) ──
+  // One consistent indicator on :focus (Tab) AND :active (mouse click) across the whole
+  // site, matching the CFA official site. Emitted UNCONDITIONALLY for every preset.
+  //  • BOX  : sky-blue #8ADDF9 (light tint of CFA Sky Blue) + near-black #1d2125 text on
+  //           text-level links / nav-links / tabs / dropdown items — the elements Moodle's
+  //           own "Rule A" already boxes on focus, plus inline nav controls. (Absorbs +
+  //           promotes the old dark-only #143 fix to ALL themes.)
+  //  • RING : 3px dashed adaptive outline on EVERY focusable element, colour computed
+  //           PER-SURFACE from the surface token's brightness (white on dark, near-black
+  //           on light) — surfaces are token-driven and can be dark on a light-bg preset
+  //           (e.g. CFA Dark Chrome's charcoal navbar) while dark presets hold white
+  //           islands (modals/dialogs/.bg-white/white inputs) that need a near-black ring.
+  //  • Buttons / inputs / checkboxes / radios / card-wrapping links: RING ONLY (no box) —
+  //    preserves brand fills, quiz traffic-light states, the red Cancel, and the
+  //    appearance:none quiz radios (a box would fill the disc).
+  // Login (#page-login-index) keeps its own scoped #157 rules; their #id specificity beats
+  // this block, so no explicit exclusion is needed here.
+  // All four colours are fixed, brand-sanctioned values (#8ADDF9 / #1d2125 / #FFFFFF) —
+  // the same documented fixed-value exception class as the chart backdrop / timer / login.
+  const focusDashFor = (hex: string) => (isDarkBg(hex) ? '#FFFFFF' : '#1d2125');
+  const pageDash = focusDashFor(tokens.pageBg);
+
+  rules.push('// ── Site-wide Focus / Click Indicator (#158) ──');
+
+  // (1) BOX + near-black text on text-level links / nav-links / tabs / dropdown items.
+  rules.push('.aalink:focus, .aalink:active, .aalink.focus,');
+  rules.push('a:not([class]):focus, a:not([class]):active, a:not([class]).focus,');
+  rules.push('.arrow_link:focus, .arrow_link:active, .arrow_link.focus,');
+  rules.push('.activityinstance > a:focus, .activityinstance > a:active, .activityinstance > a.focus,');
+  rules.push('#page-footer a:not([class]):focus, #page-footer a:not([class]):active,');
+  rules.push('.navbar .primary-navigation .nav-link:focus, .navbar .primary-navigation .nav-link:active,');
+  rules.push('.nav-tabs .nav-link:focus, .nav-tabs .nav-link:active,');
+  rules.push('.secondary-navigation .nav-tabs .nav-link:focus, .secondary-navigation .nav-tabs .nav-link:active,');
+  rules.push('.navbar .dropdown-menu .dropdown-item:focus, .navbar .dropdown-menu .dropdown-item:active,');
+  rules.push('.navbar .usermenu .dropdown-menu .dropdown-item:focus, .navbar .usermenu .dropdown-menu .dropdown-item:active,');
+  rules.push('.navbar .popover-region-container .dropdown-item:focus, .navbar .popover-region-container .dropdown-item:active,');
+  rules.push('.dropdown-item:focus, .dropdown-item:active {');
+  rules.push('  background-color: #8ADDF9 !important;');
+  rules.push('  color: #1d2125 !important;');
+  rules.push('  box-shadow: none !important;');
+  rules.push('}');
+
+  // Child icons inside a boxed element → near-black (a lime/orange glyph is illegible on #8ADDF9).
+  rules.push('.aalink:focus .icon, .aalink:focus .fa,');
+  rules.push('a:not([class]):focus .icon, a:not([class]):focus .fa,');
+  rules.push('.navbar .primary-navigation .nav-link:focus .icon, .navbar .primary-navigation .nav-link:focus .fa,');
+  rules.push('.nav-tabs .nav-link:focus .icon, .nav-tabs .nav-link:focus .fa,');
+  rules.push('.dropdown-item:focus .icon, .dropdown-item:focus .fa {');
+  rules.push('  color: #1d2125 !important;');
+  rules.push('}');
+
+  // Box text on links whose resting colour is forced by an #id-scoped rule (grade-setup tree,
+  // quiz-report table, messaging contacts) — those (1,x,x) rules otherwise beat the global box
+  // text, leaving lime/orange text on the box. Re-assert scoped to the same ids (ties + later
+  // source order → box wins). Harmless on light presets (the resting rules are dark-gated).
+  rules.push('#grade_edit_tree_table a:focus, #grade_edit_tree_table a:active,');
+  rules.push('#page-mod-quiz-report .generaltable a:focus, #page-mod-quiz-report .generaltable a:active,');
+  rules.push('.message-app .view-overview-body a:focus, .message-app .view-overview-body a:active {');
+  rules.push('  background-color: #8ADDF9 !important;');
+  rules.push('  color: #1d2125 !important;');
+  rules.push('}');
+
+  // Muted / secondary descendant text inside a boxed element → near-black too, else a
+  // .text-muted / <small> line sits illegibly on the #8ADDF9 box. Enumerated (NOT *:focus)
+  // so coloured chips (.badge.bg-*) keep their own background + text.
+  rules.push('.aalink:focus .text-muted, .aalink:focus small, .aalink:focus .text-secondary, .aalink:focus .coursecategory,');
+  rules.push('a:not([class]):focus .text-muted, a:not([class]):focus small, a:not([class]):focus .text-secondary,');
+  rules.push('.activityinstance > a:focus .text-muted, .activityinstance > a:focus small,');
+  rules.push('.nav-tabs .nav-link:focus .text-muted, .nav-tabs .nav-link:focus small,');
+  rules.push('.dropdown-item:focus .text-muted, .dropdown-item:focus small, .dropdown-item:focus .text-secondary {');
+  rules.push('  color: #1d2125 !important;');
+  rules.push('}');
+
+  // (2) Adaptive dashed RING on every focusable element — base colour = page surface.
+  const ringBase = ['a', '.btn', 'button', '[role="button"]', '.nav-link', '.dropdown-item', 'input', 'select', 'textarea', 'summary', '[tabindex="0"]'];
+  rules.push(`${ringBase.map((s) => `${s}:focus, ${s}:active`).join(',\n')} {`);
+  rules.push(`  outline: 3px dashed ${pageDash} !important;`);
+  rules.push('  outline-offset: 3px !important;');
+  rules.push('}');
+
+  // (3) Per-surface ring colour — override where the surface's brightness differs from the page.
+  [
+    { sels: ['.navbar'], token: tokens.navbarBg },
+    { sels: ['#page-footer'], token: tokens.footerBg },
+    { sels: ['[data-region="right-hand-drawer"]', '.drawer'], token: tokens.drawerBg },
+  ].forEach(({ sels, token }) => {
+    const dash = focusDashFor(token);
+    if (dash !== pageDash) {
+      rules.push(`${sels.map((s) => `${s} :focus, ${s} :active`).join(', ')} {`);
+      rules.push(`  outline-color: ${dash} !important;`);
+      rules.push('}');
+    }
+  });
+
+  // Navbar dropdown / popover menus stay WHITE on light-page presets even when the navbar bar
+  // is dark (CFA Dark Chrome etc.), so the broad `.navbar :focus` white override above would
+  // draw a white ring on a white menu → invisible. Restore the page (near-black) ring on those
+  // nested menus. Anchor on `.popover-region-container` (the panel) so the bell/message TOGGLE
+  // on the dark bar keeps its white ring. (Footer popover is dark on every CFA preset → no twin.)
+  if (!darkMode && focusDashFor(tokens.navbarBg) !== pageDash) {
+    rules.push('.navbar .dropdown-menu :focus, .navbar .dropdown-menu :active,');
+    rules.push('.navbar .popover-region-container :focus, .navbar .popover-region-container :active {');
+    rules.push(`  outline-color: ${pageDash} !important;`);
+    rules.push('}');
+  }
+
+  // (4) Dark themes: light-on-dark islands → near-black ring; then re-whiten the surfaces the
+  //     generator itself DARKENS (a near-black ring on those would vanish).
+  if (darkMode) {
+    // (4a) Genuinely light-on-dark islands (Moodle hardcodes white/grey; the generator keeps
+    //      them light + dark-texts them). A white ring would disappear on these → near-black.
+    rules.push('.bg-white :focus, .bg-white :active,');
+    rules.push('.bg-light :focus, .bg-light :active,');
+    rules.push('.modal-content :focus, .modal-content :active,');
+    rules.push('.moodle-dialogue-wrap :focus, .moodle-dialogue-wrap :active,');
+    rules.push('.moodle-dialogue-bd :focus, .moodle-dialogue-bd :active,');
+    rules.push('.fp-select :focus, .fp-select :active,');
+    rules.push('.yui3-datatable :focus, .yui3-datatable :active,');
+    rules.push('.yui3-widget-bd :focus, .yui3-widget-bd :active,');
+    rules.push('.alert:not(.alert-info) :focus, .alert:not(.alert-info) :active,');
+    rules.push('#page-mod-quiz-edit ul.slots li.section .content :focus, #page-mod-quiz-edit ul.slots li.section .content :active,');
+    rules.push('#page-mod-quiz-edit ul.slots li.activity :focus, #page-mod-quiz-edit ul.slots li.activity :active,');
+    rules.push('#page-mod-quiz-edit .section-heading :focus, #page-mod-quiz-edit .section-heading :active,');
+    rules.push('#page-mod-quiz-edit div.questionbank :focus, #page-mod-quiz-edit div.questionbank :active {');
+    rules.push('  outline-color: #1d2125 !important;');
+    rules.push('}');
+    // (4b) Surfaces the generator RE-DARKENS on dark themes (#140/#142/#147/#148/#154/#155) need
+    //      the WHITE ring back — (4a)'s near-black would vanish on the dark surface. Higher
+    //      specificity than (4a) and placed later → wins. ADD future re-darkened surfaces here.
+    rules.push('.message-app :focus, .message-app :active,');
+    rules.push('.emoji-picker :focus, .emoji-picker :active,');
+    rules.push('.moodle-dialogue-base:has(.dragdrop-keyboard-drag) .moodle-dialogue-wrap :focus, .moodle-dialogue-base:has(.dragdrop-keyboard-drag) .moodle-dialogue-wrap :active,');
+    rules.push('.mod_quiz_preflight_popup .moodle-dialogue-wrap :focus, .mod_quiz_preflight_popup .moodle-dialogue-wrap :active,');
+    rules.push('.card.course-card .card-footer.bg-white :focus, .card.course-card .card-footer.bg-white :active,');
+    rules.push('#page-question-edit .filter-group.bg-light :focus, #page-question-edit .filter-group.bg-light :active {');
+    rules.push('  outline-color: #FFFFFF !important;');
+    rules.push('}');
+  }
+  rules.push('');
 
   const block2 = rules.join('\n');
 

@@ -2028,3 +2028,164 @@ User asked if this focus styling is site-wide. It is NOT (login-only; #143 cover
 - `lib/scss-generator.ts` (login-dark block: link focus/hover + button ring), `docs/moodle-cloud-constraints.md` (2 rows), `docs/PROJECT-TRACKER.md` (this section). Memory: `project_dark_theme_login_focus.md`.
 
 **Branch:** `fix/dark-theme-login-eye-icon` (same branch as #153–#156, per user request).
+
+---
+
+## #158 — Site-wide Focus / Click Indicator (generalises #157 + #143)
+
+**Branch:** `worktree-feat-sitewide-focus-indicator` (off `main` @ 18efa04, after PR #25).
+**Spec:** `docs/superpowers/specs/2026-06-27-sitewide-focus-indicator-design.md`.
+
+### Goal
+ONE consistent keyboard + mouse focus indicator across the WHOLE exported theme, matching the CFA official site. Replaces the fragmented focus handling (the conditional `*:focus-visible` ring, the #143 content-link focus fix, the #157 login focus) with one coherent system emitted for ALL 11 presets.
+
+### The indicator (3 layers)
+- **BOX** — `background-color:#8ADDF9` (light tint of CFA Sky Blue `#00BFFF`) + `color:#1d2125` (Near-Black) + `box-shadow:none` — on text-level interactive elements: Moodle Rule-A content links (`.aalink`, `a:not([class])`, `.arrow_link`, `.activityinstance > a`), `#page-footer a:not([class])`, navbar primary nav-links, `.nav-tabs .nav-link` (+ `.secondary-navigation`), `.dropdown-item`. Child icons forced `#1d2125`.
+- **RING** — `3px dashed`, `outline-offset:3px`, on EVERY focusable element. Colour ADAPTIVE per-surface via `focusDashFor(hex)=isDarkBg(hex)?'#FFFFFF':'#1d2125'`. Base = `focusDashFor(pageBg)`. Per-surface overrides (`.navbar` / `#page-footer` / drawer) emitted when their token brightness differs from the page (handles e.g. CFA Dark Chrome's dark navbar on a LIGHT page → white ring). Dark-theme light-on-dark islands → near-black ring.
+- **Buttons / inputs / checkboxes / radios / card-wrapping links = RING ONLY** (no box) — preserves brand fills, quiz traffic-light state buttons (`.qnbutton`), the red preflight Cancel, the `appearance:none` quiz radios (#133), and avoids tinting whole cards/tiles.
+
+### Trigger
+`:focus, :focus-visible, :active, .focus` — fires on Tab AND mouse click (NOT `:focus-visible` alone, which is keyboard-only). The new block is emitted LAST in Block 2 (after `if(darkMode)` closes), UNCONDITIONALLY (all presets).
+
+### Consolidation
+- **DELETED** the legacy `*:focus-visible` solid ring (was conditional on `focusRing`/`focusRingWidth`; those tokens are now inert — retiring that control is a follow-up).
+- **REWORKED** the global `a:hover, a:focus { color: linkHover !important }` → dropped `:focus` (focus text is now owned by the box).
+- **ABSORBED** #143 into the global box (promoted from dark-only to all presets — the same bug existed on light CFA presets).
+- **RESTYLED** login #157 — kept `body#page-login-index`-scoped; one white-ring catch-all matches the global dark-surface ring; login buttons stay ring-only (recoloured white).
+
+### Adversarial review fixes (6, all verified)
+After build, an 8-agent / 6-dimension adversarial review (Opus, max effort) ran. The **tinting** dimension was cleared (the box does NOT flood cards — Rule-A scoping is safe) and **selector validity** confirmed. Patched: (1) navbar dropdown box TEXT lost to the `(0,4,0)` navbar rule → navbar-scoped box variants; (2) navbar dropdown/popover ring leaked white onto the WHITE menus of the 7 light-page+dark-navbar presets → near-black counter-override gated `!darkMode && focusDashFor(navbarBg)!==pageDash`; (3) the near-black island ring vanished on surfaces the generator RE-DARKENS (move/preflight dialogs #142/#154, messaging #140/#147/#148, course-card footer, qbank filter #155) → white re-override; (4) extended the light-island list (`.bg-light`, quiz-edit containers #113, `.alert:not(.alert-info)`, `.fp-select`/`.yui3-datatable`/`.yui3-widget-bd`); (5) id-scoped link colours (grade-setup tree, quiz-report table, messaging contacts) beat the box text → id-scoped box re-assert; (6) muted/secondary descendant text (`.text-muted`/`small`) inside a boxed link → near-black.
+
+### Colours (all fixed, brand-sanctioned — NO new tokens)
+`#8ADDF9` (light tint of CFA Sky Blue `#00BFFF`), `#1d2125` (Near-Black), `#FFFFFF` (White). Same documented fixed-value exception class as the chart backdrop / quiz timer / login surfaces.
+
+### Verification
+Generator harness across all 11 presets (merge `PRESET_TEMPLATES[i].overrides`, NOT `.tokens`): box + base ring emit for EVERY preset incl. Moodle Default; the adaptive ring colour is correct per-surface (CFA Dark Chrome emits white `.navbar`/`#page-footer`/drawer overrides; the 2 dark presets + a synthetic custom-dark emit the near-black island ring + white re-override; the 6 patches emit exactly where expected); the old `*:focus-visible` ring and the `a:hover, a:focus` conflict are gone everywhere. `npm run build` + `npm run lint` clean. **User-verified on Moodle Cloud** ("consistent layout on tap and mouse click" across sections).
+
+### Files Modified
+- `lib/scss-generator.ts` (new #158 block + consolidation edits + `focusDashFor` helper), `docs/moodle-cloud-constraints.md` (Site-wide Focus Indicator section), `docs/PROJECT-TRACKER.md` (this section), `docs/superpowers/specs/2026-06-27-sitewide-focus-indicator-design.md` (spec, committed earlier), `.gitignore` (`.playwright-mcp/`). Memory: `project_sitewide_focus_indicator.md`.
+
+### Relation to #157's planned follow-up
+#157 noted a **dual-tone** (`:focus-visible` + box-shadow halo) ring as the planned approach. We instead implemented the **box + adaptive per-surface dashed ring** — the user's confirmed visual target (sky-blue box + dark text + white/black dashes), triggered on `:focus`+`:active` (mouse AND keyboard, per the user's explicit requirement). The dual-tone box-shadow halo remains a noted future alternative that could retire the per-surface island logic.
+
+## #159 — Activity-header region dark card (Moodle 5.0 restructure)
+
+**Branch:** `worktree-feat-sitewide-focus-indicator` (on top of #158). Dark presets only.
+
+### Symptom (user, Moodle Cloud, dark theme)
+On activity-PAGE views (quiz `mod/quiz/view.php`, book `mod/book/view.php`, certificate `mod/customcert/view.php`): the intro/description box rendered **light/white** with washed-out **light** text (`#F0EEEE` on white → "Why should you care about the online needs of people with disability?" unreadable); the "Opened:" **dates** were dim; the edit-settings **Save/Cancel sticky bar** was bright white; the **completion** button was broken.
+
+### Root cause — a Moodle Cloud upgrade (4.x→5.0), NOT the #158 focus feature
+The #158 diff is 100% `:focus`/`:active` (cannot paint a resting background); the rules that govern this region are foundational (`709ccde`/`bc27ffc`), unchanged. The break came from Moodle itself:
+- **The white box is `.activity-details`.** The live 5.0 DOM nests `.activity-header > .activity-information > .activity-details > .activity-description#intro`. Moodle's `$gray-100` fill is on the OUTER `.activity-header` (`modules.scss`, un-`!important`, since 4.0) and our existing `.activity-header { transparent !important }` (L847) already beat it — so the washout was the **uncovered, light-rendering `.activity-details`**, not the header fill. A transparent-reveal chain breaks at one light link.
+- **Completion control re-classed in 5.0:** the manual button went from `btn-success` / `btn-outline-secondary` (handled) to the **unhandled** `.btn-subtle-body` ("Mark as done": transparent bg + DARK `--bs-body-color` text + LIGHT `#dee2e6` border → invisible on dark) / `.btn-subtle-success` ("Done": light-green island); auto-completion badges gained `mix-blend-mode: multiply` (a dark-theme killer).
+- `.activity-dates` text: our muted `#A0A0A1` override is sub-AA (**3.96:1** on Dark Lime).
+- `#sticky-footer`: core save/cancel bar carries the BS `.bg-white` utility (white `!important`).
+
+### Fix (appended at the tail of `if (darkMode)`)
+- **(a) Subtree dark card** — paint `.activity-header` + `.activity-information` + `.activity-details` + `.activity-description` + `.no-overflow` with `${tokens.cardBg}` **directly** (solid, NOT transparent-reveal — can't break at a light link).
+- **(b) Separators** — `.activity-header .activity-dates`/`.completion-info`/`.activity-description` light `$border-color #dee2e6` → `${tokens.cardBorder}`.
+- **(c) Dates** — `.activity-dates, .activity-dates .date-item` → `${tokens.bodyText}` (~9:1; covers the card AND the `.header-extras-container` route).
+- **(d) Sticky footer** — `#sticky-footer { background-color: ${tokens.footerBg} !important; border-color: ${tokens.cardBorder} !important }` (id (1,0,0)+`!important` beats `.bg-white`).
+- **(e) Completion control** — `.activity-header .btn-subtle-body`/`.btn-subtle-success` → dark `cardBg` chip + `cardBorder`; "Mark as done" text/icon `bodyText`; "Done" text/icon `${tokens.success}` (lime/green, semantic); the global `.btn-subtle-success .icon { #1d2125 }` rule (L583, assumes light button) is out-specified by the `.activity-header …` scope; `mix-blend-mode: normal` on `.automatic-completion-conditions .badge`; `.badge.bg-light.text-dark` "To do" pill → dark chip.
+
+### Lesson
+**Trust the live DOM over source research.** The Moodle-5.0-source agent insisted `.activity-details` "isn't a real 5.0 class (DevTools artifact)". The user's DevTools showed it real AND the culprit. The **first attempt** (header-`cardBg` + inner-transparent, excluding `.activity-details`) FAILED on Moodle Cloud; the solid-`cardBg`-on-every-container rewrite fixed it.
+
+### Verification
+Generator harness across all 11 presets (merge `PRESET_TEMPLATES[i].overrides`, NOT `.tokens`): the block emits for Dark Lime + Dark Ember + a synthetic custom-dark (token-agnostic), and NOTHING for the 8 light presets + Moodle Default + CFA Dark Chrome (light-bg). `npm run build` + `npm run lint` clean. **User-verified on Moodle Cloud** ("I can confirm it works") for quiz + book + settings footer.
+
+### Files Modified
+- `lib/scss-generator.ts` (new #159 block at the tail of `if (darkMode)`), `CLAUDE.md` (Current Status), `docs/PROJECT-TRACKER.md` (this section), `docs/moodle-cloud-constraints.md` (selector rows). Memory: `project_dark_theme_activity_header.md`. NO new tokens/presets/controls.
+
+### Caveat noted to user
+The customcert intro green/blue band may be the **certificate preview content** (an image/styled cert design), not a structural container — the theme should not recolour it (it would distort the certificate). Pending user confirmation if it persists.
+
+## #160 — Login focus-ring scoping (whole-section dashed border)
+
+**Branch:** `worktree-feat-sitewide-focus-indicator` (on top of #159).
+
+### Symptom (user, Moodle Cloud, dark login page)
+Clicking any login control (e.g. the password input) drew the white dashed focus ring around the **whole login card AND each nested form section**, not just the clicked control.
+
+### Root cause
+The #157/#158 login ring used a **bare descendant selector**:
+`body#page-login-index :focus, :focus-visible, :active { outline: 3px dashed #FFFFFF }`.
+`:active` applies to the activated element **and all of its ancestors**, so on mouse-down every wrapping container (`.login-form-password`, `.login-form`, `.login-container`, `#region-main-box`, …) matched and drew its own dashed outline. (A bare `:focus`/`:active` also targets non-focusable containers in general.)
+
+### Fix
+Enumerate focusable element **types** instead of a bare descendant:
+```
+const loginRingEls = ['a', '.btn', 'button', '[role="button"]', 'input', 'select', 'textarea', '[tabindex="0"]'];
+// body#page-login-index ${el}:focus, …:focus-visible, …:active { outline: 3px dashed #FFFFFF; outline-offset: 3px }
+```
+The ring now lands only on the focused/clicked control. The global #158 ring never had this bug: rule 2 (the outline creator) is already element-scoped; rules 3/4 set `outline-color` only (a no-op on elements with no outline).
+
+### Lesson
+**Never use a bare `:active`/`:focus` descendant selector for an `outline`/border** — `:active` matches the activated element + all ancestors. Always enumerate focusable element types.
+
+### Verification
+Bare `body#page-login-index :active {` gone; scoped `body#page-login-index input:focus,` emits; lint clean; **user-verified on Moodle Cloud**. NO new tokens/presets/controls. Files: `lib/scss-generator.ts`, `CLAUDE.md`, `docs/PROJECT-TRACKER.md`. Memory: `project_sitewide_focus_indicator.md` (updated).
+
+## #161 — Hide Moodle 5.0's re-marked-up signup link
+
+**Branch:** `worktree-feat-sitewide-focus-indicator`. Unconditional (every preset); extends the permanent #152 signup-hide.
+
+### Symptom
+After the Moodle Cloud 5.0 upgrade, a plain "Sign up" link reappeared below "Log in" on the login page — the permanent #152 hide (`.login-signup`) no longer matched it.
+
+### Root cause
+5.0 re-marked-up the auto signup link: it is now `<div class="text-center small mb-3"><a href=".../login/signup.php">Sign up</a></div>`, not `.login-signup`.
+
+### Fix
+Extend the #152 hide to all forms, excluding the custom button:
+```
+body#page-login-index .login-signup,
+body#page-login-index .text-center:has(> a[href*="/login/signup.php"]:not(.btn)),
+body#page-login-index a[href*="/login/signup.php"]:not(.btn) { display: none !important; }
+```
+**CRITICAL `:not(.btn)`**: the custom "Create new account" button (`a.btn-primary` in the Instructions, #152) is *also* a signup link — both selectors exclude `.btn` so only Moodle's plain "Sign up" text link is hidden, the custom button stays. `:has()` is Baseline-2023 (already used in the generator).
+
+### Verification
+Rule emits for all presets (unconditional); `:not(.btn)` preserves the Create-account button; lint clean; **user-verified on Moodle Cloud**. Files: `lib/scss-generator.ts`, `CLAUDE.md`, `docs/PROJECT-TRACKER.md`. Memory: `project_login_page_customisations.md` (updated).
+
+## #162 — "Create new account" button: match Log in font + hover-only underline
+
+**Branch:** `worktree-feat-sitewide-focus-indicator`. Unconditional.
+
+### Request (user, Moodle Cloud login page)
+Make the custom "Create new account" button's text font match the "Log in" button, and show its underline only on hover/click (not at rest).
+
+### Findings (live DevTools)
+- Log in = `button#loginbtn.btn.btn-primary.w-100`, 498×38 — a regular `.btn` (1rem, full-width). The Create button is `a.btn.btn-primary.btn-lg` → text at 1.25rem (`.btn-lg`).
+- The underline is Moodle's, not ours: `.login-layout-left-content a { text-decoration: underline }` (the two-column login underlines all left-content links).
+
+### Fix
+```
+body#page-login-index a.btn-primary[href*="/login/signup.php"] {
+  font-size: 1rem !important;
+  text-decoration: none !important;
+}
+body#page-login-index a.btn-primary[href*="/login/signup.php"]:hover,
+…:focus, …:active { text-decoration: underline !important; }
+```
+Anchored on the signup.php button link (`a.btn-primary` + href — the Log in button is a `<button>`, the hidden Moodle signup link is `:not(.btn)`, so only the Create button matches). (1,2,1)+`!important` beats Moodle's `.login-layout-left-content a` (0,1,1). Per the user's scoped ask, ONLY the font was matched (not padding/width).
+
+### Verification
+Rule emits for all presets (unconditional); lint clean; **user-verified on Moodle Cloud**. Files: `lib/scss-generator.ts`, `CLAUDE.md`, `docs/PROJECT-TRACKER.md`. Memory: `project_login_page_customisations.md` (updated).
+
+## #163 / #164 — Login background: transparent card + ignore the site image
+
+**Branch:** `worktree-feat-sitewide-focus-indicator`.
+
+### #163 — Transparent login card (dark presets)
+User wanted the right login card to blend with the login background image. Paint `body#page-login-index .card, .login-container { background-color: transparent !important }`, **gated on `isDarkBg(tokens.pageBg)`** so only the genuinely-dark presets (Dark Lime/Ember) get it — NOT `isDarkBg(loginBg)`, which would also blank Teal Professional's dark-charcoal login card (a *light* preset whose login bg is `#404041`). The dark `.form-control` inputs keep the form legible on the image; with no login bg image this reveals the near-black `loginBg` (clean seamless dark login). `(1,1,0)`+`!important` beats the global dark `.card { cardBg }` (0,1,0).
+
+### #164 — Login page ignores the SITE background image
+After #163, the transparent card revealed the **site** background image (`theme_boost|backgroundimage`), which Moodle applies to `body` site-wide. The login page should use only its own "Login page background image" (`theme_boost|loginbackgroundimage` → `body.pagelayout-login #page`). Emit UNCONDITIONALLY `body#page-login-index { background-image: none !important }` — suppresses the site image on the login body; the login image lives on the child `#page`, so it's untouched. Unconditional because the site image may be set in Moodle without the configurator knowing. `(1,0,1)`+`!important` beats Moodle's `body { background-image }` (0,0,1).
+
+### Combined effect
+Login bg image empty → login is a clean solid `loginBg`. Upload a login-specific image → it shows through the transparent card, and only there (never the site backdrop).
+
+### Verification
+Login-card transparent emits for Dark Lime/Ember only (light presets keep solid — gate fix verified after the first attempt wrongly caught Teal Pro); the site-image suppression emits for all presets; lint clean; **user-verified on Moodle Cloud**. Files: `lib/scss-generator.ts`, `CLAUDE.md`, `docs/PROJECT-TRACKER.md`. Memory: `project_login_page_customisations.md` (updated). NO new tokens/presets/controls.

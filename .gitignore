@@ -45,3 +45,6 @@ next-env.d.ts
 
 # git worktrees
 .worktrees/
+
+# playwright MCP scratch (snapshots, console logs, screenshots)
+.playwright-mcp/
