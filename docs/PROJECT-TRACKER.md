@@ -2226,3 +2226,48 @@ body#page-login-forgot_password .login-layout-right {
 
 ### Verification
 Generator harness over all 11 presets + a synthetic custom dark theme: rule emits unconditionally (2 occurrences each — hide + reflow), **no leak to `#page-login-index`**. `npm run build` + `npm run lint` + `tsc --noEmit` clean. **User-verified on Moodle Cloud, both pages.** Files: `lib/scss-generator.ts`, `docs/moodle-cloud-constraints.md`, `docs/PROJECT-TRACKER.md`, `CLAUDE.md`. Memory: `project_login_page_customisations.md` (updated). NO new tokens/presets/controls/preview.
+
+---
+
+## #166 — Navbar / drawer logo size cap (mobile overflow)
+
+**Branch:** `worktree-fix-mobile-drawer-logo-cap`, off `main` (`271061e`, after PR #27).
+
+### Issue
+Client report: on **mobile**, the CFA site logo ("Centre for Accessibility Australia") top-left renders **far too big and exceeds the border** — most visible when the left navigation drawer is opened. User DevTools (mobile, 400px) confirmed the exact element.
+
+### Findings (parallel research — Moodle Boost source 4.5/5.x + local codebase + live DevTools)
+- The overflowing element is the **navigation-drawer header logo**, NOT the navbar brand: `div.drawerheader > div.drawerheading > a.aabtn[data-region="site-home-link"].py-1.h-100 > img.logo.py-1.h-100`.
+- It is the **compact** logo (`get_compact_logo_url` → `pluginfile.php/.../core_admin/logocompact/.../Centre…Logo no padding-02.png`). CFA uploaded a wide full wordmark where Moodle expects a small square emblem (compact logo has "no enforced dimensions").
+- **Root cause:** Boost's `drawer.scss` gives `.drawerheader { height: $navbar-height /*60px*/; display:flex; align-items:center }` but sets **NO `max-height` on the logo**. The inner `.drawerheading` has no definite height, so the img's Bootstrap `.h-100` (`height:100% !important`) can't resolve to 60px and the image falls back to its served (full) size → balloons, vertically centred, overflows the 60px header, clipped at the top.
+- **Why mobile-only:** `.drawerheader` + the `site-home-link` logo only render in the **mobile** primary (burger) drawer; on desktop (≥768px) the nav is inline in the navbar, so this surface never appears.
+- **Why Boost doesn't catch it:** its only logo cap, `nav.navbar .logo img { max-height:35px }` (core.scss), is scoped to `nav.navbar` (never reaches `.drawerheader`) AND is mis-targeted — it expects an `img` INSIDE `.logo`, but the markup is `img.logo` (the img IS `.logo`), so it doesn't even match the navbar brand. The front-page `#page-header .logo img { max-height:75px }` is a different structure (`.logo` wrapper + child img) and is untouched.
+- The generator emitted **zero** logo/navbar-height rules before this — logo size was 100% Moodle default. The configurator cannot control what the admin uploads, so a CSS cap is the right fix. The sandbox preview uses a hand-built SVG logo (`CfaLogo.tsx`) — it can't reproduce this and needs no change.
+
+### Fix
+Appended to the **UNCONDITIONAL** Block-2 layout section in `lib/scss-generator.ts` (right after the #165 promo-hide rules, before Breadcrumb):
+```scss
+.navbar img.logo {
+  max-height: 40px !important;
+  width: auto !important;
+}
+.drawerheader img.logo {
+  max-height: 50px !important;
+  width: auto !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+```
+- **`max-height` clamps even against `height:100% !important`** — `height` and `max-height` are different properties; `!important` only resolves conflicts within one property; used height = `min(height, max-height)`. So the cap wins without fighting `.h-100`.
+- **Two surfaces, two caps:** the desktop **navbar brand** logo stays compact at **40px** (Boost's norm is ~35px); the mobile **drawer-header** logo is enlarged to **50px** — the largest that legibly fits the 60px header, so the small "AUSTRALIA" wordmark reads clearly. The two never show at once (navbar ≥768px, drawer header <768px), so the size difference is invisible.
+- **Padding zeroed on the drawer logo:** the img carries Bootstrap `.py-1` (8px); zeroing it gives the enlarged image clean headroom inside the 60px header so it can never re-overflow.
+- **`img.logo`** matches the navbar brand AND drawer-header logo but NOT `#page-header .logo img` (different structure) → no collateral.
+- **Unconditional** (pure geometry, no colour) → identical for every preset, like the #161–165 login rules. **50px is the practical ceiling** for the standard 60px header — bigger needs a TALLER drawer header (offered to the user; they kept 50px).
+- **Iteration:** the first cap was a single shared 40px; user asked to make it bigger/clearer → split into navbar-40 / drawer-50 + padding-zero.
+
+### Verification
+Compiled generator harness over all 10 presets + Moodle Default + a synthetic custom-dark theme: the rule emits in **block2**, **exactly once** per case (no dup/leak). `npm run lint` + `npm run build` clean. **User-verified on Moodle Cloud** ("looks amazing"). Files: `lib/scss-generator.ts`, `docs/moodle-cloud-constraints.md`, `docs/PROJECT-TRACKER.md`, `CLAUDE.md`. Memory: `project_navbar_drawer_logo_cap.md` (new).
+
+### Presets / controls audit (Phase 6c / 6d)
+- **Presets:** none affected — the rule is unconditional pure geometry, emitted identically for all presets (harness-confirmed). No preset value to set.
+- **Controls / quick palette:** no new token, no control. Logo height is a fixed layout constant, not a user-customisable colour. (If making the cap user-tunable is ever wanted, add a `logoMaxHeight` token + control — not warranted now.)
