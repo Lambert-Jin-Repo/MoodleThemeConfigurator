@@ -2311,3 +2311,38 @@ Generator harness (`tsx`, merging `PRESET_TEMPLATES[i].overrides` onto `DEFAULT_
 ### Presets / controls audit (Phase 6c / 6d)
 - **Presets:** none need changes — the rules are token-driven (`bodyText`/`linkColour`/`linkHover`, all already set in both dark presets) and gated on `isDarkBg(pageBg)`, so any custom dark theme gets them automatically with its own values (harness-confirmed). Light presets correctly keep Moodle's grey-on-light default (4.6:1, fine).
 - **Controls / quick palette:** no new token, no control — every colour reuses existing user-facing tokens already exposed in the panel.
+
+---
+
+## #168 — Activity completion report icons (dark themes)
+
+**Branch:** `worktree-fix-dark-theme-completion-dialog` (same branch as #167).
+
+### Issue
+On dark themes the **Activity completion report** (course → Reports → Activity completion, `report/progress/index.php`, body id `#page-report-progress-index` — the `/index.php` suffix is KEPT in the body id, and it's the same id the plugin's own stylesheet anchors on) rendered the small activity-type icons in the rotated column headers near-invisible. User DevTools confirmed `div.modicon > img.icon` (monologo).
+
+### Findings (parallel research — Moodle source 4.4–5.2 + local codebase)
+- The page was **completely uncovered** by the generator — no `.path-report-progress`/`#page-report-progress` rule existed; the #149 monologo filter is `.path-report-outline`-scoped.
+- **Header modicons:** `image_icon('monologo', …)` ALWAYS emits an `<img class="icon">` (bypasses the FontAwesome icon system); Moodle deliberately renders activity icons BLACK on report/gradebook pages (MDL-71457). `color:` is inert on an `<img>` → the #136/#149 `filter` lever applies.
+- **Completion-state cells** (`.completion-progresscell`): also PIX `<img>` SVGs — `i/completion-{auto|manual}-{y,n,pass,fail,enabled}` are **NOT in the FontAwesome map** (verified 4.4 + 5.2 `icon_system_fontawesome.php`) and carry NO `.text-*` classes. Their colours are **baked into the SVGs**: grey `#949494` boxes, blue `#6393ee` check, red `#ff403c` cross. A `brightness(0) invert(1)` flatten would destroy the y/n/pass/fail semantics; a bare `invert(1)` would hue-flip blue→orange / red→cyan.
+- **Cell borders:** the plugin stylesheet's ONLY colour rule (`report/progress/styles.css`, byte-equivalent 4.4–5.2, un-`!important`) hardcodes `border-right: 1px solid #eee` on every `#completion-progress` cell → bright hairline grid on dark.
+- **No table repaint needed:** on 5.2 the table is `table.table.generaltable.flexible.table-striped.table-hover`; the Bootstrap `.table` CSS vars follow the (dark) body, so the surface already rendered dark on the live site (user screenshot).
+- No MDL tracker issue for dark-mode contrast on this report.
+
+### Fix
+Appended at the tail of `if (darkMode)` in `lib/scss-generator.ts` (after the #167 block), all id-scoped:
+```scss
+#page-report-progress-index .modicon img.icon { filter: brightness(0) invert(1) !important; }   /* (a) monologos → white */
+#page-report-progress-index .completion-progresscell img.icon { filter: brightness(1.4) !important; }  /* (b) lift, keep ✓/✗ colours */
+#page-report-progress-index #completion-progress th,
+#page-report-progress-index #completion-progress td { border-color: ${tokens.cardBorder} !important; }  /* (c) #eee grid → dark */
+```
+- **Zero collateral by construction** (user's explicit condition): every selector requires `#page-report-progress-index`, which exists only on this page.
+- **(b) brightness-lift, not flatten** — grey ~4.3:1 → ~6:1 on the dark card while the blue/red state colours keep their meaning (WCAG 1.4.1: colour is not the only cue anyway — `title`/alt carry the state).
+
+### Verification
+Generator harness across all 10 CFA presets + Moodle Default + a synthetic custom dark: emits ONLY for Dark Lime, Dark Ember, and the synthetic dark (4 id-scoped occurrences; border uses each theme's own `cardBorder`); light presets + Moodle Default emit nothing. `npm run build` + `npm run lint` clean. **User-verified on Moodle Cloud** ("confirm fixed"). Files: `lib/scss-generator.ts`, `docs/moodle-cloud-constraints.md`, `docs/PROJECT-TRACKER.md`. Memory: `project_dark_theme_activity_completion_report.md` (new).
+
+### Presets / controls audit (Phase 6c / 6d)
+- **Presets:** none need changes — (a)/(b) are pure `filter` geometry (token-free, identical for every dark theme); (c) uses `cardBorder`, already set in both dark presets and any custom dark theme (harness-confirmed). Light presets correctly keep Moodle's black-icons-on-light default.
+- **Controls / quick palette:** no new token, no control — filters aren't user-facing colours, and the border reuses the existing `cardBorder` control.
