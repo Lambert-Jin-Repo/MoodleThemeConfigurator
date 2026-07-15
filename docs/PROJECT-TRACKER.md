@@ -2271,3 +2271,78 @@ Compiled generator harness over all 10 presets + Moodle Default + a synthetic cu
 ### Presets / controls audit (Phase 6c / 6d)
 - **Presets:** none affected — the rule is unconditional pure geometry, emitted identically for all presets (harness-confirmed). No preset value to set.
 - **Controls / quick palette:** no new token, no control. Logo height is a fixed layout constant, not a user-customisable colour. (If making the cap user-tunable is ever wanted, add a `logoMaxHeight` token + control — not warranted now.)
+
+---
+
+## #167 — Course-page completion dropdown dialog text (dark themes)
+
+**Branch:** `worktree-fix-dark-theme-completion-dialog`, off `main` (`7aec5e9`, after PR #28).
+
+### Issue
+On dark themes the course-page **"Completion ▾" dropdown dialog** ("Students must: Receive a grade / Receive a passing grade / Receive a pass grade or complete all available attempts") rendered its text in dark grey on the dark popover — barely visible (~1.6:1). User DevTools: winning rule `.activity-item .activity-completion .completion-dialog { color: #495057 }`.
+
+### Findings (parallel research — Moodle source 4.4–5.2 + tracker + local codebase)
+- **Root cause:** Boost's `course.scss` (byte-identical 4.4 → 5.2; 5.1+ under `public/`) hardcodes `.activity-item .activity-completion .completion-dialog { color: $gray-700 (#495057) }` — specificity (0,3,0), **no `!important`**. It targets the dialog **directly**, so it beats the generator's container rules (`.activity-completion { color: bodyText }` at L853), whose light colour only reaches the text by **inheritance**.
+- The popover is a **standard Bootstrap `.dropdown-menu`** (`core/local/dropdown/dialog` component; content template `core_courseformat/local/content/cm/completion_dialog.mustache`; NOT YUI, NOT portalled — the `yui_3_18…` ids are generic node-stamping). The site-wide dark rule (L928) already painted its **background** `cardBg` — only the text stayed grey.
+- The same Moodle block hardcodes a **second** `$gray-700` on the tracked-user "Edit completion" link, plus a **light `$gray-200` (#e9ecef) hover box** on it — the #135 light-hover trap.
+- Row bullet icons are FontAwesome pix icons (`i/dot`) with **no `.text-*` class** → the generic dark `.icon, .fa { color: #1d2125 !important }` paints them dark-on-dark; tracked users' complete/failed rows carry `.text-success`/`.text-danger` on the row divs (semantic — must be preserved).
+- The #159 completion fixes are all `.activity-header`-scoped (activity VIEW page) and never touch this course-page dropdown. No `.completion-dialog` rule existed anywhere in the generator. No preview replica exists (`CoursePage.tsx` has only a static label) → generator-only fix.
+- No Moodle tracker issue covers this (Boost ships no dark mode; MDL-79502/79347 are about the button/focus, closed in 4.3).
+
+### Fix
+Appended at the tail of `if (darkMode)` in `lib/scss-generator.ts` (after the #159 activity-header block):
+```scss
+.activity-item .activity-completion .completion-dialog { color: ${tokens.bodyText} !important; }
+.activity-item .activity-completion .completion-dialog .icon:not([class*="text-"]),
+.activity-item .activity-completion .completion-dialog .fa:not([class*="text-"]) { color: ${tokens.bodyText} !important; }
+.activity-item .activity-completion .completion-dialog .editcompletion a { color: ${tokens.linkColour} !important; }
+.activity-item .activity-completion .completion-dialog .editcompletion a:hover, …:focus {
+  background-color: rgba(255, 255, 255, 0.08) !important;  /* replaces Moodle's light #e9ecef hover box */
+  color: ${tokens.linkHover} !important;
+}
+```
+- **Mirror Moodle's own selector + `!important`** → trivially beats the (0,3,0) un-important hardcode. `tokens.bodyText` (CFA Light Grey `#F0EEEE`, ~12–13:1 on both dark presets' `cardBg`) — the surface is our own dark dropdown, same category as `.dropdown-item` / the quiz-edit nested-dropdown exception (dynamic dark-surface text, NOT fixed-dark `d.bodyText`).
+- **`:not([class*="text-"])` guard** on the icon re-light keeps the semantic ✓ (`.text-success`) / ✗ (`.text-danger`) rows intact (same pattern as #119/#149).
+- **"Edit completion" link** → `linkColour` at rest; hover/focus get the generator's standard `rgba(255,255,255,0.08)` dropdown hover wash + `linkHover` — never Moodle's light box (#135 lesson).
+
+### Verification
+Generator harness (`tsx`, merging `PRESET_TEMPLATES[i].overrides` onto `DEFAULT_TOKENS`) across all 10 CFA presets + Moodle Default + a **synthetic custom dark theme**: block emits ONLY for CFA Dark Lime, CFA Dark Ember, and the synthetic dark (6 selector occurrences each, each theme's own `bodyText`/`linkColour`); all 8 light presets + Moodle Default + CFA Dark Chrome (light content) emit nothing. `npm run build` + `npm run lint` clean. **User-verified on Moodle Cloud** ("confirm fixed"). Files: `lib/scss-generator.ts`, `docs/moodle-cloud-constraints.md`, `docs/PROJECT-TRACKER.md`. Memory: `project_dark_theme_completion_dialog.md` (new).
+
+### Presets / controls audit (Phase 6c / 6d)
+- **Presets:** none need changes — the rules are token-driven (`bodyText`/`linkColour`/`linkHover`, all already set in both dark presets) and gated on `isDarkBg(pageBg)`, so any custom dark theme gets them automatically with its own values (harness-confirmed). Light presets correctly keep Moodle's grey-on-light default (4.6:1, fine).
+- **Controls / quick palette:** no new token, no control — every colour reuses existing user-facing tokens already exposed in the panel.
+
+---
+
+## #168 — Activity completion report icons (dark themes)
+
+**Branch:** `worktree-fix-dark-theme-completion-dialog` (same branch as #167).
+
+### Issue
+On dark themes the **Activity completion report** (course → Reports → Activity completion, `report/progress/index.php`, body id `#page-report-progress-index` — the `/index.php` suffix is KEPT in the body id, and it's the same id the plugin's own stylesheet anchors on) rendered the small activity-type icons in the rotated column headers near-invisible. User DevTools confirmed `div.modicon > img.icon` (monologo).
+
+### Findings (parallel research — Moodle source 4.4–5.2 + local codebase)
+- The page was **completely uncovered** by the generator — no `.path-report-progress`/`#page-report-progress` rule existed; the #149 monologo filter is `.path-report-outline`-scoped.
+- **Header modicons:** `image_icon('monologo', …)` ALWAYS emits an `<img class="icon">` (bypasses the FontAwesome icon system); Moodle deliberately renders activity icons BLACK on report/gradebook pages (MDL-71457). `color:` is inert on an `<img>` → the #136/#149 `filter` lever applies.
+- **Completion-state cells** (`.completion-progresscell`): also PIX `<img>` SVGs — `i/completion-{auto|manual}-{y,n,pass,fail,enabled}` are **NOT in the FontAwesome map** (verified 4.4 + 5.2 `icon_system_fontawesome.php`) and carry NO `.text-*` classes. Their colours are **baked into the SVGs**: grey `#949494` boxes, blue `#6393ee` check, red `#ff403c` cross. A `brightness(0) invert(1)` flatten would destroy the y/n/pass/fail semantics; a bare `invert(1)` would hue-flip blue→orange / red→cyan.
+- **Cell borders:** the plugin stylesheet's ONLY colour rule (`report/progress/styles.css`, byte-equivalent 4.4–5.2, un-`!important`) hardcodes `border-right: 1px solid #eee` on every `#completion-progress` cell → bright hairline grid on dark.
+- **No table repaint needed:** on 5.2 the table is `table.table.generaltable.flexible.table-striped.table-hover`; the Bootstrap `.table` CSS vars follow the (dark) body, so the surface already rendered dark on the live site (user screenshot).
+- No MDL tracker issue for dark-mode contrast on this report.
+
+### Fix
+Appended at the tail of `if (darkMode)` in `lib/scss-generator.ts` (after the #167 block), all id-scoped:
+```scss
+#page-report-progress-index .modicon img.icon { filter: brightness(0) invert(1) !important; }   /* (a) monologos → white */
+#page-report-progress-index .completion-progresscell img.icon { filter: brightness(1.4) !important; }  /* (b) lift, keep ✓/✗ colours */
+#page-report-progress-index #completion-progress th,
+#page-report-progress-index #completion-progress td { border-color: ${tokens.cardBorder} !important; }  /* (c) #eee grid → dark */
+```
+- **Zero collateral by construction** (user's explicit condition): every selector requires `#page-report-progress-index`, which exists only on this page.
+- **(b) brightness-lift, not flatten** — grey ~4.3:1 → ~6:1 on the dark card while the blue/red state colours keep their meaning (WCAG 1.4.1: colour is not the only cue anyway — `title`/alt carry the state).
+
+### Verification
+Generator harness across all 10 CFA presets + Moodle Default + a synthetic custom dark: emits ONLY for Dark Lime, Dark Ember, and the synthetic dark (4 id-scoped occurrences; border uses each theme's own `cardBorder`); light presets + Moodle Default emit nothing. `npm run build` + `npm run lint` clean. **User-verified on Moodle Cloud** ("confirm fixed"). Files: `lib/scss-generator.ts`, `docs/moodle-cloud-constraints.md`, `docs/PROJECT-TRACKER.md`. Memory: `project_dark_theme_activity_completion_report.md` (new).
+
+### Presets / controls audit (Phase 6c / 6d)
+- **Presets:** none need changes — (a)/(b) are pure `filter` geometry (token-free, identical for every dark theme); (c) uses `cardBorder`, already set in both dark presets and any custom dark theme (harness-confirmed). Light presets correctly keep Moodle's black-icons-on-light default.
+- **Controls / quick palette:** no new token, no control — filters aren't user-facing colours, and the border reuses the existing `cardBorder` control.

@@ -2810,6 +2810,68 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push(`  color: ${tokens.bodyText} !important;`);
     rules.push('}');
     rules.push('');
+
+    // ── Course-page completion dropdown dialog (#167) ──
+    // The "Completion ▾" popover on course pages ("Students must: Receive a grade …") is a
+    // standard Bootstrap .dropdown-menu — our site-wide dark rule (L928) already paints its
+    // bg cardBg — but Boost's course.scss hardcodes the dialog TEXT grey directly:
+    //   .activity-item .activity-completion .completion-dialog { color: $gray-700 #495057 }
+    // ((0,3,0), un-!important, byte-identical 4.4–5.2). A DIRECT declaration beats our
+    // container rules' merely-INHERITED light colour → #495057 on the dark panel (~1.6:1).
+    // Mirror Moodle's own selector + !important. The i/dot bullet icons are FontAwesome with
+    // NO .text-* class → the generic .icon,.fa{#1d2125!important} (L349) paints them dark;
+    // re-light with the :not([class*="text-"]) guard so tracked users' semantic ✓ (.text-
+    // success) / ✗ (.text-danger) rows keep their colour. The "Edit completion" link is the
+    // SECOND hardcoded $gray-700 and hovers onto Moodle's LIGHT $gray-200 box (the #135
+    // trap) → linkColour at rest + the generator's standard dropdown hover wash.
+    rules.push('// Course-page completion dropdown dialog — re-light hardcoded grey text');
+    rules.push('.activity-item .activity-completion .completion-dialog {');
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push('}');
+    rules.push('.activity-item .activity-completion .completion-dialog .icon:not([class*="text-"]),');
+    rules.push('.activity-item .activity-completion .completion-dialog .fa:not([class*="text-"]) {');
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push('}');
+    rules.push('.activity-item .activity-completion .completion-dialog .editcompletion a {');
+    rules.push(`  color: ${tokens.linkColour} !important;`);
+    rules.push('}');
+    rules.push('.activity-item .activity-completion .completion-dialog .editcompletion a:hover,');
+    rules.push('.activity-item .activity-completion .completion-dialog .editcompletion a:focus {');
+    rules.push('  background-color: rgba(255, 255, 255, 0.08) !important;');
+    rules.push(`  color: ${tokens.linkHover} !important;`);
+    rules.push('}');
+    rules.push('');
+
+    // ── Activity completion report icons (#168) ──
+    // course → Reports → Activity completion (report/progress/index.php; the /index.php body
+    // id KEEPS its suffix → #page-report-progress-index, same id Moodle's own plugin
+    // stylesheet anchors on). Three page-scoped patches — the id exists ONLY on this page,
+    // so nothing else can match:
+    //  (a) The rotated-header activity-type icons are <img class="icon"> MONOLOGOS
+    //      (image_icon() bypasses FontAwesome; Moodle renders them BLACK on report pages
+    //      per MDL-71457) → invisible on dark. `color:` is inert on an <img>; use the
+    //      #136/#149 white-flatten filter.
+    //  (b) The completion-state cells are PIX <img> SVGs too (completion-auto-y/n/pass/
+    //      fail are NOT in the FontAwesome map; no .text-* classes) with colours BAKED IN:
+    //      grey #949494 boxes, blue check, red cross. A white flatten would destroy the
+    //      pass/fail semantics and invert(1) would hue-flip them → mild brightness lift
+    //      only (grey ~4.3:1 → ~6:1 on the dark card; blue/red keep their meaning).
+    //  (c) The plugin stylesheet's ONLY colour rule hardcodes a light #eee right border on
+    //      every cell → bright hairline grid on dark; darken to cardBorder.
+    // The table surface itself already renders dark (5.2 builds it from BS .table vars that
+    // follow the dark body) — no #149-style repaint needed.
+    rules.push('// Activity completion report — header monologos white, cell icons lifted');
+    rules.push('#page-report-progress-index .modicon img.icon {');
+    rules.push('  filter: brightness(0) invert(1) !important;');
+    rules.push('}');
+    rules.push('#page-report-progress-index .completion-progresscell img.icon {');
+    rules.push('  filter: brightness(1.4) !important;');
+    rules.push('}');
+    rules.push('#page-report-progress-index #completion-progress th,');
+    rules.push('#page-report-progress-index #completion-progress td {');
+    rules.push(`  border-color: ${tokens.cardBorder} !important;`);
+    rules.push('}');
+    rules.push('');
   }
 
   // ── Site-wide Focus / Click Indicator (CFA brand, #158) ──
