@@ -2810,6 +2810,37 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push(`  color: ${tokens.bodyText} !important;`);
     rules.push('}');
     rules.push('');
+
+    // ── Course-page completion dropdown dialog (#167) ──
+    // The "Completion ▾" popover on course pages ("Students must: Receive a grade …") is a
+    // standard Bootstrap .dropdown-menu — our site-wide dark rule (L928) already paints its
+    // bg cardBg — but Boost's course.scss hardcodes the dialog TEXT grey directly:
+    //   .activity-item .activity-completion .completion-dialog { color: $gray-700 #495057 }
+    // ((0,3,0), un-!important, byte-identical 4.4–5.2). A DIRECT declaration beats our
+    // container rules' merely-INHERITED light colour → #495057 on the dark panel (~1.6:1).
+    // Mirror Moodle's own selector + !important. The i/dot bullet icons are FontAwesome with
+    // NO .text-* class → the generic .icon,.fa{#1d2125!important} (L349) paints them dark;
+    // re-light with the :not([class*="text-"]) guard so tracked users' semantic ✓ (.text-
+    // success) / ✗ (.text-danger) rows keep their colour. The "Edit completion" link is the
+    // SECOND hardcoded $gray-700 and hovers onto Moodle's LIGHT $gray-200 box (the #135
+    // trap) → linkColour at rest + the generator's standard dropdown hover wash.
+    rules.push('// Course-page completion dropdown dialog — re-light hardcoded grey text');
+    rules.push('.activity-item .activity-completion .completion-dialog {');
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push('}');
+    rules.push('.activity-item .activity-completion .completion-dialog .icon:not([class*="text-"]),');
+    rules.push('.activity-item .activity-completion .completion-dialog .fa:not([class*="text-"]) {');
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push('}');
+    rules.push('.activity-item .activity-completion .completion-dialog .editcompletion a {');
+    rules.push(`  color: ${tokens.linkColour} !important;`);
+    rules.push('}');
+    rules.push('.activity-item .activity-completion .completion-dialog .editcompletion a:hover,');
+    rules.push('.activity-item .activity-completion .completion-dialog .editcompletion a:focus {');
+    rules.push('  background-color: rgba(255, 255, 255, 0.08) !important;');
+    rules.push(`  color: ${tokens.linkHover} !important;`);
+    rules.push('}');
+    rules.push('');
   }
 
   // ── Site-wide Focus / Click Indicator (CFA brand, #158) ──
