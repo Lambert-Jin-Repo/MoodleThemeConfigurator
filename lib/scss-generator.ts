@@ -2872,6 +2872,45 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push(`  border-color: ${tokens.cardBorder} !important;`);
     rules.push('}');
     rules.push('');
+
+    // ── Sortable table-header icons — sort arrow + .commands (#169) ──
+    // Every flexible_table/table_sql header (admin Browse users, Participants, logs, quiz
+    // reports…) renders the sort-direction arrow as a FontAwesome <i class="icon fa … fa-fw">
+    // sibling of the sort link inside <th class="header">, plus hide/move action icons in a
+    // nested <div class="commands">. The generic dark `.icon, .fa { #1d2125 !important }`
+    // rule matches each <i> DIRECTLY and beats the header's merely-inherited light colour →
+    // near-black glyphs on the dark th tint (same failure family as #137/#138/#146).
+    // Anchors: `th.header` + `table.flexible` classes are byte-stable 4.4–5.2; do NOT key on
+    // the FA name (fa-arrow-up-short-wide is 4.5+; 4.4 used fa-sort-asc). Grade reports build
+    // their arrow via a separate code path (grade_report::get_sort_arrow) with its own
+    // `.sorticon` class, so it is included explicitly. `:not([class*="text-"])` spares any
+    // semantic .text-* icon a plugin might place in .commands.
+    rules.push('// Sortable table headers — re-light sort arrow + column-action icons');
+    rules.push('th.header .icon:not([class*="text-"]),');
+    rules.push('th.header .fa:not([class*="text-"]),');
+    rules.push('.icon.sorticon {');
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push('}');
+    rules.push('');
+
+    // ── Report-builder "Filters" button icon (#170) ──
+    // The "Filters" dropdown button above every report-builder table (admin Browse users,
+    // task logs, custom reports — core_reportbuilder/local/filters/area template) holds a
+    // FontAwesome funnel <i class="icon fa fa-filter fa-fw"> (pix i/filter, no .text-*).
+    // The button TEXT is already light via the global dark `.btn-secondary,
+    // .btn-outline-secondary { color: bodyText }` rule, but the generic `.icon, .fa
+    // { #1d2125 !important }` matches the <i> DIRECTLY and beats the inherited colour →
+    // dark funnel on the dark button (#169 family). id="dropdownFiltersButton" is
+    // hardcoded in the template, byte-stable 4.0–5.2, and reportbuilder-exclusive.
+    // Deliberately NOT a global `.btn-outline-secondary .icon` rule — outline-secondary
+    // buttons with icons also sit on always-light surfaces (TinyMCE AI modal, login guest
+    // button, the generic dropdown-dialog component) where a light icon would be wrong.
+    // (1,1,0)+!important beats the generic (0,1,0).
+    rules.push('// Report-builder "Filters" button — re-light the funnel icon');
+    rules.push('#dropdownFiltersButton .icon, #dropdownFiltersButton .fa {');
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push('}');
+    rules.push('');
   }
 
   // ── Site-wide Focus / Click Indicator (CFA brand, #158) ──

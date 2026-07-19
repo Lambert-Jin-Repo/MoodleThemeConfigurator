@@ -2346,3 +2346,60 @@ Generator harness across all 10 CFA presets + Moodle Default + a synthetic custo
 ### Presets / controls audit (Phase 6c / 6d)
 - **Presets:** none need changes — (a)/(b) are pure `filter` geometry (token-free, identical for every dark theme); (c) uses `cardBorder`, already set in both dark presets and any custom dark theme (harness-confirmed). Light presets correctly keep Moodle's black-icons-on-light default.
 - **Controls / quick palette:** no new token, no control — filters aren't user-facing colours, and the border reuses the existing `cardBorder` control.
+
+## #169 — Sortable table-header icons (dark themes)
+
+**Branch:** `worktree-fix-dark-theme-sort-header-icons` (off `main` `f976ceb`, after PR #29).
+
+### Issue
+On dark themes the **sort-direction icon** next to the sorted column header ("Last access" on Site administration → Users → **Browse list of users**, `admin/user.php`) rendered near-black `#1d2125` on the dark table header → invisible. User DevTools confirmed the winning rule: the generic dark `.icon, .fa { color: #1d2125 !important }` (`lib/scss-generator.ts` L498). The same header's `<div class="commands">` hide/move action icons were equally dark-on-dark.
+
+### Findings (parallel research — Moodle raw source 4.4–5.2 + local codebase)
+- `flexible_table::sort_icon()` emits `pix_icon('t/sort_asc'|'t/sort_desc')` in ALL versions 4.4–5.2; on Boost this is always a FontAwesome `<i class="icon fa … fa-fw">` **sibling** of the sort link inside `<th class="header">` → `color:` is the lever.
+- **FA class name is version-unstable:** 4.4 maps to `fa-sort-asc`/`fa-sort-desc`; 4.5–5.2 map to `fa-arrow-up-short-wide`/`fa-arrow-down-short-wide` → never anchor on the FA name. `th.header` + `table.flexible` are byte-stable 4.4–5.2.
+- Site-wide: anything extending `flexible_table`/`table_sql` shares the markup (Browse users, Participants, logs, quiz reports). **Gradebook** uses a separate path (`grade_report::get_sort_arrow()`) with its own `.sorticon` class.
+- Generator: no existing rule touched `th.header` icons or `.commands`; the table surface is dark via the generic `table, th, td` colour + `th { rgba(0,0,0,.15) }` tint (5.2 BS table vars follow the dark body). Preview renders no sortable headers → generator-only fix.
+
+### Fix
+Appended at the tail of `if (darkMode)` (after the #168 block):
+```scss
+th.header .icon:not([class*="text-"]),
+th.header .fa:not([class*="text-"]),
+.icon.sorticon { color: ${tokens.bodyText} !important; }
+```
+- One rule re-lights the sort arrow AND the `.commands` action icons on every sortable table, plus grade-report sort arrows via `.sorticon`.
+- `(0,2,x)`+`!important` beats the generic `.icon, .fa` `(0,1,0)`; `:not([class*="text-"])` spares semantic icons a plugin might place in `.commands` (#137/#138/#146 re-light family).
+
+### Verification
+Generator harness across all 10 CFA presets + Moodle Default + a synthetic custom dark: Dark Lime + Dark Ember emit `#F0EEEE`, the synthetic dark emits its own `bodyText` (token stays dynamic); 8 light presets + Moodle Default emit nothing. `npm run build` + `npm run lint` clean. **User-verified on Moodle Cloud** ("it worked"). Files: `lib/scss-generator.ts`, `docs/moodle-cloud-constraints.md`, `docs/PROJECT-TRACKER.md`, `CLAUDE.md`. Memory: `project_dark_theme_sort_header_icons.md` (new).
+
+### Presets / controls audit (Phase 6c / 6d)
+- **Presets:** none need changes — the rule is dark-gated and token-driven (`bodyText` already set in both dark presets and any custom dark theme; harness-confirmed). Light presets correctly keep Moodle's dark-icons-on-light default.
+- **Controls / quick palette:** no new token, no control — reuses the existing `bodyText` token, already user-facing.
+
+## #170 — Report-builder "Filters" button icon (dark themes)
+
+**Branch:** `worktree-fix-dark-theme-sort-header-icons` (same branch as #169).
+
+### Issue
+On dark themes the funnel icon inside the "Filters" dropdown button above the admin **Browse list of users** table (`admin/user.php`) rendered near-black `#1d2125` on the dark button → invisible. The "Filters" label was already light (global dark `.btn-secondary, .btn-outline-secondary { color: bodyText }` rule); only the `<i class="icon fa fa-filter fa-fw">` was repainted by the generic dark `.icon, .fa { #1d2125 !important }` rule (direct match beats the inherited light colour — the #137/#146/#169 mechanism). User DevTools confirmed the winning rule.
+
+### Findings (parallel research — Moodle raw source 4.0–5.2 + local codebase)
+- The button is **Report Builder**, not datafilter: `core_reportbuilder/local/filters/area.mustache`, included from `core_reportbuilder/report`. `id="dropdownFiltersButton"` is hardcoded and **byte-stable 4.0–5.2**; appears on every report-builder report with filters (Browse users — a system report since 4.4/MDL-79270 — task logs, custom reports). NOT on Participants (that's `core/datafilter`'s inline "Match" UI, #155).
+- Icon is always FA `i/filter → fa-filter`, no `.text-*` → `color:` lever, no guard needed.
+- **Global `.btn-outline-secondary .icon` ruled out**: outline-secondary+icon buttons also sit on always-light surfaces (TinyMCE AI modal, login guest button, the generic `local/dropdown/dialog` component reused by #167) where a light icon would be wrong. Id scope has zero leak risk; duplicate-id edge case (report-editor tabs) is CSS-safe.
+- Generator had NO rule for icons inside secondary/outline-secondary buttons; preview has no such button → generator-only fix.
+
+### Fix
+Appended at the tail of `if (darkMode)` (after the #169 block):
+```scss
+#dropdownFiltersButton .icon, #dropdownFiltersButton .fa { color: ${tokens.bodyText} !important; }
+```
+`(1,1,0)`+`!important` beats the generic `(0,1,0)`; the funnel matches the button label's light `bodyText`.
+
+### Verification
+Generator harness across all 10 CFA presets + Moodle Default + a synthetic custom dark: Dark Lime + Dark Ember emit `#F0EEEE`, the synthetic dark emits its own `bodyText`; light presets + Moodle Default emit nothing. `npm run build` + `npm run lint` clean. **User-verified on Moodle Cloud** ("it worked"). Files: `lib/scss-generator.ts`, `docs/moodle-cloud-constraints.md`, `docs/PROJECT-TRACKER.md`, `CLAUDE.md`. Memory: `project_dark_theme_reportbuilder_filters_button.md` (new).
+
+### Presets / controls audit (Phase 6c / 6d)
+- **Presets:** none need changes — dark-gated, token-driven (`bodyText` already set everywhere it matters; harness-confirmed).
+- **Controls / quick palette:** no new token, no control — reuses the existing `bodyText` token.
