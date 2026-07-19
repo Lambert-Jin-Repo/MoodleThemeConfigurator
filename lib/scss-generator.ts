@@ -2872,6 +2872,26 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push(`  border-color: ${tokens.cardBorder} !important;`);
     rules.push('}');
     rules.push('');
+
+    // ── Sortable table-header icons — sort arrow + .commands (#169) ──
+    // Every flexible_table/table_sql header (admin Browse users, Participants, logs, quiz
+    // reports…) renders the sort-direction arrow as a FontAwesome <i class="icon fa … fa-fw">
+    // sibling of the sort link inside <th class="header">, plus hide/move action icons in a
+    // nested <div class="commands">. The generic dark `.icon, .fa { #1d2125 !important }`
+    // rule matches each <i> DIRECTLY and beats the header's merely-inherited light colour →
+    // near-black glyphs on the dark th tint (same failure family as #137/#138/#146).
+    // Anchors: `th.header` + `table.flexible` classes are byte-stable 4.4–5.2; do NOT key on
+    // the FA name (fa-arrow-up-short-wide is 4.5+; 4.4 used fa-sort-asc). Grade reports build
+    // their arrow via a separate code path (grade_report::get_sort_arrow) with its own
+    // `.sorticon` class, so it is included explicitly. `:not([class*="text-"])` spares any
+    // semantic .text-* icon a plugin might place in .commands.
+    rules.push('// Sortable table headers — re-light sort arrow + column-action icons');
+    rules.push('th.header .icon:not([class*="text-"]),');
+    rules.push('th.header .fa:not([class*="text-"]),');
+    rules.push('.icon.sorticon {');
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push('}');
+    rules.push('');
   }
 
   // ── Site-wide Focus / Click Indicator (CFA brand, #158) ──
