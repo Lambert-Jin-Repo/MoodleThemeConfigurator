@@ -2892,6 +2892,25 @@ export function generateScss(tokens: ThemeTokens): ScssOutput {
     rules.push(`  color: ${tokens.bodyText} !important;`);
     rules.push('}');
     rules.push('');
+
+    // ── Report-builder "Filters" button icon (#170) ──
+    // The "Filters" dropdown button above every report-builder table (admin Browse users,
+    // task logs, custom reports — core_reportbuilder/local/filters/area template) holds a
+    // FontAwesome funnel <i class="icon fa fa-filter fa-fw"> (pix i/filter, no .text-*).
+    // The button TEXT is already light via the global dark `.btn-secondary,
+    // .btn-outline-secondary { color: bodyText }` rule, but the generic `.icon, .fa
+    // { #1d2125 !important }` matches the <i> DIRECTLY and beats the inherited colour →
+    // dark funnel on the dark button (#169 family). id="dropdownFiltersButton" is
+    // hardcoded in the template, byte-stable 4.0–5.2, and reportbuilder-exclusive.
+    // Deliberately NOT a global `.btn-outline-secondary .icon` rule — outline-secondary
+    // buttons with icons also sit on always-light surfaces (TinyMCE AI modal, login guest
+    // button, the generic dropdown-dialog component) where a light icon would be wrong.
+    // (1,1,0)+!important beats the generic (0,1,0).
+    rules.push('// Report-builder "Filters" button — re-light the funnel icon');
+    rules.push('#dropdownFiltersButton .icon, #dropdownFiltersButton .fa {');
+    rules.push(`  color: ${tokens.bodyText} !important;`);
+    rules.push('}');
+    rules.push('');
   }
 
   // ── Site-wide Focus / Click Indicator (CFA brand, #158) ──

@@ -2376,3 +2376,30 @@ Generator harness across all 10 CFA presets + Moodle Default + a synthetic custo
 ### Presets / controls audit (Phase 6c / 6d)
 - **Presets:** none need changes — the rule is dark-gated and token-driven (`bodyText` already set in both dark presets and any custom dark theme; harness-confirmed). Light presets correctly keep Moodle's dark-icons-on-light default.
 - **Controls / quick palette:** no new token, no control — reuses the existing `bodyText` token, already user-facing.
+
+## #170 — Report-builder "Filters" button icon (dark themes)
+
+**Branch:** `worktree-fix-dark-theme-sort-header-icons` (same branch as #169).
+
+### Issue
+On dark themes the funnel icon inside the "Filters" dropdown button above the admin **Browse list of users** table (`admin/user.php`) rendered near-black `#1d2125` on the dark button → invisible. The "Filters" label was already light (global dark `.btn-secondary, .btn-outline-secondary { color: bodyText }` rule); only the `<i class="icon fa fa-filter fa-fw">` was repainted by the generic dark `.icon, .fa { #1d2125 !important }` rule (direct match beats the inherited light colour — the #137/#146/#169 mechanism). User DevTools confirmed the winning rule.
+
+### Findings (parallel research — Moodle raw source 4.0–5.2 + local codebase)
+- The button is **Report Builder**, not datafilter: `core_reportbuilder/local/filters/area.mustache`, included from `core_reportbuilder/report`. `id="dropdownFiltersButton"` is hardcoded and **byte-stable 4.0–5.2**; appears on every report-builder report with filters (Browse users — a system report since 4.4/MDL-79270 — task logs, custom reports). NOT on Participants (that's `core/datafilter`'s inline "Match" UI, #155).
+- Icon is always FA `i/filter → fa-filter`, no `.text-*` → `color:` lever, no guard needed.
+- **Global `.btn-outline-secondary .icon` ruled out**: outline-secondary+icon buttons also sit on always-light surfaces (TinyMCE AI modal, login guest button, the generic `local/dropdown/dialog` component reused by #167) where a light icon would be wrong. Id scope has zero leak risk; duplicate-id edge case (report-editor tabs) is CSS-safe.
+- Generator had NO rule for icons inside secondary/outline-secondary buttons; preview has no such button → generator-only fix.
+
+### Fix
+Appended at the tail of `if (darkMode)` (after the #169 block):
+```scss
+#dropdownFiltersButton .icon, #dropdownFiltersButton .fa { color: ${tokens.bodyText} !important; }
+```
+`(1,1,0)`+`!important` beats the generic `(0,1,0)`; the funnel matches the button label's light `bodyText`.
+
+### Verification
+Generator harness across all 10 CFA presets + Moodle Default + a synthetic custom dark: Dark Lime + Dark Ember emit `#F0EEEE`, the synthetic dark emits its own `bodyText`; light presets + Moodle Default emit nothing. `npm run build` + `npm run lint` clean. **User-verified on Moodle Cloud** ("it worked"). Files: `lib/scss-generator.ts`, `docs/moodle-cloud-constraints.md`, `docs/PROJECT-TRACKER.md`, `CLAUDE.md`. Memory: `project_dark_theme_reportbuilder_filters_button.md` (new).
+
+### Presets / controls audit (Phase 6c / 6d)
+- **Presets:** none need changes — dark-gated, token-driven (`bodyText` already set everywhere it matters; harness-confirmed).
+- **Controls / quick palette:** no new token, no control — reuses the existing `bodyText` token.
